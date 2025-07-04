@@ -1,15 +1,14 @@
-RT(config)# show star
-Using 2456 out of 2097152 bytes
+TTUT-RT(config)# show star
+Using 3227 out of 2097152 bytes
 
 ! NEC Portable Internetwork Core Operating System Software
 ! IX Series IX3100 (magellan-sec) Software, Version 10.5.35, RELEASE SOFTWARE
 ! Compiled Dec 15-Fri-2023 15:30:47 JST #2
-! Last updated Feb 20-Tue-2024 20:56:14 JST
+! Last updated Jun 25-Wed-2025 22:40:38 JST
 !
-hostname RT
+hostname TTUT-RT
 timezone +09 00
 !
-username admin password hash 4Df43DCA9cA7e5129eF3A572aE12a2@ administrator
 !
 ntp ip enable
 ntp server 210.173.160.27
@@ -21,15 +20,6 @@ ntp master
 ip ufs-cache enable
 ip route default 192.168.8.1
 ip dhcp enable
-ip access-list implicit-deny deny ip src any dest any
-ip access-list permit-wan-in permit ip src any dest 192.168.99.0/24
-ip access-list permit-wan-in permit ip src any dest 192.168.20.100/32
-ip access-list permit-wan-in permit ip src any dest 10.244.0.0/16
-ip access-list permit-wan-in permit ip src any dest 192.168.8.0/24
-ip access-list permit-wan-out permit ip src 192.168.99.0/24 dest any
-ip access-list permit-wan-out permit ip src 192.168.20.100/32 dest any
-ip access-list permit-wan-out permit ip src 10.244.0.0/16 dest any
-ip access-list permit-wan-out permit ip src 192.168.8.0/24 dest any
 !
 !
 !
@@ -42,70 +32,48 @@ snmp-agent ip community univerge
 !
 !
 !
+ip name-server 192.168.99.51
 dns cache enable
 !
 proxy-dns ip enable
 proxy-dns server 192.168.99.51
-proxy-dns server 1.1.1.1
 !
 !
 ssh-server ip enable
 !
-http-server username admin
+http-server authentication-method digest
+http-server username admin secret-password SECRET
+http-server monitor-username monitor secret-password SECRET
 http-server ip enable
 !
 !
-!
-!
-!
-!
-router bgp 65000
-  neighbor 192.168.99.33 remote-as 65000
+router bgp 64646
+  neighbor 192.168.16.2 remote-as 64646
   address-family ipv4 unicast
     redistribute-internal
-    network 192.168.8.0/24
-    network 192.168.16.0/24
-    redistribute ospf 1
-!
-ip router ospf 1
-  originate-default always
-  redistribute bgp 65000
-  router-id 0.0.0.1
-  passive-interface GigaEthernet0.0
-  area 0
-  network 192.168.16.0/30 area 0
-  network 192.168.8.0/24 area 0
+    redistribute connected
 !
 device GigaEthernet0
 !
 device GigaEthernet1
-  shutdown
 !
 device GigaEthernet2
   shutdown
 !
 device GigaEthernet3
-  connector-type sfp
+  shutdown
 !
 interface GigaEthernet0.0
   ip address 192.168.8.99/24
-  ip filter permit-wan-in 1 in
-  ip filter implicit-deny 2 in
-  ip filter permit-wan-out 1 out
-  ip filter implicit-deny 2 out
   no shutdown
 !
 interface GigaEthernet1.0
-  no ip address
-  shutdown
+  ip address 192.168.16.1/30
+  no shutdown
 !
 interface GigaEthernet2.0
   no ip address
   shutdown
-!
-interface GigaEthernet3.0
-  ip address 192.168.16.1/30
-  no shutdown
 !
 interface Loopback0.0
   no ip address

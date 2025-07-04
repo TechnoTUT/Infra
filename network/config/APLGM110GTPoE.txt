@@ -1,0 +1,657 @@
+#show config current_config
+Command: show config current_config
+
+#-------------------------------------------------------------------
+#                       APLGM110GTPoE Configuration
+#
+#                       Firmware: 1.09.01
+#        Copyright(C) 2017 APRESIA Systems, Ltd. All rights reserved.
+#-------------------------------------------------------------------
+
+
+# BASIC
+
+config serial_port baud_rate 9600 auto_logout 10_minutes
+config default_language japanese
+config terminal_line default
+enable clipaging
+enable command logging
+
+# UTILIZATION_NOTIFY
+
+config utilization notify cpu state enable threshold 100 polling_interval 60 trap_state disable log_state enable
+config utilization notify dram state enable threshold 100 polling_interval 60 trap_state disable log_state enable
+
+# STORM
+
+config traffic control 1 broadcast disable multicast disable unicast disable action drop threshold 64 countdown 0 time_interval 5 recover_time 300
+config traffic control 2 broadcast disable multicast disable unicast disable action drop threshold 64 countdown 0 time_interval 5 recover_time 300
+config traffic control 3 broadcast disable multicast disable unicast disable action drop threshold 64 countdown 0 time_interval 5 recover_time 300
+config traffic control 4 broadcast disable multicast disable unicast disable action drop threshold 64 countdown 0 time_interval 5 recover_time 300
+config traffic control 5 broadcast disable multicast disable unicast disable action drop threshold 64 countdown 0 time_interval 5 recover_time 300
+config traffic control 6 broadcast disable multicast disable unicast disable action drop threshold 64 countdown 0 time_interval 5 recover_time 300
+config traffic control 7 broadcast disable multicast disable unicast disable action drop threshold 64 countdown 0 time_interval 5 recover_time 300
+config traffic control 8 broadcast disable multicast disable unicast disable action drop threshold 64 countdown 0 time_interval 5 recover_time 300
+config traffic control 9 broadcast disable multicast disable unicast disable action drop threshold 64 countdown 0 time_interval 5 recover_time 300
+config traffic control 10 broadcast disable multicast disable unicast disable action drop threshold 64 countdown 0 time_interval 5 recover_time 300
+
+# LOOP_DETECT
+
+config loopdetect recover_timer 60
+config loopdetect interval 10
+config loopdetect ports 1 state disabled method shutdown
+config loopdetect ports 2 state disabled method shutdown
+config loopdetect ports 3 state disabled method shutdown
+config loopdetect ports 4 state disabled method shutdown
+config loopdetect ports 5 state disabled method shutdown
+config loopdetect ports 6 state disabled method shutdown
+config loopdetect ports 7 state disabled method shutdown
+config loopdetect ports 8 state disabled method shutdown
+config loopdetect ports 9 state disabled method shutdown
+config loopdetect ports 10 state disabled method shutdown
+disable loopdetect
+
+# QOS
+
+config scheduling_mechanism strict
+config scheduling 0 weight 1
+config scheduling 1 weight 2
+config scheduling 2 weight 4
+config scheduling 3 weight 8
+config 802.1p user_priority 0  1
+config 802.1p user_priority 1  0
+config 802.1p user_priority 2  0
+config 802.1p user_priority 3  1
+config 802.1p user_priority 4  2
+config 802.1p user_priority 5  2
+config 802.1p user_priority 6  3
+config 802.1p user_priority 7  3
+config 802.1p default_priority 1 0
+config 802.1p default_priority 2 0
+config 802.1p default_priority 3 0
+config 802.1p default_priority 4 0
+config 802.1p default_priority 5 0
+config 802.1p default_priority 6 0
+config 802.1p default_priority 7 0
+config 802.1p default_priority 8 0
+config 802.1p default_priority 9 0
+config 802.1p default_priority 10 0
+config cos mapping ports 1 ethernet 802.1p
+config cos mapping ports 2 ethernet 802.1p
+config cos mapping ports 3 ethernet 802.1p
+config cos mapping ports 4 ethernet 802.1p
+config cos mapping ports 5 ethernet 802.1p
+config cos mapping ports 6 ethernet 802.1p
+config cos mapping ports 7 ethernet 802.1p
+config cos mapping ports 8 ethernet 802.1p
+config cos mapping ports 9 ethernet 802.1p
+config cos mapping ports 10 ethernet 802.1p
+config cos tos value 0 class 0
+config cos tos value 1 class 0
+config cos tos value 2 class 0
+config cos tos value 3 class 0
+config cos tos value 4 class 0
+config cos tos value 5 class 0
+config cos tos value 6 class 0
+config cos tos value 7 class 0
+config dscp_mapping dscp_value 0 class 0
+config dscp_mapping dscp_value 1 class 0
+config dscp_mapping dscp_value 2 class 0
+config dscp_mapping dscp_value 3 class 0
+config dscp_mapping dscp_value 4 class 0
+config dscp_mapping dscp_value 5 class 0
+config dscp_mapping dscp_value 6 class 0
+config dscp_mapping dscp_value 7 class 0
+config dscp_mapping dscp_value 8 class 0
+config dscp_mapping dscp_value 9 class 0
+config dscp_mapping dscp_value 10 class 0
+config dscp_mapping dscp_value 11 class 0
+config dscp_mapping dscp_value 12 class 0
+config dscp_mapping dscp_value 13 class 0
+config dscp_mapping dscp_value 14 class 0
+config dscp_mapping dscp_value 15 class 0
+config dscp_mapping dscp_value 16 class 0
+config dscp_mapping dscp_value 17 class 0
+config dscp_mapping dscp_value 18 class 0
+config dscp_mapping dscp_value 19 class 0
+config dscp_mapping dscp_value 20 class 0
+config dscp_mapping dscp_value 21 class 0
+config dscp_mapping dscp_value 22 class 0
+config dscp_mapping dscp_value 23 class 0
+config dscp_mapping dscp_value 24 class 0
+config dscp_mapping dscp_value 25 class 0
+config dscp_mapping dscp_value 26 class 0
+config dscp_mapping dscp_value 27 class 0
+config dscp_mapping dscp_value 28 class 0
+config dscp_mapping dscp_value 29 class 0
+config dscp_mapping dscp_value 30 class 0
+config dscp_mapping dscp_value 31 class 0
+config dscp_mapping dscp_value 32 class 0
+config dscp_mapping dscp_value 33 class 0
+config dscp_mapping dscp_value 34 class 0
+config dscp_mapping dscp_value 35 class 0
+config dscp_mapping dscp_value 36 class 0
+config dscp_mapping dscp_value 37 class 0
+config dscp_mapping dscp_value 38 class 0
+config dscp_mapping dscp_value 39 class 0
+config dscp_mapping dscp_value 40 class 0
+config dscp_mapping dscp_value 41 class 0
+config dscp_mapping dscp_value 42 class 0
+config dscp_mapping dscp_value 43 class 0
+config dscp_mapping dscp_value 44 class 0
+config dscp_mapping dscp_value 45 class 0
+config dscp_mapping dscp_value 46 class 0
+config dscp_mapping dscp_value 47 class 0
+config dscp_mapping dscp_value 48 class 0
+config dscp_mapping dscp_value 49 class 0
+config dscp_mapping dscp_value 50 class 0
+config dscp_mapping dscp_value 51 class 0
+config dscp_mapping dscp_value 52 class 0
+config dscp_mapping dscp_value 53 class 0
+config dscp_mapping dscp_value 54 class 0
+config dscp_mapping dscp_value 55 class 0
+config dscp_mapping dscp_value 56 class 0
+config dscp_mapping dscp_value 57 class 0
+config dscp_mapping dscp_value 58 class 0
+config dscp_mapping dscp_value 59 class 0
+config dscp_mapping dscp_value 60 class 0
+config dscp_mapping dscp_value 61 class 0
+config dscp_mapping dscp_value 62 class 0
+config dscp_mapping dscp_value 63 class 0
+
+# MIRROR
+
+disable mirror
+config mirror port 1 delete source ports 1 both
+
+# BANDWIDTH
+
+ config bandwidth_control 1 rx_rate no_limit tx_rate no_limit
+ config bandwidth_control 2 rx_rate no_limit tx_rate no_limit
+ config bandwidth_control 3 rx_rate no_limit tx_rate no_limit
+ config bandwidth_control 4 rx_rate no_limit tx_rate no_limit
+ config bandwidth_control 5 rx_rate no_limit tx_rate no_limit
+ config bandwidth_control 6 rx_rate no_limit tx_rate no_limit
+ config bandwidth_control 7 rx_rate no_limit tx_rate no_limit
+ config bandwidth_control 8 rx_rate no_limit tx_rate no_limit
+ config bandwidth_control 9 rx_rate no_limit tx_rate no_limit
+ config bandwidth_control 10 rx_rate no_limit tx_rate no_limit
+
+# SYSLOG
+
+disable syslog
+config log_save_timing on_demand
+
+# TRAF-SEGMENTATION
+
+config traffic_segmentation 1 forward_list 1-10
+config traffic_segmentation 2 forward_list 1-10
+config traffic_segmentation 3 forward_list 1-10
+config traffic_segmentation 4 forward_list 1-10
+config traffic_segmentation 5 forward_list 1-10
+config traffic_segmentation 6 forward_list 1-10
+config traffic_segmentation 7 forward_list 1-10
+config traffic_segmentation 8 forward_list 1-10
+config traffic_segmentation 9 forward_list 1-10
+config traffic_segmentation 10 forward_list 1-10
+
+# SSL
+
+disable ssl
+enable ssl ciphersuite RSA_with_RC4_128_MD5
+enable ssl ciphersuite RSA_with_3DES_EDE_CBC_SHA
+enable ssl ciphersuite DHE_DSS_with_3DES_EDE_CBC_SHA
+config ssl cachetimeout 600
+
+# POE
+
+config poe system power_limit 125
+
+config poe ports 1-8 state enable priority low power_limit user_define 31200
+
+# DDM
+
+
+# MANAGEMENT
+
+enable snmp traps
+enable snmp authenticate_traps
+enable snmp linkchange_traps
+disable snmp login_trap
+disable snmp logout_trap
+disable snmp login_fail_trap
+config snmp linkchange_traps ports all enable
+disable rmon
+
+# SNMPv3
+
+delete snmp community public
+delete snmp community private
+delete snmp user initial
+delete snmp group initial
+delete snmp view restricted all
+delete snmp view CommunityView all
+delete snmp group public
+delete snmp group private
+delete snmp group ReadGroup
+delete snmp group WriteGroup
+config snmp engineID 8000011603004066b7a4f3
+create snmp view restricted 1.3.6.1.2.1.1 view_type included
+create snmp view restricted 1.3.6.1.2.1.11 view_type included
+create snmp view restricted 1.3.6.1.6.3.10.2.1 view_type included
+create snmp view restricted 1.3.6.1.6.3.11.2.1 view_type included
+create snmp view restricted 1.3.6.1.6.3.15.1.1 view_type included
+create snmp view CommunityView 1 view_type included
+create snmp view CommunityView 1.3.6.1.6.3 view_type excluded
+create snmp view CommunityView 1.3.6.1.6.3.1 view_type included
+create snmp community private view CommunityView read_write
+delete snmp group private
+create snmp community public view CommunityView read_only
+delete snmp group public
+create snmp community univerge view CommunityView read_only
+delete snmp group univerge
+create snmp group public v1 read_view CommunityView notify_view CommunityView
+create snmp group public v2c read_view CommunityView notify_view CommunityView
+create snmp group initial v3  noauth_nopriv read_view restricted notify_view restricted
+create snmp group private v1 read_view CommunityView write_view CommunityView notify_view CommunityView
+create snmp group private v2c read_view CommunityView write_view CommunityView notify_view CommunityView
+create snmp group univerge v1 read_view CommunityView notify_view CommunityView
+create snmp group univerge v2c read_view CommunityView notify_view CommunityView
+create snmp group ReadGroup v1 read_view CommunityView notify_view CommunityView
+create snmp group ReadGroup v2c read_view CommunityView notify_view CommunityView
+create snmp group WriteGroup v1 read_view CommunityView write_view CommunityView notify_view CommunityView
+create snmp group WriteGroup v2c read_view CommunityView write_view CommunityView notify_view CommunityView
+create snmp user initial initial
+
+# VLAN
+
+disable asymmetric_vlan
+enable pvid auto_assign
+config vlan default delete 1-10
+config vlan default advertisement disable
+create vlan wan tag 8 advertisement
+config vlan wan add tagged 7-9
+create vlan dj tag 10 advertisement
+config vlan dj add tagged 7-9
+config vlan dj add untagged 1-4
+create vlan vj tag 20 advertisement
+config vlan vj add tagged 7-9
+config vlan vj add untagged 5-6
+create vlan led tag 30 advertisement
+config vlan led add tagged 7-9
+create vlan cam1 tag 40 advertisement
+config vlan cam1 add tagged 7-9
+create vlan cam2 tag 50 advertisement
+config vlan cam2 add tagged 7-9
+create vlan pa tag 60 advertisement
+config vlan pa add tagged 7-9
+create vlan server tag 99 advertisement
+config vlan server add tagged 7-9
+config vlan server add untagged 10
+disable qinq
+disable gvrp
+config gvrp 1 state disable ingress_checking enable acceptable_frame admit_all pvid 10
+config gvrp 2 state disable ingress_checking enable acceptable_frame admit_all pvid 10
+config gvrp 3 state disable ingress_checking enable acceptable_frame admit_all pvid 10
+config gvrp 4 state disable ingress_checking enable acceptable_frame admit_all pvid 10
+config gvrp 5 state disable ingress_checking enable acceptable_frame admit_all pvid 20
+config gvrp 6 state disable ingress_checking enable acceptable_frame admit_all pvid 20
+config gvrp 7 state disable ingress_checking enable acceptable_frame admit_all pvid 1
+config gvrp 8 state disable ingress_checking enable acceptable_frame admit_all pvid 1
+config gvrp 9 state disable ingress_checking enable acceptable_frame admit_all pvid 1
+config gvrp 10 state disable ingress_checking enable acceptable_frame admit_all pvid 99
+config qinq ports 1-10 role nni outer_tpid 0x88A8 vlan_translation disable
+
+# PROTOCOL_VLAN
+
+
+# 8021X
+
+disable 802.1x
+config 802.1x auth_protocol radius_eap
+config 802.1x auth_failover disable
+config 802.1x capability ports 1 none
+config 802.1x capability ports 2 none
+config 802.1x capability ports 3 none
+config 802.1x capability ports 4 none
+config 802.1x capability ports 5 none
+config 802.1x capability ports 6 none
+config 802.1x capability ports 7 none
+config 802.1x capability ports 8 none
+config 802.1x capability ports 9 none
+config 802.1x capability ports 10 none
+config 802.1x auth_parameter ports 1 direction both port_control auto quiet_period 60 tx_period 30 supp_timeout 30 server_timeout 30 max_req 2 reauth_period 3600 enable_reauth disable
+config 802.1x auth_parameter ports 2 direction both port_control auto quiet_period 60 tx_period 30 supp_timeout 30 server_timeout 30 max_req 2 reauth_period 3600 enable_reauth disable
+config 802.1x auth_parameter ports 3 direction both port_control auto quiet_period 60 tx_period 30 supp_timeout 30 server_timeout 30 max_req 2 reauth_period 3600 enable_reauth disable
+config 802.1x auth_parameter ports 4 direction both port_control auto quiet_period 60 tx_period 30 supp_timeout 30 server_timeout 30 max_req 2 reauth_period 3600 enable_reauth disable
+config 802.1x auth_parameter ports 5 direction both port_control auto quiet_period 60 tx_period 30 supp_timeout 30 server_timeout 30 max_req 2 reauth_period 3600 enable_reauth disable
+config 802.1x auth_parameter ports 6 direction both port_control auto quiet_period 60 tx_period 30 supp_timeout 30 server_timeout 30 max_req 2 reauth_period 3600 enable_reauth disable
+config 802.1x auth_parameter ports 7 direction both port_control auto quiet_period 60 tx_period 30 supp_timeout 30 server_timeout 30 max_req 2 reauth_period 3600 enable_reauth disable
+config 802.1x auth_parameter ports 8 direction both port_control auto quiet_period 60 tx_period 30 supp_timeout 30 server_timeout 30 max_req 2 reauth_period 3600 enable_reauth disable
+config 802.1x auth_parameter ports 9 direction both port_control auto quiet_period 60 tx_period 30 supp_timeout 30 server_timeout 30 max_req 2 reauth_period 3600 enable_reauth disable
+config 802.1x auth_parameter ports 10 direction both port_control auto quiet_period 60 tx_period 30 supp_timeout 30 server_timeout 30 max_req 2 reauth_period 3600 enable_reauth disable
+config radius parameter timeout 5 retransmit 2
+
+# PORT_LOCK
+
+ config port_security ports 1 admin_state disable max_learning_addr 1 lock_address_mode DeleteOnTimeout
+ config port_security ports 2 admin_state disable max_learning_addr 1 lock_address_mode DeleteOnTimeout
+ config port_security ports 3 admin_state disable max_learning_addr 1 lock_address_mode DeleteOnTimeout
+ config port_security ports 4 admin_state disable max_learning_addr 1 lock_address_mode DeleteOnTimeout
+ config port_security ports 5 admin_state disable max_learning_addr 1 lock_address_mode DeleteOnTimeout
+ config port_security ports 6 admin_state disable max_learning_addr 1 lock_address_mode DeleteOnTimeout
+ config port_security ports 7 admin_state disable max_learning_addr 1 lock_address_mode DeleteOnTimeout
+ config port_security ports 8 admin_state disable max_learning_addr 1 lock_address_mode DeleteOnTimeout
+ config port_security ports 9 admin_state disable max_learning_addr 1 lock_address_mode DeleteOnTimeout
+ config port_security ports 10 admin_state disable max_learning_addr 1 lock_address_mode DeleteOnTimeout
+
+# LACP
+
+config lacp_ports 1 port_priority 32768
+config lacp_ports 2 port_priority 32768
+config lacp_ports 3 port_priority 32768
+config lacp_ports 4 port_priority 32768
+config lacp_ports 5 port_priority 32768
+config lacp_ports 6 port_priority 32768
+config lacp_ports 7 port_priority 32768
+config lacp_ports 8 port_priority 32768
+config lacp_ports 9 port_priority 32768
+config lacp_ports 10 port_priority 32768
+config lacp_ports 1-10 mode passive
+config lacp_ports 1-10 lacp_timeout short
+config link_aggregation algorithm mac_source
+config link_aggregation system_priority 32768
+
+# STP
+
+enable stp
+config stp version mstp
+config stp maxage 20 maxhops 20 forwarddelay 15 txholdcount 6 fbpdu enable
+config stp priority 32768 instance_id 0
+config stp ports 1 externalCost auto hellotime 2 edge true p2p auto state enable
+config stp ports 1 hellotime 2
+config stp mst_ports 1 instance_id 0 internalCost auto priority 128
+config stp ports 1 fbpdu enable
+config stp ports 1 restricted_role false
+config stp ports 1 restricted_tcn false
+config stp ports 2 externalCost auto hellotime 2 edge true p2p auto state enable
+config stp ports 2 hellotime 2
+config stp mst_ports 2 instance_id 0 internalCost auto priority 128
+config stp ports 2 fbpdu enable
+config stp ports 2 restricted_role false
+config stp ports 2 restricted_tcn false
+config stp ports 3 externalCost auto hellotime 2 edge true p2p auto state enable
+config stp ports 3 hellotime 2
+config stp mst_ports 3 instance_id 0 internalCost auto priority 128
+config stp ports 3 fbpdu enable
+config stp ports 3 restricted_role false
+config stp ports 3 restricted_tcn false
+config stp ports 4 externalCost auto hellotime 2 edge true p2p auto state enable
+config stp ports 4 hellotime 2
+config stp mst_ports 4 instance_id 0 internalCost auto priority 128
+config stp ports 4 fbpdu enable
+config stp ports 4 restricted_role false
+config stp ports 4 restricted_tcn false
+config stp ports 5 externalCost auto hellotime 2 edge true p2p auto state enable
+config stp ports 5 hellotime 2
+config stp mst_ports 5 instance_id 0 internalCost auto priority 128
+config stp ports 5 fbpdu enable
+config stp ports 5 restricted_role false
+config stp ports 5 restricted_tcn false
+config stp ports 6 externalCost auto hellotime 2 edge true p2p auto state enable
+config stp ports 6 hellotime 2
+config stp mst_ports 6 instance_id 0 internalCost auto priority 128
+config stp ports 6 fbpdu enable
+config stp ports 6 restricted_role false
+config stp ports 6 restricted_tcn false
+config stp ports 7 externalCost auto hellotime 2 edge auto p2p auto state enable
+config stp ports 7 hellotime 2
+config stp mst_ports 7 instance_id 0 internalCost auto priority 128
+config stp ports 7 fbpdu enable
+config stp ports 7 restricted_role false
+config stp ports 7 restricted_tcn false
+config stp ports 8 externalCost auto hellotime 2 edge auto p2p auto state enable
+config stp ports 8 hellotime 2
+config stp mst_ports 8 instance_id 0 internalCost auto priority 128
+config stp ports 8 fbpdu enable
+config stp ports 8 restricted_role false
+config stp ports 8 restricted_tcn false
+config stp ports 9 externalCost auto hellotime 2 edge auto p2p auto state enable
+config stp ports 9 hellotime 2
+config stp mst_ports 9 instance_id 0 internalCost auto priority 128
+config stp ports 9 fbpdu enable
+config stp ports 9 restricted_role false
+config stp ports 9 restricted_tcn false
+config stp ports 10 externalCost auto hellotime 2 edge auto p2p auto state enable
+config stp ports 10 hellotime 2
+config stp mst_ports 10 instance_id 0 internalCost auto priority 128
+config stp ports 10 fbpdu enable
+config stp ports 10 restricted_role false
+config stp ports 10 restricted_tcn false
+config stp mst_config_id name 00:40:66:B7:A4:F3 revision_level 0
+
+# BPDU_PROTECTION
+
+config bpdu_guard ports 1-10 mode shutdown
+
+# BANNER_PROMP
+
+config command_prompt default
+config greeting_message default
+
+# SSH
+
+config ssh algorithm 3DES enable
+config ssh algorithm AES128 enable
+config ssh algorithm AES192 enable
+config ssh algorithm AES256 enable
+config ssh algorithm arcfour enable
+config ssh algorithm blowfish enable
+config ssh algorithm cast128 enable
+config ssh algorithm twofish128 enable
+config ssh algorithm twofish192 enable
+config ssh algorithm twofish256 enable
+config ssh algorithm MD5 enable
+config ssh algorithm SHA1 enable
+config ssh algorithm RSA enable
+config ssh algorithm DSA enable
+config ssh authmode password enable
+config ssh authmode publickey enable
+config ssh authmode hostbased enable
+config ssh server maxsession 8
+config ssh server contimeout 120
+config ssh server authfail 2
+config ssh server rekey never
+ config ssh user adpro authmode password
+enable ssh
+
+# SNOOP
+
+enable igmp_snooping
+config igmp_snooping vlan_name default state disable fast_leave disable
+config igmp_snooping querier vlan_name default query_interval 125 max_response_time 10 robustness_variable 2 last_member_query_interval 1 state disable version 3
+config igmp_snooping vlan_name wan state disable fast_leave disable
+config igmp_snooping querier vlan_name wan query_interval 125 max_response_time 10 robustness_variable 2 last_member_query_interval 1 state disable version 3
+config igmp_snooping vlan_name dj state enable fast_leave disable
+config igmp_snooping querier vlan_name dj query_interval 125 max_response_time 10 robustness_variable 2 last_member_query_interval 1 state enable version 3
+config igmp_snooping vlan_name vj state enable fast_leave disable
+config igmp_snooping querier vlan_name vj query_interval 125 max_response_time 10 robustness_variable 2 last_member_query_interval 1 state disable version 3
+config igmp_snooping vlan_name led state disable fast_leave disable
+config igmp_snooping querier vlan_name led query_interval 125 max_response_time 10 robustness_variable 2 last_member_query_interval 1 state disable version 3
+config igmp_snooping vlan_name cam1 state disable fast_leave disable
+config igmp_snooping querier vlan_name cam1 query_interval 125 max_response_time 10 robustness_variable 2 last_member_query_interval 1 state disable version 3
+config igmp_snooping vlan_name cam2 state disable fast_leave disable
+config igmp_snooping querier vlan_name cam2 query_interval 125 max_response_time 10 robustness_variable 2 last_member_query_interval 1 state disable version 3
+config igmp_snooping vlan_name pa state disable fast_leave disable
+config igmp_snooping querier vlan_name pa query_interval 125 max_response_time 10 robustness_variable 2 last_member_query_interval 1 state disable version 3
+config igmp_snooping vlan_name server state disable fast_leave disable
+config igmp_snooping querier vlan_name server query_interval 125 max_response_time 10 robustness_variable 2 last_member_query_interval 1 state disable version 3
+
+# FDB
+
+config fdb aging_time 300
+config multicast port_filtering_mode 1-10 forward_unregistered_groups
+
+# SMTP
+
+disable smtp
+
+# ACL
+
+
+# SNTP
+
+disable sntp
+config time_zone operator + hour 9 min 0
+config sntp primary 0.0.0.0 secondary 0.0.0.0 poll-interval 720
+config dst disable
+
+# IP
+
+config ipif System vlan server ipaddress 192.168.99.3/24 state enable
+debug config after_reboot ipif 0.0.0.0/0
+enable telnet 23
+enable web 80
+
+# MBA
+
+disable mac_based_access_control
+disable authorization network
+config mac_based_access_control ports 1-10 state disable
+config mac_based_access_control ports 1 aging_time 1440 hold_time 300 max_users 128
+config mac_based_access_control ports 2 aging_time 1440 hold_time 300 max_users 128
+config mac_based_access_control ports 3 aging_time 1440 hold_time 300 max_users 128
+config mac_based_access_control ports 4 aging_time 1440 hold_time 300 max_users 128
+config mac_based_access_control ports 5 aging_time 1440 hold_time 300 max_users 128
+config mac_based_access_control ports 6 aging_time 1440 hold_time 300 max_users 128
+config mac_based_access_control ports 7 aging_time 1440 hold_time 300 max_users 128
+config mac_based_access_control ports 8 aging_time 1440 hold_time 300 max_users 128
+config mac_based_access_control ports 9 aging_time 1440 hold_time 300 max_users 128
+config mac_based_access_control ports 10 aging_time 1440 hold_time 300 max_users 128
+config mac_based_access_control method local
+config mac_based_access_control auth_failover disable
+config mac_based_access_control password default
+config mac_based_access_control password_type manual_string
+config mac_based_access_control mac_format case uppercase delimiter none
+config mac_based_access_control max_users 128
+
+# LLDP
+
+disable lldp
+config lldp message_tx_interval 30
+config lldp tx_delay 2
+config lldp message_tx_hold_multiplier 4
+config lldp reinit_delay 2
+config lldp notification_interval 5
+config lldp ports 1-10 notification disable
+config lldp ports 1-10 admin_status tx_and_rx
+
+# MLDSNP
+
+disable mld_snooping
+config mld_snooping vlan default state disable fast_done disable
+config mld_snooping querier vlan default query_interval 125 max_response_time 10 robustness_variable 2 last_listener_query_interval 1
+config mld_snooping vlan wan state disable fast_done disable
+config mld_snooping querier vlan wan query_interval 125 max_response_time 10 robustness_variable 2 last_listener_query_interval 1
+config mld_snooping vlan dj state disable fast_done disable
+config mld_snooping querier vlan dj query_interval 125 max_response_time 10 robustness_variable 2 last_listener_query_interval 1
+config mld_snooping vlan vj state disable fast_done disable
+config mld_snooping querier vlan vj query_interval 125 max_response_time 10 robustness_variable 2 last_listener_query_interval 1
+config mld_snooping vlan led state disable fast_done disable
+config mld_snooping querier vlan led query_interval 125 max_response_time 10 robustness_variable 2 last_listener_query_interval 1
+config mld_snooping vlan cam1 state disable fast_done disable
+config mld_snooping querier vlan cam1 query_interval 125 max_response_time 10 robustness_variable 2 last_listener_query_interval 1
+config mld_snooping vlan cam2 state disable fast_done disable
+config mld_snooping querier vlan cam2 query_interval 125 max_response_time 10 robustness_variable 2 last_listener_query_interval 1
+config mld_snooping vlan pa state disable fast_done disable
+config mld_snooping querier vlan pa query_interval 125 max_response_time 10 robustness_variable 2 last_listener_query_interval 1
+config mld_snooping vlan server state disable fast_done disable
+config mld_snooping querier vlan server query_interval 125 max_response_time 10 robustness_variable 2 last_listener_query_interval 1
+
+# ARP
+
+config arp_aging time 20
+
+# AAA
+
+config authen_login default method local
+config authen_enable default method  local_enable
+config authen application console login default
+config authen application console enable default
+config authen application telnet login default
+config authen application telnet enable default
+config authen application ssh login default
+config authen application ssh enable default
+config authen application http login default
+config authen application http enable default
+config authen parameter response_timeout 30
+config authen parameter attempt 3
+disable authen_policy
+config admin local_enable
+
+
+
+
+# DHCP_RELAY
+
+disable dhcp_relay
+config dhcp_relay hops 4 time 0
+
+# Web_Authenticaiton
+
+config web_authentication switch_http_port 80
+config web_authentication virtual_ip 192.168.99.3
+config web_authentication auth_failover disable
+config web_authentication method local
+config web_authentication authorization network local enable
+config web_authentication authorization network radius enable
+disable web_authentication
+config web_authentication ports 1-10 aging_time 1440 block_time 60
+
+# ROUTE
+
+create iproute default 192.168.99.1 1
+
+# NDP
+
+
+# MULTI_AUTHENTICATION
+
+ config authentication auth_mode host_based
+
+# PORT
+
+ config ports 1  speed auto flow_control disable state enable  description "PRO DJ LINK"
+ config ports 1  learning enable
+ config ports 2  speed auto flow_control disable state enable  description "PRO DJ LINK"
+ config ports 2  learning enable
+ config ports 3  speed auto flow_control disable state enable  description "PRO DJ LINK"
+ config ports 3  learning enable
+ config ports 4  speed auto flow_control disable state enable  description "PRO DJ LINK"
+ config ports 4  learning enable
+ config ports 5  speed auto flow_control disable state enable  description "VJ"
+ config ports 5  learning enable
+ config ports 6  speed auto flow_control disable state enable  description "VJ"
+ config ports 6  learning enable
+ config ports 7  speed auto flow_control disable state enable  description "server"
+ config ports 7  learning enable
+ config ports 8  speed auto flow_control disable state enable  description "ap"
+ config ports 8  learning enable
+ config ports 9 medium_type fiber speed auto flow_control disable state disable  clear_description
+ config ports 9 medium_type fiber learning enable
+ config ports 9  speed auto flow_control disable state enable  clear_description
+ config ports 9  learning enable
+ config ports 10 medium_type fiber speed auto flow_control disable state disable  clear_description
+ config ports 10 medium_type fiber learning enable
+ config ports 10  speed auto flow_control disable state enable  clear_description
+ config ports 10  learning enable
+ disable jumbo_frame
+ config auto_recovery_mode disable
+ config ports 1-10  mdix auto
+
+#-------------------------------------------------------------------
+#             End of configuration file for APLGM110GTPoE
+#------------------------------------------------------------------
+
+
+#
