@@ -1,0 +1,3 @@
+[submodule "server/k3s"]
+	path = server/k3s
+	url = https://github.com/TechnoTUT/k3s.git
