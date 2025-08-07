@@ -48,91 +48,9 @@ OBS Studioの場合、[NDI Plugin for OBS Studio](https://github.com/DistroAV/Di
 動作しない場合、NDIのランタイムがインストールされていない可能性があります。インストール方法は以下をご覧ください。
 https://github.com/DistroAV/DistroAV/wiki/1.-Installation
 
-#### Windows
-```powershell
-winget install OBSProject.OBSStudio
-winget install NDI.NDIRuntime
+Ubuntuの場合は、以下のコマンドで一括インストールができます。
 ```
-DistroAVを以下からダウンロードし、インストールします。
-[Releases · DistroAV/DistroAV](https://github.com/DistroAV/DistroAV/releases)
-#### Mac
-```zsh
-brew install --cask obs
-brew install --cask obs-ndi
-brew install --cask libndi
-```
-#### Ubuntu
-```bash
-sudo apt-get install ffmpeg
-sudo add-apt-repository ppa:obsproject/obs-studio
-sudo apt-get update && sudo apt-get install obs-studio
-
-sudo apt-get update -y && sudo apt-get upgrade -y
-sudo apt-get install -y wget tar ufw
-sudo systemctl enable --now ufw 
-sudo ufw enable && sudo ufw allow 22/tcp
-mkdir -p tmp && cd tmp
-wget https://github.com/DistroAV/DistroAV/releases/download/6.0.0/distroav-6.0.0-x86_64-linux-gnu.deb
-sudo apt install ./distroav-6.0.0-x86_64-linux-gnu.deb
-rm -rf distroav-6.0.0-x86_64-linux-gnu.deb
-wget https://downloads.ndi.tv/SDK/NDI_SDK_Linux/Install_NDI_SDK_v6_Linux.tar.gz
-tar xvf Install_NDI_SDK_v6_Linux.tar.gz 
-rm -rf Install_NDI_SDK_v6_Linux.tar.gz 
-echo "y" | PAGER="cat" bash Install_NDI_SDK_v6_Linux.sh
-rm -rf Install_NDI_SDK_v6_Linux.sh 
-sudo cp NDI\ SDK\ for\ Linux/lib/x86_64-linux-gnu/* /usr/local/lib/
-sudo ln -s /usr/local/lib/libndi.so.6 /usr/local/lib/libndi.so.5
-ls -la /usr/local/lib/libndi*
-cd .. && rm -r tmp
-mkdir -p ~/.ndi
-cat <<EOF > ~/.ndi/ndi-config.v1.json
-{
-  "ndi" : {
-    "rudp" : {
-      "recv" : {
-        "enable" : true
-      }
-    },
-    "tcp" : {
-      "recv" : {
-        "enable" : false
-      }
-    },
-    "networks" : {
-      "ips" : "",
-      "discovery" : ""
-    },
-    "groups" : {
-      "recv" : "public",
-      "send" : "public"
-    },
-    "multicast" : {
-      "send" : {
-        "enable" : false,
-        "netprefix" : "239.255.0.0",
-        "netmask" : "255.255.0.0"
-      }
-    },
-    "unicast" : {
-      "recv" : {
-        "enable" : true
-      }
-    }
-  }
-}
-EOF
-sudo apt install avahi-daemon
-sudo systemctl enable avahi-daemon
-sudo systemctl start avahi-daemon
-sudo ufw allow 5353/udp
-sudo ufw allow 5959:5969/tcp
-sudo ufw allow 5959:5969/udp
-sudo ufw allow 6960:6970/tcp
-sudo ufw allow 6960:6970/udp
-sudo ufw allow 7960:7970/tcp
-sudo ufw allow 7960:7970/udp
-sudo ufw allow 5960/tcp
-sudo ufw status
+curl https://raw.githubusercontent.com/TechnoTUT/OBS-Temprate/refs/heads/main/install.sh | bash
 ```
 
 #### 送信
