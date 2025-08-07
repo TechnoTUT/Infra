@@ -11,7 +11,6 @@ Beat Link Trigger は、AlphaTheta(Pioneer DJ)のDJ機器と連携し、曲情�
 ## 機能
 Beat Link Trigger は以下の機能を提供します。  
 - 曲情報・波形情報の取得・表示
-- [Ableton Linkによる対応外部機器とのBPM情報の共有](/service/vj/abletonlink)
 - [OSCによる対応外部機器との取得情報の共有](/service/vj/osc)
 - httpによる取得情報の共有
 
