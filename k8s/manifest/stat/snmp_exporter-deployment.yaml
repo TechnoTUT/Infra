@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: snmp-exporter-deployment
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: snmp-exporter
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: snmp-exporter
+    spec:
+      containers:
+        - name: snmp-exporter
+          image: prom/snmp-exporter:v0.22.0
+          args:
+            - "--config.file=/etc/prometheus/snmp.yml"
+          ports:
+            - containerPort: 9116
+          volumeMounts:
+            - mountPath: /etc/prometheus
+              name: snmp-exporter-volume
+      volumes:
+        - name: snmp-exporter-volume
+          configMap:
+            name: snmp-exporter-config
+status: {}

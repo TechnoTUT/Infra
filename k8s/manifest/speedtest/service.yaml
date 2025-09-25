@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: speedtest-service
+  labels:
+    app: speedtest
+  namespace: speedtest
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: speed.kube.technotut.net
+spec:
+  selector:
+    app: speedtest
+  type: LoadBalancer
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 3000
+    - name: https
+      protocol: TCP
+      port: 443
+      targetPort: 3001

@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: time-deployment
+  labels:
+    app: time
+  namespace: time
+spec:
+  selector:
+    matchLabels:
+      app: time
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: time
+    spec:
+      containers:
+      - name: time
+        image: ghcr.io/airyland/datetime.app:latest
+        ports:
+        - containerPort: 3000
+      restartPolicy: Always

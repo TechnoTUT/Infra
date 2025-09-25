@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: cam2-nginx-service
+  labels:
+    app: cam2-sonycam-nginx
+  namespace: cam2
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: cam2.kube.technotut.net
+spec:
+  selector:
+    app: cam2-sonycam-nginx
+  type: LoadBalancer
+  loadBalancerIP: 10.33.71.2
+  ports:
+    - name: rtmp
+      protocol: TCP
+      port: 1935
+      targetPort: 1935
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 80

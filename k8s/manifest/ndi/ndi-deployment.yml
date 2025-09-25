@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ndi-deployment
+  labels:
+    app: ndi-discovery-server
+  namespace: ndi
+spec:
+  selector:
+    matchLabels:
+      app: ndi-discovery-server
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: ndi-discovery-server
+    spec:
+      containers:
+      - name: ndi-discovery-server
+        image: ghcr.io/technotut/ndi-discovery-server:main
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5959
+      restartPolicy: Always

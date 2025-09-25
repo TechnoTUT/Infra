@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana-service
+  namespace: monitoring
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: stat.kube.technotut.net
+spec:
+  selector: 
+    app: grafana
+  type: LoadBalancer
+  loadBalancerIP: 10.33.1.0
+  ports:
+    - port: 80
+      targetPort: 3000

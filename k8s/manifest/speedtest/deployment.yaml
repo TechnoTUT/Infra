@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: speedtest-deployment
+  labels:
+    app: speedtest
+  namespace: speedtest
+spec:
+  selector:
+    matchLabels:
+      app: speedtest
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: speedtest
+    spec:
+      containers:
+      - name: speedtest
+        image: openspeedtest/latest
+        ports:
+        - containerPort: 3000
+        - containerPort: 3001
+        env:
+        - name: SET_SERVER_NAME
+          value: "TechnoTUT Speedtest"
+      restartPolicy: Always

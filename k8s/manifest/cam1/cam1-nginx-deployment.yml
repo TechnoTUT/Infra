@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cam1-nginx-deployment
+  labels:
+    app: cam1-sonycam-nginx
+  namespace: cam1
+spec:
+  selector:
+    matchLabels:
+      app: cam1-sonycam-nginx
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: cam1-sonycam-nginx
+    spec:
+      containers:
+      - name: cam1-sonycam-nginx
+        image: ghcr.io/technotut/sonycam-nginx:main
+        env:
+        - name: SERVER_URL
+          value: rtmp://rtmp-service.live:1935/live/cam1
+        ports:
+        - containerPort: 1935
+        - containerPort: 80
+        resources:
+          limits:
+            cpu: 1
+            memory: 256Mi
+      restartPolicy: Always
+status: {}

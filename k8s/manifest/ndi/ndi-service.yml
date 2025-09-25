@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ndi-service
+  labels:
+    app: ndi-discovery-server
+  namespace: ndi
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: ndi-discovery.kube.technotut.net
+spec:
+  selector:
+    app: ndi-discovery-server
+  type: LoadBalancer
+  loadBalancerIP: 10.33.220.0
+  ports:
+    - name: ndi
+      protocol: TCP
+      port: 5959
+      targetPort: 5959

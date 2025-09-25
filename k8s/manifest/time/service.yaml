@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: time-service
+  labels:
+    app: time
+  namespace: time
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: time.kube.technotut.net
+spec:
+  selector:
+    app: time
+  type: LoadBalancer
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 3000

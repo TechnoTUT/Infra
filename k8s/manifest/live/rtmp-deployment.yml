@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rtmp-deployment
+  labels:
+    app: rtmp-live-server
+  namespace: live
+spec:
+  selector:
+    matchLabels:
+      app: rtmp-live-server
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: rtmp-live-server
+    spec:
+      containers:
+      - name: rtmp-live-server
+        image: ghcr.io/technotut/rtmp-live-server:external
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 1935
+        - containerPort: 8080
+      restartPolicy: Always

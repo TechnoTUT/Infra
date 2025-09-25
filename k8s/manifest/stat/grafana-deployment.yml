@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana-deployment
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: grafana
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+        - name: grafana
+          image: grafana/grafana:10.4.15
+          ports:
+            - containerPort: 3000
+          volumeMounts:
+            - mountPath: /var/lib/grafana
+              name: grafana-claim0
+            - mountPath: /usr/share/grafana/conf
+              name: grafana-config
+      restartPolicy: Always
+      volumes:
+        - name: grafana-claim0
+          persistentVolumeClaim:
+            claimName: grafana-claim0
+        - name: grafana-config
+          configMap:
+            name: grafana-config
+status: {}

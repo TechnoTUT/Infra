@@ -1,0 +1,565 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: snmp-exporter-config
+  namespace: monitoring
+data:
+  snmp.yml: |-
+    nec:
+      walk:
+      - 1.3.6.1.2.1.2.2.1.1
+      - 1.3.6.1.2.1.2.2.1.13
+      - 1.3.6.1.2.1.2.2.1.14
+      - 1.3.6.1.2.1.2.2.1.19
+      - 1.3.6.1.2.1.2.2.1.2
+      - 1.3.6.1.2.1.2.2.1.20
+      - 1.3.6.1.2.1.2.2.1.5
+      - 1.3.6.1.2.1.2.2.1.8
+      - 1.3.6.1.2.1.31.1.1.1.10
+      - 1.3.6.1.2.1.31.1.1.1.6
+      - 1.3.6.1.4.1.119.2.3.84.6.1.1.11
+      - 1.3.6.1.4.1.119.2.3.84.6.1.1.12
+      - 1.3.6.1.4.1.119.2.3.84.6.1.1.3
+      - 1.3.6.1.4.1.207.8.4.4.3.12.1.1.3
+      - 1.3.6.1.4.1.207.8.4.4.3.12.1.1.4
+      - 1.3.6.1.4.1.207.8.4.4.3.12.1.1.5
+      - 1.3.6.1.4.1.207.8.4.4.3.12.1.1.6
+      - 1.3.6.1.4.1.207.8.4.4.3.12.1.1.7
+      - 1.3.6.1.4.1.207.8.4.4.3.12.2.1.4
+      - 1.3.6.1.4.1.207.8.4.4.3.12.2.1.5
+      - 1.3.6.1.4.1.207.8.4.4.3.12.2.1.6
+      - 1.3.6.1.4.1.207.8.4.4.3.12.2.1.7
+      - 1.3.6.1.4.1.207.8.4.4.3.12.2.1.8
+      - 1.3.6.1.4.1.207.8.4.4.3.12.3.1.4
+      - 1.3.6.1.4.1.207.8.4.4.3.12.3.1.5
+      - 1.3.6.1.4.1.207.8.4.4.3.12.3.1.6
+      - 1.3.6.1.4.1.207.8.4.4.3.12.3.1.7
+      - 1.3.6.1.4.1.207.8.48.1.2.3.1.3
+      - 1.3.6.1.4.1.207.8.48.1.2.3.1.5
+      - 1.3.6.1.4.1.207.8.48.1.2.4.1.3
+      - 1.3.6.1.4.1.207.8.48.1.2.6.1.3
+      - 1.3.6.1.4.1.9.9.109.1.1.1.1.6
+      - 1.3.6.1.4.1.9.9.109.1.1.1.1.7
+      - 1.3.6.1.4.1.9.9.109.1.1.1.1.8
+      get:
+      - 1.3.6.1.2.1.1.3.0
+      - 1.3.6.1.2.1.1.5.0
+      - 1.3.6.1.4.1.119.2.3.84.2.1.1.0
+      - 1.3.6.1.4.1.119.2.3.84.2.2.0
+      - 1.3.6.1.4.1.119.2.3.84.2.5.1.0
+      - 1.3.6.1.4.1.119.2.3.84.2.5.2.0
+      - 1.3.6.1.4.1.119.2.3.84.2.5.3.0
+      - 1.3.6.1.4.1.119.2.3.84.2.5.4.0
+      - 1.3.6.1.4.1.119.2.3.84.2.6.2.0
+      - 1.3.6.1.4.1.207.8.4.4.3.3.1.0
+      - 1.3.6.1.4.1.207.8.4.4.3.3.2.0
+      - 1.3.6.1.4.1.207.8.4.4.3.3.3.0
+      - 1.3.6.1.4.1.207.8.4.4.3.3.4.0
+      - 1.3.6.1.4.1.207.8.4.4.3.3.5.0
+      - 1.3.6.1.4.1.207.8.4.4.3.3.6.0
+      - 1.3.6.1.4.1.207.8.4.4.3.3.7.0
+      - 1.3.6.1.4.1.207.8.48.1.2.1.2.0
+      - 1.3.6.1.4.1.207.8.48.1.2.1.3.0
+      - 1.3.6.1.4.1.207.8.48.1.2.1.4.0
+      - 1.3.6.1.4.1.207.8.48.1.2.2.1.0
+      metrics:
+      - name: sysUpTime
+        oid: 1.3.6.1.2.1.1.3
+        type: gauge
+        help: The time (in hundredths of a second) since the network management portion
+          of the system was last re-initialized. - 1.3.6.1.2.1.1.3
+      - name: sysName
+        oid: 1.3.6.1.2.1.1.5
+        type: DisplayString
+        help: An administratively-assigned name for this managed node - 1.3.6.1.2.1.1.5
+      - name: ifIndex
+        oid: 1.3.6.1.2.1.2.2.1.1
+        type: gauge
+        help: A unique value, greater than zero, for each interface - 1.3.6.1.2.1.2.2.1.1
+        indexes:
+        - labelname: ifIndex
+          type: gauge
+        lookups:
+        - labels:
+          - ifIndex
+          labelname: ifDescr
+          oid: 1.3.6.1.2.1.2.2.1.2
+          type: DisplayString
+      - name: ifInDiscards
+        oid: 1.3.6.1.2.1.2.2.1.13
+        type: counter
+        help: The number of inbound packets which were chosen to be discarded even though
+          no errors had been detected to prevent their being deliverable to a higher-layer
+          protocol - 1.3.6.1.2.1.2.2.1.13
+        indexes:
+        - labelname: ifIndex
+          type: gauge
+        lookups:
+        - labels:
+          - ifIndex
+          labelname: ifDescr
+          oid: 1.3.6.1.2.1.2.2.1.2
+          type: DisplayString
+      - name: ifInErrors
+        oid: 1.3.6.1.2.1.2.2.1.14
+        type: counter
+        help: For packet-oriented interfaces, the number of inbound packets that contained
+          errors preventing them from being deliverable to a higher-layer protocol - 1.3.6.1.2.1.2.2.1.14
+        indexes:
+        - labelname: ifIndex
+          type: gauge
+        lookups:
+        - labels:
+          - ifIndex
+          labelname: ifDescr
+          oid: 1.3.6.1.2.1.2.2.1.2
+          type: DisplayString
+      - name: ifOutDiscards
+        oid: 1.3.6.1.2.1.2.2.1.19
+        type: counter
+        help: The number of outbound packets which were chosen to be discarded even though
+          no errors had been detected to prevent their being transmitted - 1.3.6.1.2.1.2.2.1.19
+        indexes:
+        - labelname: ifIndex
+          type: gauge
+        lookups:
+        - labels:
+          - ifIndex
+          labelname: ifDescr
+          oid: 1.3.6.1.2.1.2.2.1.2
+          type: DisplayString
+      - name: ifDescr
+        oid: 1.3.6.1.2.1.2.2.1.2
+        type: DisplayString
+        help: A textual string containing information about the interface - 1.3.6.1.2.1.2.2.1.2
+        indexes:
+        - labelname: ifIndex
+          type: gauge
+        lookups:
+        - labels:
+          - ifIndex
+          labelname: ifDescr
+          oid: 1.3.6.1.2.1.2.2.1.2
+          type: DisplayString
+      - name: ifOutErrors
+        oid: 1.3.6.1.2.1.2.2.1.20
+        type: counter
+        help: For packet-oriented interfaces, the number of outbound packets that could
+          not be transmitted because of errors - 1.3.6.1.2.1.2.2.1.20
+        indexes:
+        - labelname: ifIndex
+          type: gauge
+        lookups:
+        - labels:
+          - ifIndex
+          labelname: ifDescr
+          oid: 1.3.6.1.2.1.2.2.1.2
+          type: DisplayString
+      - name: ifSpeed
+        oid: 1.3.6.1.2.1.2.2.1.5
+        type: gauge
+        help: An estimate of the interface's current bandwidth in bits per second - 1.3.6.1.2.1.2.2.1.5
+        indexes:
+        - labelname: ifIndex
+          type: gauge
+        lookups:
+        - labels:
+          - ifIndex
+          labelname: ifDescr
+          oid: 1.3.6.1.2.1.2.2.1.2
+          type: DisplayString
+      - name: ifOperStatus
+        oid: 1.3.6.1.2.1.2.2.1.8
+        type: gauge
+        help: The current operational state of the interface - 1.3.6.1.2.1.2.2.1.8
+        indexes:
+        - labelname: ifIndex
+          type: gauge
+        lookups:
+        - labels:
+          - ifIndex
+          labelname: ifDescr
+          oid: 1.3.6.1.2.1.2.2.1.2
+          type: DisplayString
+        enum_values:
+          1: up
+          2: down
+          3: testing
+          4: unknown
+          5: dormant
+          6: notPresent
+          7: lowerLayerDown
+      - name: ifHCOutOctets
+        oid: 1.3.6.1.2.1.31.1.1.1.10
+        type: counter
+        help: The total number of octets transmitted out of the interface, including framing
+          characters - 1.3.6.1.2.1.31.1.1.1.10
+        indexes:
+        - labelname: ifIndex
+          type: gauge
+        lookups:
+        - labels:
+          - ifIndex
+          labelname: ifDescr
+          oid: 1.3.6.1.2.1.2.2.1.2
+          type: DisplayString
+      - name: ifHCInOctets
+        oid: 1.3.6.1.2.1.31.1.1.1.6
+        type: counter
+        help: The total number of octets received on the interface, including framing
+          characters - 1.3.6.1.2.1.31.1.1.1.6
+        indexes:
+        - labelname: ifIndex
+          type: gauge
+        lookups:
+        - labels:
+          - ifIndex
+          labelname: ifDescr
+          oid: 1.3.6.1.2.1.2.2.1.2
+          type: DisplayString
+      - name: picoCelsius
+        oid: 1.3.6.1.4.1.119.2.3.84.2.1.1
+        type: gauge
+        help: Indicates the temperature of the equipment inside, in degree (Celsius).
+          - 1.3.6.1.4.1.119.2.3.84.2.1.1
+      - name: picoVoltage
+        oid: 1.3.6.1.4.1.119.2.3.84.2.2
+        type: gauge
+        help: Indicates the observed voltage, in milli-volt (mV). - 1.3.6.1.4.1.119.2.3.84.2.2
+      - name: picoSchedRtUtl1Sec
+        oid: 1.3.6.1.4.1.119.2.3.84.2.5.1
+        type: gauge
+        help: Indicates the observed system utilization for last 1 second, in percent
+          (%). - 1.3.6.1.4.1.119.2.3.84.2.5.1
+      - name: picoSchedRtUtl5Sec
+        oid: 1.3.6.1.4.1.119.2.3.84.2.5.2
+        type: gauge
+        help: Indicates the observed system utilization for last 5 seconds, in percent
+          (%). - 1.3.6.1.4.1.119.2.3.84.2.5.2
+      - name: picoSchedRtUtl1Min
+        oid: 1.3.6.1.4.1.119.2.3.84.2.5.3
+        type: gauge
+        help: Indicates the observed system utilization for last 1 minute, in percent
+          (%). - 1.3.6.1.4.1.119.2.3.84.2.5.3
+      - name: picoSchedRtUtl1Hour
+        oid: 1.3.6.1.4.1.119.2.3.84.2.5.4
+        type: gauge
+        help: Indicates the observed system utilization for last 1 hour, in percent (%).
+          - 1.3.6.1.4.1.119.2.3.84.2.5.4
+      - name: picoHeapUtil
+        oid: 1.3.6.1.4.1.119.2.3.84.2.6.2
+        type: gauge
+        help: Indicates the observed current heap utilization, in percent (%). - 1.3.6.1.4.1.119.2.3.84.2.6.2
+      - name: picoExtIfOperStatus
+        oid: 1.3.6.1.4.1.119.2.3.84.6.1.1.11
+        type: gauge
+        help: The current operational state of the interface. - 1.3.6.1.4.1.119.2.3.84.6.1.1.11
+        indexes:
+        - labelname: picoExtIfInstalledSlot
+          type: gauge
+        - labelname: picoExtIfIndex
+          type: gauge
+        enum_values:
+          1: up
+          2: down
+          3: testing
+      - name: picoExtIfLastChange
+        oid: 1.3.6.1.4.1.119.2.3.84.6.1.1.12
+        type: gauge
+        help: The value of sysUpTime at the time the interface entered its current operational
+          state. - 1.3.6.1.4.1.119.2.3.84.6.1.1.12
+        indexes:
+        - labelname: picoExtIfInstalledSlot
+          type: gauge
+        - labelname: picoExtIfIndex
+          type: gauge
+      - name: picoExtIfDescr
+        oid: 1.3.6.1.4.1.119.2.3.84.6.1.1.3
+        type: DisplayString
+        help: A textual string containing information about the interface. - 1.3.6.1.4.1.119.2.3.84.6.1.1.3
+        indexes:
+        - labelname: picoExtIfInstalledSlot
+          type: gauge
+        - labelname: picoExtIfIndex
+          type: gauge
+      - name: atEnvMonv2FanIndex
+        oid: 1.3.6.1.4.1.207.8.4.4.3.12.1.1.3
+        type: gauge
+        help: The numeric identifier of this fan on its host board. - 1.3.6.1.4.1.207.8.4.4.3.12.1.1.3
+        indexes:
+        - labelname: atEnvMonv2FanStackMemberId
+          type: gauge
+        - labelname: atEnvMonv2FanBoardIndex
+          type: gauge
+        - labelname: atEnvMonv2FanIndex
+          type: gauge
+      - name: atEnvMonv2FanDescription
+        oid: 1.3.6.1.4.1.207.8.4.4.3.12.1.1.4
+        type: DisplayString
+        help: The description of this fan. - 1.3.6.1.4.1.207.8.4.4.3.12.1.1.4
+        indexes:
+        - labelname: atEnvMonv2FanStackMemberId
+          type: gauge
+        - labelname: atEnvMonv2FanBoardIndex
+          type: gauge
+        - labelname: atEnvMonv2FanIndex
+          type: gauge
+      - name: atEnvMonv2FanCurrentSpeed
+        oid: 1.3.6.1.4.1.207.8.4.4.3.12.1.1.5
+        type: gauge
+        help: The current speed of this fan in revolutions per minute. - 1.3.6.1.4.1.207.8.4.4.3.12.1.1.5
+        indexes:
+        - labelname: atEnvMonv2FanStackMemberId
+          type: gauge
+        - labelname: atEnvMonv2FanBoardIndex
+          type: gauge
+        - labelname: atEnvMonv2FanIndex
+          type: gauge
+      - name: atEnvMonv2FanLowerThreshold
+        oid: 1.3.6.1.4.1.207.8.4.4.3.12.1.1.6
+        type: gauge
+        help: The minimum acceptable speed of the fan in revolutions per minute. - 1.3.6.1.4.1.207.8.4.4.3.12.1.1.6
+        indexes:
+        - labelname: atEnvMonv2FanStackMemberId
+          type: gauge
+        - labelname: atEnvMonv2FanBoardIndex
+          type: gauge
+        - labelname: atEnvMonv2FanIndex
+          type: gauge
+      - name: atEnvMonv2FanStatus
+        oid: 1.3.6.1.4.1.207.8.4.4.3.12.1.1.7
+        type: gauge
+        help: An indication of whether this fan is currently in an alarm condition - 1.3.6.1.4.1.207.8.4.4.3.12.1.1.7
+        indexes:
+        - labelname: atEnvMonv2FanStackMemberId
+          type: gauge
+        - labelname: atEnvMonv2FanBoardIndex
+          type: gauge
+        - labelname: atEnvMonv2FanIndex
+          type: gauge
+        enum_values:
+          1: failed
+          2: good
+      - name: atEnvMonv2VoltageDescription
+        oid: 1.3.6.1.4.1.207.8.4.4.3.12.2.1.4
+        type: DisplayString
+        help: The description of this voltage rail. - 1.3.6.1.4.1.207.8.4.4.3.12.2.1.4
+        indexes:
+        - labelname: atEnvMonv2VoltageStackMemberId
+          type: gauge
+        - labelname: atEnvMonv2VoltageBoardIndex
+          type: gauge
+        - labelname: atEnvMonv2VoltageIndex
+          type: gauge
+      - name: atEnvMonv2VoltageCurrent
+        oid: 1.3.6.1.4.1.207.8.4.4.3.12.2.1.5
+        type: gauge
+        help: The current reading of this voltage rail in millivolts. - 1.3.6.1.4.1.207.8.4.4.3.12.2.1.5
+        indexes:
+        - labelname: atEnvMonv2VoltageStackMemberId
+          type: gauge
+        - labelname: atEnvMonv2VoltageBoardIndex
+          type: gauge
+        - labelname: atEnvMonv2VoltageIndex
+          type: gauge
+      - name: atEnvMonv2VoltageUpperThreshold
+        oid: 1.3.6.1.4.1.207.8.4.4.3.12.2.1.6
+        type: gauge
+        help: The maximum acceptable reading of this voltage rail in millivolts. - 1.3.6.1.4.1.207.8.4.4.3.12.2.1.6
+        indexes:
+        - labelname: atEnvMonv2VoltageStackMemberId
+          type: gauge
+        - labelname: atEnvMonv2VoltageBoardIndex
+          type: gauge
+        - labelname: atEnvMonv2VoltageIndex
+          type: gauge
+      - name: atEnvMonv2VoltageLowerThreshold
+        oid: 1.3.6.1.4.1.207.8.4.4.3.12.2.1.7
+        type: gauge
+        help: The minimum acceptable reading of this voltage rail in millivolts. - 1.3.6.1.4.1.207.8.4.4.3.12.2.1.7
+        indexes:
+        - labelname: atEnvMonv2VoltageStackMemberId
+          type: gauge
+        - labelname: atEnvMonv2VoltageBoardIndex
+          type: gauge
+        - labelname: atEnvMonv2VoltageIndex
+          type: gauge
+      - name: atEnvMonv2VoltageStatus
+        oid: 1.3.6.1.4.1.207.8.4.4.3.12.2.1.8
+        type: gauge
+        help: An indication of whether this voltage rail is currently in an alarm condition
+          - 1.3.6.1.4.1.207.8.4.4.3.12.2.1.8
+        indexes:
+        - labelname: atEnvMonv2VoltageStackMemberId
+          type: gauge
+        - labelname: atEnvMonv2VoltageBoardIndex
+          type: gauge
+        - labelname: atEnvMonv2VoltageIndex
+          type: gauge
+        enum_values:
+          1: outOfRange
+          2: inRange
+      - name: atEnvMonv2TemperatureDescription
+        oid: 1.3.6.1.4.1.207.8.4.4.3.12.3.1.4
+        type: DisplayString
+        help: The description of this temperature sensor. - 1.3.6.1.4.1.207.8.4.4.3.12.3.1.4
+        indexes:
+        - labelname: atEnvMonv2TemperatureStackMemberId
+          type: gauge
+        - labelname: atEnvMonv2TemperatureBoardIndex
+          type: gauge
+        - labelname: atEnvMonv2TemperatureIndex
+          type: gauge
+      - name: atEnvMonv2TemperatureCurrent
+        oid: 1.3.6.1.4.1.207.8.4.4.3.12.3.1.5
+        type: gauge
+        help: The current reading of this temperature sensor in tenths of a degree Celsius.
+          - 1.3.6.1.4.1.207.8.4.4.3.12.3.1.5
+        indexes:
+        - labelname: atEnvMonv2TemperatureStackMemberId
+          type: gauge
+        - labelname: atEnvMonv2TemperatureBoardIndex
+          type: gauge
+        - labelname: atEnvMonv2TemperatureIndex
+          type: gauge
+      - name: atEnvMonv2TemperatureUpperThreshold
+        oid: 1.3.6.1.4.1.207.8.4.4.3.12.3.1.6
+        type: gauge
+        help: The maximum acceptable reading of this temperature sensor in tenths of a
+          degree Celsius. - 1.3.6.1.4.1.207.8.4.4.3.12.3.1.6
+        indexes:
+        - labelname: atEnvMonv2TemperatureStackMemberId
+          type: gauge
+        - labelname: atEnvMonv2TemperatureBoardIndex
+          type: gauge
+        - labelname: atEnvMonv2TemperatureIndex
+          type: gauge
+      - name: atEnvMonv2TemperatureStatus
+        oid: 1.3.6.1.4.1.207.8.4.4.3.12.3.1.7
+        type: gauge
+        help: An indication of whether this temperature sensor is currently in an alarm
+          condition - 1.3.6.1.4.1.207.8.4.4.3.12.3.1.7
+        indexes:
+        - labelname: atEnvMonv2TemperatureStackMemberId
+          type: gauge
+        - labelname: atEnvMonv2TemperatureBoardIndex
+          type: gauge
+        - labelname: atEnvMonv2TemperatureIndex
+          type: gauge
+        enum_values:
+          1: outOfRange
+          2: inRange
+      - name: cpuUtilisationMax
+        oid: 1.3.6.1.4.1.207.8.4.4.3.3.1
+        type: gauge
+        help: Maximum CPU utilisation since the router was last restarted - 1.3.6.1.4.1.207.8.4.4.3.3.1
+      - name: cpuUtilisationAvg
+        oid: 1.3.6.1.4.1.207.8.4.4.3.3.2
+        type: gauge
+        help: Average CPU utilisation since the router was last restarted - 1.3.6.1.4.1.207.8.4.4.3.3.2
+      - name: cpuUtilisationAvgLastMinute
+        oid: 1.3.6.1.4.1.207.8.4.4.3.3.3
+        type: gauge
+        help: Average CPU utilisation over the past minute - 1.3.6.1.4.1.207.8.4.4.3.3.3
+      - name: cpuUtilisationAvgLast10Seconds
+        oid: 1.3.6.1.4.1.207.8.4.4.3.3.4
+        type: gauge
+        help: Average CPU utilisation over the past ten seconds - 1.3.6.1.4.1.207.8.4.4.3.3.4
+      - name: cpuUtilisationAvgLastSecond
+        oid: 1.3.6.1.4.1.207.8.4.4.3.3.5
+        type: gauge
+        help: Average CPU utilisation over the past second - 1.3.6.1.4.1.207.8.4.4.3.3.5
+      - name: cpuUtilisationMaxLast5Minutes
+        oid: 1.3.6.1.4.1.207.8.4.4.3.3.6
+        type: gauge
+        help: Maximum CPU utilisation over the last 5 minutes - 1.3.6.1.4.1.207.8.4.4.3.3.6
+      - name: cpuUtilisationAvgLast5Minutes
+        oid: 1.3.6.1.4.1.207.8.4.4.3.3.7
+        type: gauge
+        help: Average CPU utilisation over the past 5 minutes - 1.3.6.1.4.1.207.8.4.4.3.3.7
+      - name: gs900mLastMinute
+        oid: 1.3.6.1.4.1.207.8.48.1.2.1.2
+        type: gauge
+        help: The average, over the last minute, of the percentage of time that this processor
+          was not idle. - 1.3.6.1.4.1.207.8.48.1.2.1.2
+      - name: gs900mLast5minutes
+        oid: 1.3.6.1.4.1.207.8.48.1.2.1.3
+        type: gauge
+        help: The average, over the last 5 minutes, of the percentage of time that this
+          processor was not idle. - 1.3.6.1.4.1.207.8.48.1.2.1.3
+      - name: gs900mLast15minutes
+        oid: 1.3.6.1.4.1.207.8.48.1.2.1.4
+        type: gauge
+        help: The average, over the last 15 minutes, of the percentage of time that this
+          processor was not idle. - 1.3.6.1.4.1.207.8.48.1.2.1.4
+      - name: gs900mTemperatureCurrent
+        oid: 1.3.6.1.4.1.207.8.48.1.2.2.1
+        type: gauge
+        help: This object is current temperature. - 1.3.6.1.4.1.207.8.48.1.2.2.1
+      - name: gs900mFanCurrentSpeed
+        oid: 1.3.6.1.4.1.207.8.48.1.2.3.1.3
+        type: gauge
+        help: The current speed of this fan in revolutions per minute. - 1.3.6.1.4.1.207.8.48.1.2.3.1.3
+        indexes:
+        - labelname: gs900mFanIndex
+          type: gauge
+      - name: gs900mFanStatus
+        oid: 1.3.6.1.4.1.207.8.48.1.2.3.1.5
+        type: gauge
+        help: An indication of whether this fan is currently in an alarm condition - 1.3.6.1.4.1.207.8.48.1.2.3.1.5
+        indexes:
+        - labelname: gs900mFanIndex
+          type: gauge
+        enum_values:
+          1: failed
+          2: normal
+          3: warning
+          4: start
+      - name: gs900mVoltageStatus
+        oid: 1.3.6.1.4.1.207.8.48.1.2.4.1.3
+        type: gauge
+        help: An indication of whether this voltage rail is currently in an alarm condition
+          - 1.3.6.1.4.1.207.8.48.1.2.4.1.3
+        indexes:
+        - labelname: gs900mVoltageIndex
+          type: gauge
+        enum_values:
+          1: failed
+          2: normal
+          3: warning
+      - name: gs900mPortLedStatus
+        oid: 1.3.6.1.4.1.207.8.48.1.2.6.1.3
+        type: gauge
+        help: An indication of whether this port LED is lighted. - 1.3.6.1.4.1.207.8.48.1.2.6.1.3
+        indexes:
+        - labelname: gs900mPortIndex
+          type: gauge
+        enum_values:
+          1: "on"
+          2: "off"
+      - name: cpmCPUTotal5secRev
+        oid: 1.3.6.1.4.1.9.9.109.1.1.1.1.6
+        type: gauge
+        help: The overall CPU busy percentage in the last 5 second period - 1.3.6.1.4.1.9.9.109.1.1.1.1.6
+        indexes:
+        - labelname: cpmCPUTotalIndex
+          type: gauge
+      - name: cpmCPUTotal1minRev
+        oid: 1.3.6.1.4.1.9.9.109.1.1.1.1.7
+        type: gauge
+        help: The overall CPU busy percentage in the last 1 minute period - 1.3.6.1.4.1.9.9.109.1.1.1.1.7
+        indexes:
+        - labelname: cpmCPUTotalIndex
+          type: gauge
+      - name: cpmCPUTotal5minRev
+        oid: 1.3.6.1.4.1.9.9.109.1.1.1.1.8
+        type: gauge
+        help: The overall CPU busy percentage in the last 5 minute period - 1.3.6.1.4.1.9.9.109.1.1.1.1.8
+        indexes:
+        - labelname: cpmCPUTotalIndex
+          type: gauge
+      version: 2
+      retries: 3
+      timeout: 3s
+      auth:
+        community: univerge
