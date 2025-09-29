@@ -1,6 +1,6 @@
 ---
 title: PRO DJ LINK
-sidebar_position: 1
+sidebar_position: 11
 ---
 ## PRO DJ LINK とは
 AlphaTheta(Pioneer DJ)のDJ機器同士をネットワークで接続し、曲情報や再生状態を共有します。  

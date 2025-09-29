@@ -1,25 +1,38 @@
 ---
-title: 概要
+title: Computing
 slug: /computing
 sidebar_position: 1
 ---
-# About
-[TechnoTUT Network](/) では、計算機を運用し、計算資源を提供しています。
-運用中の計算機は仮想化技術を活用し、ソフトウェアとハードウェアの間に抽象化レイヤーを設けることで効率的に利用できるようにしています。  
-TechnoTUT Network では、ハイパーバイザー型とコンテナ型の2種類の仮想化手法を採用しています。  
+[TechnoTUT Network](/) では、コンテナ型の仮想化手法を採用し、計算資源を提供しています。
+仮想化技術を活用することで、ソフトウェアとハードウェアの間に抽象化レイヤーを設け効率的に利用できるようにしています。    
 
-## ハイパーバイザー型
-ハイパーバイザー型仮想化は、ハードウェア上にハイパーバイザーと呼ばれる仮想化ソフトウェアを配置し、その上で仮想マシンを実行する方式です。
-TechnoTUT Network では、ハイパーバイザーとしてProxmox VE を採用し、KVMによる仮想マシンとLXCによるコンテナを提供しています。
+コンテナ型仮想化は、Linux カーネルの機能を利用してプロセスを隔離する方式です。Linux カーネルを共有することで、仮想マシンよりも軽量で高速に動作します。
+TechnoTUT Network では、Kubernetes をコンテナオーケストレーションツールとして採用しています。Infrastructure as Code (IaC) による運用が可能であり、運用の効率化を実現します。
 
-## コンテナ型
-コンテナ型仮想化は、Linux カーネルの機能を利用してプロセスを隔離する方式です。Linux カーネルを共有することで、仮想マシンよりも軽量で高速に動作します。  
-TechnoTUT Network では、Kubernetes をコンテナオーケストレーションツールとして採用しています。Kubernetes により、Infrastructure as Code (IaC) による運用が可能であり、運用の効率化を実現します。
+構築方法については、[GitHub](https://github.com/TechnoTUT/Infra/blob/main/k8s/k8s.md) を参照してください。
 
-## How to use
-使用方法については、以下のページを参照してください。  
-- [仮想基盤](/service/virtualization)
-- [コンテナ実行環境](/service/kubernetes)
+## Kubernetes とは
+Kubernetesは、複数サーバで複数のコンテナを管理するためのツールです。  
+  
+TechnoTUTでは、以下のリポジトリでKubernetesの管理を行っています。  
+[![TechnoTUT/Infra - GitHub](https://gh-card.dev/repos/TechnoTUT/Infra.svg?fullname=)](https://github.com/TechnoTUT/Infra)
 
-## Build
-構築方法については、[構築](/computing/build) を参照してください。
+## クラスタ構成
+Kubernetesのクラスタは、3台の物理サーバ(pjsekai, maimai, chunithm)で構成されています。各ノードには、Debian 13 trixieがインストールされ、Kubeadmでクラスタが構築されています。
+Kubernetesのバージョンは、1.34です。
+
+| Node | CPU | Memory | IP Address | Role |
+|------|-----|--------|------------|------|
+| pjsekai | 4CPU | 8GB | 192.168.30.200/24 | Control-Plane |
+| maimai | 2CPU | 12GB | 192.168.30.201/24 | Worker |
+| chunithm | 2CPU | 12GB | 192.168.30.202/24 | Worker |
+
+Control-Planeノードは、Kubernetesの管理を担当し、APIサーバ、スケジューラー、コントローラマネージャなどのコンポーネントが動作しています。  
+Workerノードは、実際にコンテナが動作するノードであり、Podがスケジュールされます。
+
+### ArgoCD
+ArgoCDを使用すれば、GitHubリポジトリに配置されたマニフェストを自動で適用することができます。  
+GitHubリポジトリのマニフェストに更新があれば、自動で適用されます。  
+  
+使用するには、ArgoCDのWebUIにアクセスし、GitHub上のマニフェストを同期します。  
+https://cd.svc.technotut.net/
