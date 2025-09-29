@@ -1,8 +1,6 @@
-TTUT_CORE#show star
-!
 service password-encryption
 !
-hostname TTUT_CORE
+hostname N-2
 !
 no banner motd
 !
@@ -25,142 +23,50 @@ snmp-server community univerge
 !
 ip domain-lookup
 !
-ip dhcp pool pool10
- network 10.10.0.0 255.255.0.0
- range 10.10.254.0 10.10.254.254
- dns-server 192.168.16.5
- default-router 10.10.0.1
- domain-name dj.intra.technotut.net
- subnet-mask 255.255.0.0
+no service dhcp-server
 !
-ip dhcp pool pool20
- network 10.20.0.0 255.255.0.0
- range 10.20.253.0 10.20.254.254
- dns-server 192.168.16.5
- default-router 10.20.0.1
- subnet-mask 255.255.0.0
+no ip multicast-routing
 !
-ip dhcp pool pool40
- network 192.168.71.0 255.255.255.0
- range 192.168.71.101 192.168.71.200
- dns-server 10.33.71.11
- default-router 192.168.71.1
- subnet-mask 255.255.255.0
-!
-ip dhcp pool pool50
- network 192.168.72.0 255.255.255.0
- range 192.168.72.101 192.168.72.200
- dns-server 10.33.71.12
- default-router 192.168.72.1
- subnet-mask 255.255.255.0
-!
-ip dhcp pool pool60
- network 192.168.60.0 255.255.255.0
- range 192.168.60.101 192.168.60.200
- dns-server 192.168.16.5
- default-router 192.168.60.1
- subnet-mask 255.255.255.0
-!
-service dhcp-server
-!
-ip multicast-routing
-!
-spanning-tree mode mstp
-!
-spanning-tree mst configuration
- instance 1 vlan 10
- instance 2 vlan 20
- instance 3 vlan 30
- instance 4 vlan 40
- instance 5 vlan 50
- instance 6 vlan 60
- region ttut-intra
- revision 1
+spanning-tree mode rstp
 !
 no ipv6 mld snooping
 !
 vlan database
- vlan 8 name wan
  vlan 10 name dj
  vlan 16 name gw
- vlan 20 name vj
- vlan 30 name led
- vlan 40 name cam1
- vlan 50 name cam2
- vlan 60 name pa
- vlan 99 name server
- vlan 8,10,16,20,30,40,50,60,99 state enable
+ vlan 20 name pa
+ vlan 30 name av
+ vlan 40 name led-c
+ vlan 50 name led-b
+ vlan 60 name led-d
+ vlan 70 name entrance
+ vlan 80 name cam1
+ vlan 90 name cam2
+ vlan 99 name mgmt
+ vlan 100 name srv
+ vlan 10,16,20,30,40,50,60,70,80,90,99-100 state enable
 !
-interface port1.0.1
+interface port1.0.1-1.0.32
  switchport
  switchport mode access
- switchport access vlan 8
+ switchport access vlan 30
 !
-interface port1.0.2-1.0.10
- switchport
- switchport mode access
- shutdown
-!
-interface port1.0.11
- switchport
- switchport mode access
- switchport access vlan 99
-!
-interface port1.0.12
- switchport
- switchport mode access
- shutdown
-!
-interface port1.0.13
- switchport
- switchport mode access
- switchport access vlan 16
-!
-interface port1.0.14-1.0.16
- switchport
- switchport mode access
- shutdown
-!
-interface port1.0.17
+interface port1.0.33-1.0.34
  switchport
  switchport mode trunk
  switchport trunk allowed vlan all
  switchport trunk native vlan none
-!
-interface port1.0.18
- switchport
- switchport mode access
- switchport access vlan 99
-!
-interface port1.0.19
- switchport
- switchport mode access
- switchport access vlan 8
-!
-interface port1.0.20-1.0.28
- switchport
- switchport mode access
  shutdown
+ channel-group 3 mode active
+ lacp timeout long
 !
-interface port1.0.29-1.0.30
+interface port1.0.35-1.0.36
  switchport
  switchport mode trunk
  switchport trunk allowed vlan all
  switchport trunk native vlan none
-!
-interface port1.0.31-1.0.32
- switchport
- switchport mode trunk
- switchport trunk allowed vlan all
- switchport trunk native vlan none
- static-channel-group 2
-!
-interface port1.0.33-1.0.36
- switchport
- switchport mode trunk
- switchport trunk allowed vlan all
- switchport trunk native vlan none
- static-channel-group 1
+ channel-group 2 mode active
+ lacp timeout long
 !
 interface port1.0.37-1.0.44
  switchport
@@ -175,59 +81,15 @@ interface port1.0.45-1.0.48
  switchport mode access
  shutdown
 !
-interface po1
+interface po1-3
  switchport
  switchport mode trunk
  switchport trunk allowed vlan all
  switchport trunk native vlan none
 !
-interface sa1-2
- switchport
- switchport mode trunk
- switchport trunk allowed vlan all
- switchport trunk native vlan none
+interface vlan99
+ ip address 192.168.99.2/24
 !
-interface vlan10
- ip address 10.10.0.1/16
- no ip igmp snooping
-!
-interface vlan16
- ip address 192.168.16.6/30
-!
-interface vlan20
- ip address 10.20.0.1/16
- ip igmp snooping querier
-!
-interface vlan30
- ip address 192.168.11.1/24
- no ip igmp snooping
-!
-interface vlan40
- ip address 192.168.71.1/24
- no ip igmp snooping
-!
-interface vlan50
- ip address 192.168.72.1/24
- no ip igmp snooping
-!
-interface vlan60
- ip address 192.168.60.1/24
- no ip igmp snooping
-!
-router ospf
- ospf router-id 192.168.16.6
- passive-interface vlan10
- passive-interface vlan20
- passive-interface vlan30
- passive-interface vlan99
- passive-interface vlan40
- passive-interface vlan50
- passive-interface vlan60
- passive-interface vlan8
- network 192.168.16.4/30 area 0
- redistribute connected
-!
-ntp server 192.168.16.1
 line con 0
 line vty 0 4
 !

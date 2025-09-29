@@ -3,5 +3,5 @@ kind: BGPPeer
 metadata:
   name: bgp-peer
 spec:
-  peerIP: 192.168.99.1
-  asNumber: 65000
+  peerIP: 192.168.30.1
+  asNumber: 64646

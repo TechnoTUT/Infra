@@ -1,8 +1,6 @@
-sw4#show star
-!
 service password-encryption
 !
-hostname sw4
+hostname N-4
 !
 no banner motd
 !
@@ -21,75 +19,44 @@ no service http
 no clock timezone
 !
 no snmp-server ipv6
-snmp-server community univerge 1
+snmp-server community univerge
 !
 aaa authentication enable default local
 aaa authentication login default local
 !
-ntp server 192.168.16.1
-!
 ip domain-lookup
 !
 no service dhcp-server
-spanning-tree mode mstp
-!
-spanning-tree mst configuration
- instance 1 vlan 10
- instance 2 vlan 20
- instance 3 vlan 30
- instance 5 vlan 99
- region ttut-intra
- revision 1
+spanning-tree mode rstp
 !
 lacp global-passive-mode enable
 !
 vlan database
  vlan 10 name dj
- vlan 20 name vj
- vlan 30 name led
- vlan 40 name cam1
- vlan 50 name cam2
- vlan 60 name pa
- vlan 99 name server
- vlan 10,20,30,40,50,60,99 state enable
+ vlan 16 name gw
+ vlan 20 name pa
+ vlan 30 name av
+ vlan 40 name led-c
+ vlan 50 name led-b
+ vlan 60 name led-d
+ vlan 70 name entrance
+ vlan 80 name cam1
+ vlan 90 name cam2
+ vlan 99 name mgmt
+ vlan 100 name srv
+ vlan 10,16,20,30,40,50,60,70,80,90,99-100 state enable
 !
-interface port1.0.1-1.0.2
- switchport
- switchport mode access
- switchport access vlan 60
- spanning-tree edgeport
-!
-interface port1.0.3-1.0.8
- switchport
- switchport mode access
- switchport access vlan 20
- spanning-tree edgeport
-!
-interface port1.0.9-1.0.10
+interface port1.0.1-1.0.22
  switchport
  switchport mode access
  switchport access vlan 20
- channel-group 3 mode active
 !
-interface port1.0.11-1.0.12
+interface port1.0.3-1.0.22
  switchport
  switchport mode access
- switchport access vlan 20
- channel-group 2 mode active
+ switchport access vlan 30
 !
-interface port1.0.13-1.0.14
- switchport
- switchport mode access
- switchport access vlan 99
- spanning-tree edgeport
-!
-interface port1.0.15-1.0.16
- switchport
- switchport mode trunk
- switchport trunk allowed vlan all
- switchport trunk native vlan none
-!
-interface port1.0.17-1.0.24
+interface port1.0.23-1.0.24
  switchport
  switchport mode trunk
  switchport trunk allowed vlan all
@@ -101,17 +68,6 @@ interface po1
  switchport mode trunk
  switchport trunk allowed vlan all
  switchport trunk native vlan none
-!
-interface po2-3
- switchport
- switchport mode access
- switchport access vlan 20
-!
-interface vlan10
- no ip igmp snooping
-!
-interface vlan30,vlan40,vlan50,vlan60
- no ip igmp snooping
 !
 interface vlan99
  ip address 192.168.99.4/24
