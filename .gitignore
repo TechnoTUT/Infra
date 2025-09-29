@@ -1,5 +1,6 @@
 # Dependencies
 /docs/node_modules
+/docs/package-lock.json
 
 # Production
 /docs/build
