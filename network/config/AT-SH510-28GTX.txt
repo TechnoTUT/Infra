@@ -1,0 +1,231 @@
+TTUT_CORE(config)#do show star
+!
+service password-encryption
+!
+hostname TTUT_CORE
+!
+no banner motd
+!
+username manager privilege 15 password 8 $1$bJoVec4D$JwOJGPr7YqoExA0GVasdE0
+!
+access-list 1 permit any
+!
+ssh server v2only
+ssh server allow-users manager
+service ssh ip
+!
+platform hwfilter-size ipv4-limited-ipv6
+!
+no service telnet
+!
+no service http
+!
+no clock timezone
+!
+no snmp-server ipv6
+snmp-server community univerge
+!
+!
+aaa authentication enable default local
+aaa authentication login default local
+!
+!
+!
+stack virtual-chassis-id 2215
+!
+ntp server 192.168.16.1
+!
+ip domain-lookup
+!
+ip dhcp pool pool10
+ network 192.168.13.0 255.255.255.0
+ range 192.168.13.31 192.168.13.240
+ dns-server 192.168.16.5
+ default-router 192.168.13.1
+ domain-name dj.utone.technotut.net
+ subnet-mask 255.255.255.0
+!
+ip dhcp pool pool20
+ network 192.168.12.0 255.255.255.128
+ range 192.168.12.31 192.168.12.110
+ dns-server 192.168.16.5
+ default-router 192.168.12.1
+ domain-name pa.utone.technotut.net
+ subnet-mask 255.255.255.128
+!
+ip dhcp pool pool30
+ network 10.14.0.0 255.255.0.0
+ range 10.14.200.0 10.14.215.255
+ dns-server 192.168.16.5
+ default-router 10.14.0.1
+ domain-name av.utone.technotut.net
+ subnet-mask 255.255.0.0
+!
+ip dhcp pool pool40
+ network 192.168.111.0 255.255.255.0
+ range 192.168.111.180 192.168.111.217
+ dns-server 192.168.16.5
+ default-router 192.168.111.1
+ domain-name led-control.utone.technotut.net
+ subnet-mask 255.255.255.0
+!
+ip dhcp pool pool60
+ network 192.168.121.0 255.255.255.240
+ range 192.168.121.2 192.168.121.12
+ dns-server 192.168.16.5
+ default-router 192.168.121.1
+ domain-name led-display.utone.technotut.net
+ subnet-mask 255.255.255.240
+!
+ip dhcp pool pool70
+ network 192.168.15.0 255.255.255.240
+ range 192.168.15.2 192.168.15.12
+ dns-server 192.168.16.5
+ default-router 192.168.121.1
+ domain-name entrance.utone.technotut.net
+ subnet-mask 255.255.255.240
+!
+ip dhcp pool pool80
+ network 192.168.77.0 255.255.255.240
+ range 192.168.77.2 192.168.77.12
+ dns-server 10.11.77.253
+ default-router 192.168.77.1
+ domain-name cam1.utone.technotut.net
+ subnet-mask 255.255.255.240
+!
+ip dhcp pool pool90
+ network 192.168.77.16 255.255.255.240
+ range 192.168.77.19 192.168.77.28
+ dns-server 10.11.77.254
+ default-router 192.168.77.17
+ domain-name cam2.utone.technotut.net
+ subnet-mask 255.255.255.240
+!
+ip dhcp pool pool99
+ network 192.168.99.0 255.255.255.0
+ range 192.168.99.31 192.168.99.240
+ dns-server 192.168.16.5
+ default-router 192.168.99.1
+ default-router 192.168.99.2
+ domain-name mgmt.utone.technotut.net
+ subnet-mask 255.255.255.0
+!
+!
+!
+service dhcp-server
+!
+!
+!
+ip multicast-routing
+!
+spanning-tree mode rstp
+!
+lacp global-passive-mode enable
+!
+switch 2 provision sh510-28
+!
+vlan database
+ vlan 8 name wan
+ vlan 10 name dj
+ vlan 16 name gw
+ vlan 20 name vj
+ vlan 30 name led
+ vlan 40 name cam1
+ vlan 50 name cam2
+ vlan 60 name pa
+ vlan 99 name server
+ vlan 8,10,16,20,30,40,50,60,70,80,90,99-100 state enable
+!
+interface port2.0.1
+ switchport
+ switchport mode access
+ switchport access vlan 16
+!
+interface port2.0.2
+ switchport
+ switchport mode trunk
+ switchport trunk allowed vlan all
+ switchport trunk native vlan none
+!
+interface port2.0.3-2.0.10
+ shutdown
+ switchport
+ switchport mode access
+!
+interface port2.0.11-2.0.14
+ switchport
+ switchport mode trunk
+ switchport trunk allowed vlan all
+ switchport trunk native vlan none
+ channel-group 3 mode active
+!
+interface port2.0.15-2.0.16
+ switchport
+ switchport mode trunk
+ switchport trunk allowed vlan all
+ switchport trunk native vlan none
+ channel-group 2 mode active
+!
+interface port2.0.17-2.0.24
+ switchport
+ switchport mode trunk
+ switchport trunk allowed vlan all
+ switchport trunk native vlan none
+ channel-group 1 mode active
+!
+interface port2.0.25-2.0.26
+ shutdown
+ switchport
+ switchport mode access
+!
+interface po1-3
+ switchport
+ switchport mode trunk
+ switchport trunk allowed vlan all
+ switchport trunk native vlan none
+!
+interface vlan10
+ ip address 192.168.13.1/24
+ no ip igmp snooping
+!
+interface vlan16
+ ip address 192.168.16.6/30
+!
+interface vlan20
+ ip address 192.168.12.1/25
+ ip igmp snooping querier
+!
+interface vlan30
+ ip address 10.14.0.1/16
+ no ip igmp snooping
+!
+interface vlan40
+ ip address 192.168.111.1/24
+ no ip igmp snooping
+!
+interface vlan50
+ ip address 192.168.11.1/24
+ no ip igmp snooping
+!
+interface vlan60
+ ip address 192.168.121.1/28
+ no ip igmp snooping
+!
+interface vlan70
+ ip address 192.168.15.1/28
+!
+interface vlan80
+ ip address 192.168.77.1/28
+!
+interface vlan90
+ ip address 192.168.77.17/28
+!
+interface vlan99
+ ip address 192.168.99.2/24
+!
+ip route 0.0.0.0/0 192.168.16.5
+!
+line con 0
+line vty 0 4
+!
+end
