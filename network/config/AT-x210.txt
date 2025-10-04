@@ -46,7 +46,7 @@ vlan database
  vlan 100 name srv
  vlan 10,16,20,30,40,50,60,70,80,90,99-100 state enable
 !
-interface port1.0.1-1.0.22
+interface port1.0.1-1.0.2
  switchport
  switchport mode access
  switchport access vlan 20
