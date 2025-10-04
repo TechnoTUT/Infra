@@ -6,7 +6,7 @@ metadata:
     app: time
   namespace: time
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: time.kube.technotut.net
+    external-dns.alpha.kubernetes.io/hostname: time.svc.technotut.net
 spec:
   selector:
     app: time

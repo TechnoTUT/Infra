@@ -213,6 +213,13 @@ Sample: [metallb-ipaddresspool.yaml](./setup/metallb/metallb-ipaddresspool.yaml)
 ```bash
 kubectl apply -f metallb-ipaddresspool.yaml
 ```
+## Install ingress-nginx
+https://github.com/kubernetes/ingress-nginx
+```bash
+helm upgrade --install ingress-nginx ingress-nginx \
+  --repo https://kubernetes.github.io/ingress-nginx \
+  --namespace ingress-nginx --create-namespace
+```
 
 ## Install ArgoCD
 ```bash
@@ -223,10 +230,31 @@ curl -L https://github.com/argoproj/argo-cd/releases/download/v3.1.7/argocd-linu
 chmod +x argocd
 sudo mv argocd /usr/local/bin/argocd
 argocd admin initial-password -n argocd
-argocd login 10.11.0.0
+argocd login 10.11.0.1
 argocd account update-password
 ```
-Access `10.11.0.0` and login `admin` with password
+Access `10.11.0.1` and login `admin` with password
+
+## Install ExternalDNS
+https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/rfc2136.md
+```bash
+## Create TSIG key for RFC2136 and copy to secret.yaml
+tsig-keygen -a hmac-sha256 externaldns
+```
+see [secret.yaml](./setup/bind9/secret.yaml) and [externaldns.yaml](./setup/bind9/externaldns.yaml).
+```bash
+kubectl create namespace bind
+vim secret.yaml  ## paste the key you generated
+vim externaldns.yaml  ## edit the secret
+kubectl apply -f secret.yaml
+kubectl apply -f externaldns.yaml
+```
+Deploy BIND9 as DNS server using ArgoCD.
+```bash
+argocd app create bind --repo https://github.com/TechnoTUT/Infra.git --path k8s/manifest/bind9 --dest-server https://kubernetes.default.svc --dest-namespace bind
+argocd app sync bind
+argocd app set bind --sync-policy automated
+```
 
 ## if you want to reset
 Uninstall and retry install  
