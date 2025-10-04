@@ -4,13 +4,8 @@ slug: /
 sidebar_position: 1
 ---
 # About
-TechnoTUT Networkは、部室及びThe Utopia Tone(学内DJイベント)で利用可能なIPネットワークです。  
-音声・映像等のメディアの伝送や会場内に設置された機器のコントロールなど、あらゆる情報を送ることができます。一部のネットワーク機器はPoE(Power over Ethernet)に対応し、機器への電源供給が可能です。  
-
-TechnoTUT NOCでは、DJ機器との通信に用いるPRO DJ LINKや、映像伝送プロトコルであるNDI・RTMP、複数デバイスで拍・テンポを同期するAbleton Link、照明制御用のプロトコルであるArt-Net、PAの要であるデジタルミキサーの制御通信などを流すためのネットワークを、ネットワーク仮想化技術であるVLANを用いて統合したシステムを構築しています。また、スパニングツリープロトコルやリンクアグリゲーションといったL2冗長化技術を取り入れることで、機器故障やケーブルの断線時にもサービスへの影響を最小限に抑える取り組みも行っています。
-
 このページ及び図・コードは、TechnoTUTの[GitHubリポジトリ](https://github.com/TechnoTUT/Infra)で管理されています。  
-[![TechnoTUT/Infrastructure - GitHub](https://gh-card.dev/repos/TechnoTUT/Infra.svg?fullname=)](https://github.com/TechnoTUT/Infra)
+[![TechnoTUT/Infra - GitHub](https://gh-card.dev/repos/TechnoTUT/Infra.svg?fullname=)](https://github.com/TechnoTUT/Infra)
 
 ## Our Mission
 ### 1. 安定したネットワークの提供

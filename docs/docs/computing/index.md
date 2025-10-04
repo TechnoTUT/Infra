@@ -1,8 +1,9 @@
 ---
-title: Computing
+title: 計算基盤
 slug: /computing
 sidebar_position: 1
 ---
+# Computing
 [TechnoTUT Network](/) では、コンテナ型の仮想化手法を採用し、計算資源を提供しています。
 仮想化技術を活用することで、ソフトウェアとハードウェアの間に抽象化レイヤーを設け効率的に利用できるようにしています。    
 

@@ -1,6 +1,6 @@
 ---
 title: 機材
-sidebar_position: 2
+sidebar_position: 3
 ---
 ## L3
 [NEC UNIVERGE IX3110](https://jpn.nec.com/univerge/ix/Info/ix3110.html)  
