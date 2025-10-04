@@ -6,7 +6,7 @@ metadata:
     app: speedtest
   namespace: speedtest
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: speed.kube.technotut.net
+    external-dns.alpha.kubernetes.io/hostname: speed.svc.technotut.net
 spec:
   selector:
     app: speedtest

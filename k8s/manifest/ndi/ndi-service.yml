@@ -6,12 +6,12 @@ metadata:
     app: ndi-discovery-server
   namespace: ndi
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: ndi-discovery.kube.technotut.net
+    external-dns.alpha.kubernetes.io/hostname: ndi.svc.technotut.net
 spec:
   selector:
     app: ndi-discovery-server
   type: LoadBalancer
-  loadBalancerIP: 10.33.220.0
+  loadBalancerIP: 10.11.230.254
   ports:
     - name: ndi
       protocol: TCP
