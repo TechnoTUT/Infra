@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bind-deployment
+  labels:
+    app: bind
+  namespace: bind
+spec:
+  selector:
+    matchLabels:
+      app: bind
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: bind
+    spec:
+      containers:
+      - name: bind
+        image: docker.io/ubuntu/bind9:latest
+        ports:
+        - containerPort: 53
+        volumeMounts:
+          - mountPath: /etc/bind
+            name: bind-options
+          - mountPath: /etc/bind/pri/svc
+            name: bind-svc-zone
+          - mountPath: /etc/bind/keys
+            name: bind-tsig
+            readOnly: true
+      volumes:
+        - name: bind-options
+          configMap:
+            name: bind-options
+        - name: bind-svc-zone
+          configMap:
+            name: bind-svc-zone
+        - name: bind-tsig
+          secret:
+            secretName: bind-tsig
+            
