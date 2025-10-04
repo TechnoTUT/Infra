@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bind-options
+  namespace: bind
+data:
+  named.conf: |-
+    include "/etc/bind/keys/externaldns.key";
+    include "/etc/bind/named.conf.options";
+    include "/etc/bind/named.conf.default-zones";
+
+  named.conf.options: |-
+    options {
+        directory "/var/cache/bind";
+
+        allow-query { any; };
+        forwarders {
+            1.1.1.1;
+            1.0.0.1;
+        };
+
+        recursion yes;
+        dnssec-validation auto;
+    };
+
+  named.conf.default-zones: |-
+
+    zone "svc.technotut.net" {
+        type master;
+        file "/etc/bind/pri/svc/svc.zone";
+        allow-transfer {
+            key "externaldns";
+        };
+        update-policy {
+            grant externaldns zonesub ANY;
+        };
+    };

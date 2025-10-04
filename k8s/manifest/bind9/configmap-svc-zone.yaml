@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bind-svc-zone
+  namespace: bind
+data:
+  svc.zone: |-
+    $TTL 60
+    @   IN  SOA ns.svc.technotut.net. admin.svc.technotut.net. (
+            2025100401 ; Serial
+            3600       ; Refresh
+            1800       ; Retry
+            1209600    ; Expire
+            86400 )    ; Minimum TTL
+
+        IN  NS  ns.svc.technotut.net.
+    ns  IN  A   10.11.254.254

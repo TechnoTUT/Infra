@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: speedtest
-        image: openspeedtest/latest
+        image: docker.io/openspeedtest/latest
         ports:
         - containerPort: 3000
         - containerPort: 3001
