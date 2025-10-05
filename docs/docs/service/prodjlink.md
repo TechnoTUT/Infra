@@ -10,7 +10,7 @@ LINK Export機能を利用すれば、PC/Mac/iPhone/iPad/Android端末から直�
 1. お使いの端末でrekordboxを起動します。  
    rekordboxは[こちら](https://rekordbox.com/ja/)からダウンロードできます。
 2. DJネットワークに接続します。  
-   DJブースのLANケーブルを端末に接続するか、無線接続の場合は`TechnoTUT_DJ`というSSIDに接続します。
+   DJブースのLANケーブルを端末に接続するか、無線接続の場合は`TechnoTUT_DJ_5G`というSSIDに接続します。
 3. PC/Macの場合は、`Export`モードに切り替え、左下の`LINK`ボタンをクリックします。  
    iPhone/iPad/Android端末の場合は、`rekordbox`アプリを起動し、`CDJ/XDJに接続`をタップします。 
 4. CDJ/XDJの`rekordbox`ボタンを押し、接続した端末名を選択すると、USB同様に利用できます。  
@@ -19,13 +19,13 @@ LINK Export機能を利用すれば、PC/Mac/iPhone/iPad/Android端末から直�
 ## トラブルシューティング
 - rekordboxがPerformanceモードになっている → Exportモードに変更する
 - IPアドレスの取得が手動設定になっている → 自動(DHCP)に変更する
-- VPNが有効になっている → 無効にするか, `192.168.10.0/24`を除外するようにスプリットトンネルを設定する
+- VPNが有効になっている → 無効にするか, `192.168.13.0/24`を除外するようにスプリットトンネルを設定する
 - rekordbox以外のソフトウェアがUDP 50000, 50002ポートを使用している → Rekordbox以外をすべて閉じる, 再起動してからRekordboxだけ起動する
 - FirewallでUDP 50000, 50002を許可する, rekordboxの通信を許可する
 - LANケーブルで接続している場合は、Wi-Fiをオフにする
 
 macOSの場合、ファイアウォールの設定を確認する必要があります。
-1. 左上のApple Logoからシステム設定を選択
+1. 左上からシステム設定を選択
 2. ネットワークを選択
 3. ファイアウォールがオンの場合はオプションを選択して設定を確認します (オフの場合以下の手順は必要ありません)
 4. Rekordbox, Rekordbox Agentは`外部からの 接続を許可`に設定します (※外部からの接続をすべてブロックに設定すると接続できません！)

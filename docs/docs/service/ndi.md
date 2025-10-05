@@ -55,7 +55,7 @@ NDI Discovery Serverは、NDIの機器を名前解決するためのサーバで
 TechnoTUT Networkでは、コンテナ基盤上でNDI Discovery Serverを提供しています。  
 [![TechnoTUT/ndi-discovery-server - GitHub](https://gh-card.dev/repos/TechnoTUT/ndi-discovery-server.svg?fullname=)](https://github.com/TechnoTUT/ndi-discovery-server/pkgs/container/ndi-discovery-server)
 ### NDI Discovery ServerのIPアドレスを各機器に設定する
-NDI Discovery ServerのIPアドレスは`10.11.230.254`です。
+NDI Discovery ServerのIPアドレスは`10.11.230.254 (ndi.svc.technotut.net)`です。
 #### utone-linuxの場合
 utone-linuxでは、予めNDI Discovery ServerのIPアドレスが設定されています。設定は不要です。
 #### Windows/Macの場合

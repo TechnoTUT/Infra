@@ -12,6 +12,7 @@ xxxの部分は各LED BARごとに異なります。各基盤を参照してく�
 
 ## LED PAR・Moving Head
 LED PAR・Moving HeadはDMX信号で制御します。網内で提供しているコンテナ基盤では、Art-Net信号をDMX信号に変換するサービスを提供しています。  
-変換サービスは`10.11.240.254`にて提供しています。
+変換サービスは`dmx.svc.technotut.net`及び`10.11.240.254`にて提供しています。  
+Web-GUIで設定を行う場合は、http://dmx.svc.technotut.net/ にアクセスしてください。
 
 詳細は、[TechnoTUT/qlcplus-artnet-to-dmx-converter](https://github.com/TechnoTUT/qlcplus-artnet-to-dmx-converter)を参照してください。
