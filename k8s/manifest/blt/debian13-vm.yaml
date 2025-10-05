@@ -1,0 +1,50 @@
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: blt
+  namespace: blt
+  labels:
+    kubevirt.io/os: linux
+spec:
+  runStrategy: Always
+  template:
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        devices:
+          disks:
+          - disk:
+              bus: virtio
+            name: disk0
+          - cdrom:
+              bus: sata
+              readonly: true
+            name: cloudinitdisk
+          interfaces:
+          - name: default
+            masquerade: {}
+        machine:
+          type: q35
+        resources:
+          requests:
+            memory: 4096M
+      networks:
+      - name: default
+        pod: {}
+      volumes:
+      - name: disk0
+        persistentVolumeClaim:
+          claimName: blt-pvc
+      - cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            hostname: blt
+            ssh_pwauth: true
+            disable_root: false
+            chpasswd:
+              list: |
+                root:password
+                debian:password
+              expire: False
+        name: cloudinitdisk
