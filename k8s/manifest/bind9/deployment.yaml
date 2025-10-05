@@ -2,40 +2,56 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: bind-deployment
-  labels:
-    app: bind
   namespace: bind
 spec:
+  replicas: 1
   selector:
     matchLabels:
       app: bind
-  replicas: 3
   template:
     metadata:
       labels:
         app: bind
     spec:
+      initContainers:
+      - name: init-zone
+        image: docker.io/busybox
+        command: ["/bin/sh", "-c"]
+        args:
+          - if [ ! -f /data/svc.zone ]; then cp /config/svc.zone /data/svc.zone; fi
+        volumeMounts:
+          - name: bind-svc-zone-config
+            mountPath: /config
+          - name: bind-svc-zone-pvc
+            mountPath: /data
+
       containers:
       - name: bind
         image: docker.io/ubuntu/bind9:latest
         ports:
         - containerPort: 53
+          protocol: UDP
+        - containerPort: 53
+          protocol: TCP
         volumeMounts:
-          - mountPath: /etc/bind
-            name: bind-options
-          - mountPath: /etc/bind/pri/svc
-            name: bind-svc-zone
-          - mountPath: /etc/bind/keys
-            name: bind-tsig
+          - name: bind-options
+            mountPath: /etc/bind
+          - name: bind-svc-zone-pvc
+            mountPath: /etc/bind/pri/svc
+          - name: bind-tsig
+            mountPath: /etc/bind/keys
             readOnly: true
+
       volumes:
         - name: bind-options
           configMap:
             name: bind-options
-        - name: bind-svc-zone
+        - name: bind-svc-zone-config
           configMap:
             name: bind-svc-zone
+        - name: bind-svc-zone-pvc
+          persistentVolumeClaim:
+            claimName: bind-svc-zone-pvc
         - name: bind-tsig
           secret:
             secretName: bind-tsig
-            
