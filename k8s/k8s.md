@@ -256,6 +256,29 @@ argocd app sync bind
 argocd app set bind --sync-policy automated
 ```
 
+## Install KubeVirt
+https://kubevirt.io/user-guide/cluster_admin/installation/#installing-kubevirt-on-kubernetes
+```bash
+export RELEASE=$(curl https://storage.googleapis.com/kubevirt-prow/release/kubevirt/kubevirt/stable.txt)
+kubectl apply -f https://github.com/kubevirt/kubevirt/releases/download/${RELEASE}/kubevirt-operator.yaml
+kubectl apply -f https://github.com/kubevirt/kubevirt/releases/download/${RELEASE}/kubevirt-cr.yaml
+```
+Install virtctl
+https://kubevirt.io/user-guide/user_workloads/virtctl_client_tool/
+```bash
+export VERSION=$(curl https://storage.googleapis.com/kubevirt-prow/release/kubevirt/kubevirt/stable.txt)
+curl -L https://github.com/kubevirt/kubevirt/releases/download/${VERSION}/virtctl-${VERSION}-linux-amd64 -o virtctl
+sudo mv virtctl /usr/local/bin/
+sudo chmod +x /usr/local/bin/virtctl
+```
+Install Containerized Data Importer (CDI)
+https://kubevirt.io/labs/kubernetes/lab2.html
+```bash
+export VERSION=$(basename $(curl -s -w %{redirect_url} https://github.com/kubevirt/containerized-data-importer/releases/latest))
+kubectl create -f https://github.com/kubevirt/containerized-data-importer/releases/download/$VERSION/cdi-operator.yaml
+kubectl create -f https://github.com/kubevirt/containerized-data-importer/releases/download/$VERSION/cdi-cr.yaml
+```
+
 ## Deploy kubernetes dashboard
 ```bash
 helm repo add kubernetes-dashboard https://kubernetes.github.io/dashboard/
@@ -292,6 +315,13 @@ kubectl apply -f cluster-role-binding.yaml
 Get the token for login
 ```bash
 kubectl -n kubernetes-dashboard create token root
+```
+
+## Install Nginx Ingress Controller
+```bash
+helm upgrade --install ingress-nginx ingress-nginx \
+  --repo https://kubernetes.github.io/ingress-nginx \
+  --namespace ingress-nginx --create-namespace
 ```
 
 ## if you want to reset
