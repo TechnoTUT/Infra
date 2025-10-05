@@ -256,6 +256,44 @@ argocd app sync bind
 argocd app set bind --sync-policy automated
 ```
 
+## Deploy kubernetes dashboard
+```bash
+helm repo add kubernetes-dashboard https://kubernetes.github.io/dashboard/
+helm upgrade --install kubernetes-dashboard kubernetes-dashboard/kubernetes-dashboard --create-namespace --namespace kubernetes-dashboard --set kong.image.repository=docker.io/library/kong --set kong.image.tag="3.9.0"
+kubectl patch svc kubernetes-dashboard-kong-proxy -n kubernetes-dashboard -p '{"spec": {"type": "LoadBalancer"}}'
+kubectl patch svc kubernetes-dashboard-kong-proxy -n kubernetes-dashboard -p '{"metadata": {"annotations": {"external-dns.alpha.kubernetes.io/hostname": "dash.svc.technotut.net"}}}'
+```
+Create ServiceAccount and ClusterRoleBinding for dashboard access
+```bash
+cat <<EOF | tee service-account.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: root
+  namespace: kubernetes-dashboard
+EOF
+cat <<EOF | tee cluster-role-binding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: root
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: root
+  namespace: kubernetes-dashboard
+EOF
+kubectl apply -f service-account.yaml
+kubectl apply -f cluster-role-binding.yaml
+```
+Get the token for login
+```bash
+kubectl -n kubernetes-dashboard create token root
+```
+
 ## if you want to reset
 Uninstall and retry install  
 https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/#remove-the-node  
