@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: xrdp
+  labels:
+    app: xrdp
+  namespace: blt
+spec:
+  selector:
+    matchLabels:
+      app: xrdp
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: xrdp
+    spec:
+      containers:
+      - name: xrdp
+        image: ghcr.io/technotut/xrdp:main
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3389
+        volumeMounts:
+        - name: xrdp-config
+          mountPath: /etc/xrdp/xrdp.ini
+          subPath: xrdp.ini
+      restartPolicy: Always
+      volumes:
+      - name: xrdp-config
+        configMap:
+          name: xrdp-config

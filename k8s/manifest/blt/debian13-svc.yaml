@@ -9,7 +9,11 @@ spec:
   selector:
     vm.kubevirt.io/name: blt
   type: LoadBalancer
+  loadBalancerIP: 10.11.210.254
   ports:
     - protocol: TCP
       port: 22
       targetPort: 22
+    - protocol: TCP
+      port: 5901
+      targetPort: 5901

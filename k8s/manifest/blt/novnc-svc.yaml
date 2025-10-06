@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: novnc-service
+  labels:
+    app: novnc
+  namespace: blt
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: web.blt.svc.technotut.net
+spec:
+  selector:
+    app: novnc
+  type: LoadBalancer
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 6080

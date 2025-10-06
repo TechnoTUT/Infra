@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: novnc
+  labels:
+    app: novnc
+  namespace: blt
+spec:
+  selector:
+    matchLabels:
+      app: novnc
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: novnc
+    spec:
+      containers:
+      - name: novnc
+        image: ghcr.io/technotut/novnc:main
+        args: ["6080", "10.11.210.254:5901"]
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 6080
+      restartPolicy: Always

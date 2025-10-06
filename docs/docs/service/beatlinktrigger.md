@@ -16,13 +16,15 @@ Beat Link Trigger は以下の機能を提供します。
 
 ## 使用方法
 1. [TechnoTUT Network](/network)に接続します。  
-2. コンテナ基盤上のDebian GUI環境に接続します。  
-   `blt.svc.technotut.net`へリモートデスクトップ接続を行います。
-3. デスクトップの`start.sh`を実行してBeat Link Triggerを起動します。  
+2. コンテナ基盤上のDebian GUI環境に接続します。以下のいずれかの方法で接続できます。
+   - ブラウザで http://web.blt.svc.technotut.net へアクセスします。
+   - RDPクライアントで `rdp.blt.svc.technotut.net`へリモートデスクトップ接続を行います。
+   - VNCクライアントで `blt.svc.technotut.net:5901`へ接続します。  
+3. デスクトップの`blt-start.sh`を実行してBeat Link Triggerを起動します。  
     起動すると、自動で曲情報・波形情報が表示されます。  
    ![Beat Link Trigger](/img/service/beat-link-trigger_trackinfo.jpg)
 
-何らかの不具合が発生した場合は、一度ウィンドウを閉じて再度`start.sh`を実行してください。  
+何らかの不具合が発生した場合は、一度ウィンドウを閉じて再度デスクトップ上の`blt-start.sh`を実行してください。  
 
 ## 開発者向け情報
 ### 各種機能の起動自動化
