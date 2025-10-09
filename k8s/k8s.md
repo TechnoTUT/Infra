@@ -324,6 +324,86 @@ helm upgrade --install ingress-nginx ingress-nginx \
   --namespace ingress-nginx --create-namespace
 ```
 
+## Install Multus
+If you want to use L2 connection between PRO DJ LINK or Ableton Link Network, install Multus.
+
+Create bridge interface at all nodes. Configure `/etc/network/interfaces`.  
+Sample:
+```
+# This file describes the network interfaces available on your system
+# and how to activate them. For more information, see interfaces(5).
+
+source /etc/network/interfaces.d/*
+
+# The loopback network interface
+auto lo
+iface lo inet loopback
+
+# The primary network interface
+allow-hotplug eno1
+iface eno1 inet manual
+        ## avoid Intel NIC e1000e hardware unit hang
+        ## post-up /sbin/ethtool -K eno1 gro off tso off gso off rx off tx off rxvlan off txvlan off sg off
+
+# vlan setting
+auto eno1.10
+iface eno1.10 inet manual
+        vlan-raw-device eno1
+
+auto eno1.30
+iface eno1.30 inet manual
+        vlan-raw-device eno1
+
+auto eno1.100
+iface eno1.100 inet static
+        vlan-raw-device eno1
+        address 192.168.30.200/24
+        gateway 192.168.30.1
+        dns-nameservers 192.168.30.1
+        dns-search srv.utone.technotut.net
+
+auto br10
+allow-hotplug br10
+iface br10 inet manual
+  bridge_ports eno1.10
+  bridge_stp off
+  bridge_maxwait 1
+
+auto br30
+allow-hotplug br30
+iface br30 inet manual
+  bridge_ports eno1.30
+  bridge_stp off
+  bridge_maxwait 1
+
+```
+
+Install Multus
+```bash
+kubectl apply -f https://raw.githubusercontent.com/k8snetworkplumbingwg/multus-cni/master/deployments/multus-daemonset-thick.yml
+```
+
+Create NetworkAttachmentDefinition for vlan10
+```yaml
+apiVersion: "k8s.cni.cncf.io/v1"
+kind: NetworkAttachmentDefinition
+metadata:
+  name: vlan10-bridge
+  namespace: kube-public
+spec:
+  config: |
+    {
+      "cniVersion": "0.3.1",
+      "name": "vlan10",
+      "type": "bridge",
+      "bridge": "br10",
+      "ipam": {
+          "type": "host-local",
+          "subnet": "192.168.13.0/24"
+      }
+    }
+```
+
 ## if you want to reset
 Uninstall and retry install  
 https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/#remove-the-node  
