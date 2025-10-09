@@ -6,12 +6,12 @@ metadata:
     app: rtmp-live-server
   namespace: live
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: live.kube.technotut.net
+    external-dns.alpha.kubernetes.io/hostname: live.svc.technotut.net
 spec:
   selector:
     app: rtmp-live-server
   type: LoadBalancer
-  loadBalancerIP: 10.33.70.0
+  loadBalancerIP: 10.11.0.0
   ports:
     - name: rtmp
       protocol: TCP
