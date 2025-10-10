@@ -6,12 +6,12 @@ metadata:
     app: cam1-sonycam-nginx
   namespace: cam1
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: cam1.kube.technotut.net
+    external-dns.alpha.kubernetes.io/hostname: cam1.svc.technotut.net
 spec:
   selector:
     app: cam1-sonycam-nginx
   type: LoadBalancer
-  loadBalancerIP: 10.33.71.1
+  loadBalancerIP: 10.11.77.252
   ports:
     - name: rtmp
       protocol: TCP
