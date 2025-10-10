@@ -7,7 +7,7 @@ spec:
   type: LoadBalancer
   selector:
     k8s-app: coredns
-  loadBalancerIP: 10.33.71.12
+  loadBalancerIP: 10.11.77.254
   ports:
     - name: dns
       port: 53
