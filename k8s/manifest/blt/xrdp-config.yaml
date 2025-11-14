@@ -286,7 +286,7 @@ data:
     [vnc-any]
     name=vnc-any
     lib=libvnc.so
-    ip=10.11.210.253
+    ip=10.11.210.254
     port=5901
     username=debian
     password=password
