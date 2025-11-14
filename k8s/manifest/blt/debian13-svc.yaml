@@ -17,3 +17,6 @@ spec:
     - name: vnc
       port: 5901
       targetPort: 5901
+    - name: http
+      port: 17081
+      targetPort: 17081
