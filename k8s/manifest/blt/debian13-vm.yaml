@@ -24,10 +24,6 @@ spec:
           interfaces:
           - name: default
             masquerade: {}
-          - name: vlan10
-            bridge: {}
-          - name: vlan30
-            bridge: {}
         machine:
           type: q35
         resources:
@@ -36,12 +32,6 @@ spec:
       networks:
       - name: default
         pod: {}
-      - name: vlan10
-        multus:
-          networkName: kube-public/vlan10-bridge
-      - name: vlan30
-        multus:
-          networkName: kube-public/vlan30-bridge
       volumes:
       - name: disk0
         persistentVolumeClaim:
@@ -57,13 +47,4 @@ spec:
                 root:password
                 debian:password
               expire: False
-          networkData: |
-            version: 2
-            ethernets: 
-              enp1s0:
-                dhcp4: true
-              enp2s0:
-                dhcp4: true
-              enp3s0:
-                dhcp4: true
         name: cloudinitdisk
