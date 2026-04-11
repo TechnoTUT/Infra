@@ -23,7 +23,7 @@ spec:
             name: cloudinitdisk
           interfaces:
           - name: default
-            bridge: {}
+            masquerade: {}
           - name: vlan10
             bridge: {}
           - name: vlan30
@@ -50,11 +50,11 @@ spec:
           networkData: |
             version: 2
             ethernets:
-              eth0:
+              enp1s0:
                 dhcp4: true
-              eth1:
+              enp2s0:
                 dhcp4: true
-              eth2:
+              enp3s0:
                 dhcp4: true
           userData: |
             #cloud-config
