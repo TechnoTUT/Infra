@@ -47,6 +47,15 @@ spec:
         persistentVolumeClaim:
           claimName: blt-pvc
       - cloudInitNoCloud:
+          networkData: |
+            version: 2
+            ethernets:
+              eth0:
+                dhcp4: true
+              eth1:
+                dhcp4: true
+              eth2:
+                dhcp4: true
           userData: |
             #cloud-config
             hostname: blt
