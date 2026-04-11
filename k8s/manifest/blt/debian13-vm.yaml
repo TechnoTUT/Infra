@@ -47,15 +47,6 @@ spec:
         persistentVolumeClaim:
           claimName: blt-pvc
       - cloudInitNoCloud:
-          networkData: |
-            version: 2
-            ethernets:
-              enp1s0:
-                dhcp4: true
-              enp2s0:
-                dhcp4: true
-              enp3s0:
-                dhcp4: true
           userData: |
             #cloud-config
             hostname: blt
@@ -66,4 +57,25 @@ spec:
                 root:password
                 debian:password
               expire: False
+            packages:
+              - ifupdown
+        
+            write_files:
+              - path: /etc/network/interfaces
+                content: |
+                  auto lo
+                  iface lo inet loopback
+          
+                  auto enp1s0
+                  iface enp1s0 inet dhcp
+          
+                  auto enp2s0
+                  iface enp2s0 inet dhcp
+          
+                  auto enp3s0
+                  iface enp3s0 inet dhcp
+        
+          runcmd:
+            - ifdown -a || true
+            - ifup -a
         name: cloudinitdisk
