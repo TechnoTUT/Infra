@@ -24,6 +24,10 @@ spec:
           interfaces:
           - name: default
             masquerade: {}
+          - name: vlan10
+            bridge: {}
+          - name: vlan30
+            bridge: {}
         machine:
           type: q35
         resources:
@@ -32,6 +36,12 @@ spec:
       networks:
       - name: default
         pod: {}
+      - name: vlan10
+        multus:
+          networkName: kube-public/vlan10-bridge
+      - name: vlan30
+        multus:
+          networkName: kube-public/vlan30-bridge
       volumes:
       - name: disk0
         persistentVolumeClaim:
