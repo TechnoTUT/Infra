@@ -5,7 +5,7 @@ sidebar_position: 10
 ## デジタルミキサーの使用方法
 
 1. デジタルミキサーの電源を入れる。必要に応じて、LANケーブルを接続して部内ネットワークに接続する。  
-接続ポートが指定されているため、確認すること。[(参照)](/network/design)
+接続ポートが指定されているため、確認すること。[(参照)](/network/spec)
 2. iPadをWi-Fi `TechnoTUT_PA_5G` または `TechnoTUT_PA` に接続する。
 3. iPad App `Soundcraft Ui` を起動。
 登録済みでない場合は、SafariやChromeで http://pa.svc.technotut.net/ にアクセス。
