@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rtmp-config
+  namespace: live
+  labels:
+    app: rtmp-live-server
+data:
+  nginx.conf: |
+    worker_processes  auto;
+    #error_log  logs/error.log;
+
+    events {
+        worker_connections  1024;
+    }
+
+    # RTMP configuration
+    rtmp {
+        server {
+            listen 1935; # Listen on standard RTMP port
+            listen [::]:1935 ipv6only=on;
+            chunk_size 4000;
+
+            application live {
+                live on;
+                drop_idle_publisher 10s;
+            }
+
+            application external {
+                live on;
+                record off;
+                allow publish all;
+                allow play all;
+                push rtmp://10.88.0.1:1935/live/technotut;
+            }
+        }
+    }
+
+
+    http {
+            sendfile off;
+            tcp_nopush on;
+            directio 512;
+            # HTTP server required to serve the player and HLS fragments
+            server {
+                    listen 8080;
+                    listen [::]:8080 ipv6only=on;
+
+                    # This URL provides RTMP statistics in XML
+                    location /stat {
+                            rtmp_stat all;
+                            rtmp_stat_stylesheet stat.xsl; # Use stat.xsl stylesheet
+                    }
+
+                    location /stat.xsl {
+                            # XML stylesheet to view RTMP stats.
+                            root /usr/local/nginx/html;
+                    }
+
+            }
+    }
