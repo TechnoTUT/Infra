@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: rtmp-live-server
-        image: ghcr.io/technotut/rtmp-live-server:main
+        image: ghcr.io/technotut/rtmp-live-server:alqutami-rtmp-hls
         imagePullPolicy: Always
         ports:
         - containerPort: 1935
