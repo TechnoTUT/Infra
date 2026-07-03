@@ -49,6 +49,7 @@ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 KubernetesのネットワークはCNI (Container Network Interface) プラグインによって実装されている．  
 今回はCiliumを使用する．  
 https://docs.cilium.io/en/stable/gettingstarted/k8s-install-default/#k8s-install-quick
+https://docs.cilium.io/en/stable/installation/k8s-install-kubeadm/
 
 Cilium CLIをインストールする．  
 https://docs.cilium.io/en/stable/gettingstarted/k8s-install-default/#install-the-cilium-cli
@@ -65,7 +66,7 @@ rm cilium-linux-${CLI_ARCH}.tar.gz{,.sha256sum}
 Ciliumをインストールする．
 ```bash
 cilium install \
-  --version 1.19.4 \
+  --version 1.19.5 \
   --set ipv4.enabled=true \
   --set routingMode=native \
   --set ipam.mode=kubernetes \
@@ -93,14 +94,14 @@ Persistent Volume (PV) をNFSで提供するためのプロビジョナー nfs-s
 nfs-subdir-external-provisioner: https://github.com/kubernetes-sigs/nfs-subdir-external-provisioner  
 
 NFSサーバを構築する．  
-https://www.server-world.info/query?os=Rocky_Linux_10&p=nfs&f=1
+https://www.server-world.info/query?os=Debian_13&p=nfs&f=1
 ``` /etc/exports
-/nfs 192.168.30.0/24(rw,no_root_squash)
+/nfs 192.168.99.0/24(rw,no_root_squash)
 ```
 
-全てのノードにnfs-utilsをインストールする．
+全てのノードにnfs-commonをインストールする．
 ```bash
-sudo dnf -y install nfs-utils
+sudo apt install nfs-common
 ```
 
 KubernetesのパッケージマネージャであるHelmをインストールする．
@@ -112,7 +113,7 @@ chmod 700 get_helm.sh
 nfs-subdir-external-provisioner をHelmでインストールする． 
 ```bash
 helm repo add nfs-subdir-external-provisioner https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/
-helm install nfs-subdir-external-provisioner nfs-subdir-external-provisioner/nfs-subdir-external-provisioner --set nfs.server=192.168.30.200 --set nfs.path=/nfs --namespace nfs-provisioner --create-namespace
+helm install nfs-subdir-external-provisioner nfs-subdir-external-provisioner/nfs-subdir-external-provisioner --set nfs.server=192.168.99.200 --set nfs.path=/nfs --namespace nfs-provisioner --create-namespace
 ```
 
 ## ExternalDNS の導入
@@ -210,9 +211,9 @@ iface eno1.30 inet manual
 auto eno1.100
 iface eno1.100 inet static
         vlan-raw-device eno1
-        address 192.168.30.200/24
-        gateway 192.168.30.1
-        dns-nameservers 192.168.30.1
+        address 192.168.99.200/24
+        gateway 192.168.99.1
+        dns-nameservers 192.168.99.1
         dns-search srv.utone.technotut.net
 
 auto br10
@@ -252,7 +253,7 @@ spec:
       "bridge": "br10",
       "ipam": {
           "type": "host-local",
-          "subnet": "192.168.13.0/24"
+          "subnet": "10.10.0.0/16"
       }
     }
 ```
