@@ -44,8 +44,8 @@ spec:
           networkName: kube-public/vlan20-bridge
       volumes:
       - name: disk0
-        persistentVolumeClaim:
-          claimName: blt-pvc
+        dataVolume:
+          name: blt-dv
       - cloudInitNoCloud:
           userData: |
             #cloud-config
@@ -62,6 +62,11 @@ spec:
               - openjdk-21-jre
               - curl
               - ca-certificates
+              - xfce4
+              - xfce4-goodies
+              - lightdm
+              - xorg
+              - dbus-x11
                     
             write_files:
               - path: /etc/network/interfaces
@@ -80,26 +85,47 @@ spec:
               - path: /etc/systemd/system/blt.service
                 permissions: "0644"
                 content: |
-                
-                [Unit]
-                Description=Beat Link Trigger
-                After=network-online.target
-                Wants=network-online.target
 
-                [Service]
-                Type=simple
-                User=debian
-                WorkingDirectory=/opt/blt
-                ExecStart=/usr/bin/java -jar /opt/blt/beat-link-trigger.jar
-                Restart=on-failure
-                RestartSec=5
+                  [Unit]
+                  Description=Beat Link Trigger
+                  After=network-online.target
+                  Wants=network-online.target
 
-                [Install]
-                WantedBy=multi-user.target              
+                  [Service]
+                  Type=simple
+                  User=debian
+                  WorkingDirectory=/opt/blt
+                  ExecStart=/usr/bin/java -jar /opt/blt/beat-link-trigger.jar
+                  Restart=on-failure
+                  RestartSec=5
+
+                  [Install]
+                  WantedBy=multi-user.target
+              - path: /home/debian/.config/autostart/blt.desktop
+                owner: debian:debian
+                permissions: "0644"
+                content: |
+                  [Desktop Entry]
+                  Type=Application
+                  Name=Beat Link Trigger
+                  Exec=/usr/bin/java -jar /opt/blt/beat-link-trigger.jar
+                  Terminal=false
+                  X-GNOME-Autostart-enabled=true   
+              - path: /etc/lightdm/lightdm.conf.d/50-autologin.conf     
+                  [Seat:*]
+                  autologin-user=debian
+                  autologin-user-timeout=0      
             runcmd:
               - ifdown -a || true
               - ifup -a
               - mkdir -p /opt/blt
               - curl -fL -o /opt/blt/beat-link-trigger.jar https://github.com/Deep-Symmetry/beat-link-trigger/releases/download/latest-preview/beat-link-trigger-8.1.0-Preview.jar
               - chown -R debian:debian /opt/blt
+              - systemctl daemon-reload
+              - systemctl enable --now blt.service
+              - mkdir -p /home/debian/.config/autostart
+              - chown -R debian:debian /home/debian/.config
+              - systemctl disable blt.service || true
+              - systemctl enable lightdm
+              - systemctl set-default graphical.target
         name: cloudinitdisk

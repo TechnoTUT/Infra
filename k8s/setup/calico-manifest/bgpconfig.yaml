@@ -7,4 +7,4 @@ spec:
   nodeToNodeMeshEnabled: false
   asNumber: 64646
   serviceLoadBalancerIPs:
-    - cidr: 10.11.0.0/16
+    - cidr: 10.12.0.0/16
