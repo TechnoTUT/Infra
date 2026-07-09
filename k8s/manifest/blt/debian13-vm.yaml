@@ -81,6 +81,7 @@ spec:
           runcmd:
             - ifdown -a || true
             - ifup -a
-            curl -LO https://github.com/Deep-Symmetry/beat-link-trigger/releases/download/latest-preview/beat-link-trigger-8.1.0-Preview.jar
-            # - java -jar beat-link-trigger-8.1.0-Preview.jar
+            - mkdir -p /opt/blt
+            - curl -fL -o /opt/blt/beat-link-trigger.jar https://github.com/Deep-Symmetry/beat-link-trigger/releases/download/latest-preview/beat-link-trigger-8.1.0-Preview.jar
+            - chown -R debian:debian /opt/blt
         name: cloudinitdisk
