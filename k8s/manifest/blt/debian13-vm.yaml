@@ -76,8 +76,26 @@ spec:
                   iface enp2s0 inet dhcp
 
                   auto enp3s0
-                  iface enp3s0 inet dhcp
+                  iface enp3s0 inet dhcp                
+              - path: /etc/systemd/system/blt.service
+                permissions: "0644"
+                content: |
+                
+                [Unit]
+                Description=Beat Link Trigger
+                After=network-online.target
+                Wants=network-online.target
 
+                [Service]
+                Type=simple
+                User=debian
+                WorkingDirectory=/opt/blt
+                ExecStart=/usr/bin/java -jar /opt/blt/beat-link-trigger.jar
+                Restart=on-failure
+                RestartSec=5
+
+                [Install]
+                WantedBy=multi-user.target              
             runcmd:
               - ifdown -a || true
               - ifup -a
