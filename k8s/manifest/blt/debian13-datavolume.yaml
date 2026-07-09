@@ -1,0 +1,19 @@
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  name: blt-dv
+  namespace: blt
+spec:
+  source:
+    http:
+      url: "https://cdimage.debian.org/images/cloud/trixie/latest/debian-13-generic-amd64.raw"
+
+  pvc:
+    accessModes:
+      - ReadWriteOnce
+
+    resources:
+      requests:
+        storage: 15Gi
+
+    storageClassName: local-path
