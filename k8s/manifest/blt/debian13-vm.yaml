@@ -96,7 +96,7 @@ spec:
                     auto enp2s0
                     iface enp2s0 inet dhcp
                     auto enp3s0
-                    iface enp3s0 inet dhcp 
+                    iface enp3s0 inet dhcp
                 - path: /home/debian/.config/autostart/blt.desktop
                   owner: debian:debian
                   permissions: "0644"
