@@ -9,7 +9,7 @@ spec:
   selector:
     vm.kubevirt.io/name: blt
   type: LoadBalancer
-  loadBalancerIP: 10.11.210.254
+  loadBalancerIP: 10.12.210.254
   ports:
     - name: ssh
       port: 22

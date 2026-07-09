@@ -26,7 +26,7 @@ spec:
             masquerade: {}
           - name: vlan10
             bridge: {}
-          - name: vlan30
+          - name: vlan20
             bridge: {}
         machine:
           type: q35
@@ -39,9 +39,9 @@ spec:
       - name: vlan10
         multus:
           networkName: kube-public/vlan10-bridge
-      - name: vlan30
+      - name: vlan20
         multus:
-          networkName: kube-public/vlan30-bridge
+          networkName: kube-public/vlan20-bridge
       volumes:
       - name: disk0
         persistentVolumeClaim:
@@ -59,27 +59,28 @@ spec:
               expire: False
             packages:
               - ifupdown
-        
+              - openjdk-21-jre
+              - curl
+              - ca-certificates
+                    
             write_files:
               - path: /etc/network/interfaces
                 content: |
                   auto lo
                   iface lo inet loopback
-                  
+
                   auto enp1s0
                   iface enp1s0 inet dhcp
-                  
+
                   auto enp2s0
-                  iface enp2s0 inet static
-                          address 192.168.13.100
-                          netmask 255.255.255.0
-                  
+                  iface enp2s0 inet dhcp
+
                   auto enp3s0
                   iface enp3s0 inet dhcp
-                          address 10.14.0.100
-                          netmask 255.255.0.0
         
           runcmd:
             - ifdown -a || true
             - ifup -a
+            curl -LO https://github.com/Deep-Symmetry/beat-link-trigger/releases/download/latest-preview/beat-link-trigger-8.1.0-Preview.jar
+            # - java -jar beat-link-trigger-8.1.0-Preview.jar
         name: cloudinitdisk
