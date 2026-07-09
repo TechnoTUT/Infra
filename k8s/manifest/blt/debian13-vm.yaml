@@ -77,11 +77,11 @@ spec:
 
                   auto enp3s0
                   iface enp3s0 inet dhcp
-        
-          runcmd:
-            - ifdown -a || true
-            - ifup -a
-            - mkdir -p /opt/blt
-            - curl -fL -o /opt/blt/beat-link-trigger.jar https://github.com/Deep-Symmetry/beat-link-trigger/releases/download/latest-preview/beat-link-trigger-8.1.0-Preview.jar
-            - chown -R debian:debian /opt/blt
+
+            runcmd:
+              - ifdown -a || true
+              - ifup -a
+              - mkdir -p /opt/blt
+              - curl -fL -o /opt/blt/beat-link-trigger.jar https://github.com/Deep-Symmetry/beat-link-trigger/releases/download/latest-preview/beat-link-trigger-8.1.0-Preview.jar
+              - chown -R debian:debian /opt/blt
         name: cloudinitdisk
