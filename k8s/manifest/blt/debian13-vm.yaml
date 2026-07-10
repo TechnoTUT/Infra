@@ -82,6 +82,7 @@ spec:
                 - lightdm
                 - xorg
                 - dbus-x11
+                - ssh
 
               write_files:
                 - path: /etc/network/interfaces
