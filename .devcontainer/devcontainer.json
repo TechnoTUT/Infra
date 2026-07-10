@@ -3,7 +3,7 @@
 {
 	"name": "noc.technotut.net",
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-	"image": "docker.io/node:22.14",
+	"image": "docker.io/node:26",
 	// Configure tool-specific properties.
 	"customizations": {
 		"vscode": {

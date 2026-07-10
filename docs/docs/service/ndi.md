@@ -28,7 +28,7 @@ utone-linuxは、標準でNDIの送受信機能を搭載しています。また
 使用方法は [TechnoTUT/utone-linux](https://github.com/TechnoTUT/utone-linux)を参照してください。  
 
 ### Resolume Avenueの場合
-Resolume Avenueの場合、標準でNDIの送受信ができます。NDI出力を行う場合は、[配線図](/network/design)を参考にしてAVネットワーク(VLAN30)に接続し`Output` > `Network streaming (NewTek NDI)`を選択してNDI出力を有効にします。  
+Resolume Avenueの場合、標準でNDIの送受信ができます。NDI出力を行う場合は、[配線図](/network/spec)を参考にしてAVネットワーク(VLAN30)に接続し`Output` > `Network streaming (NewTek NDI)`を選択してNDI出力を有効にします。  
 詳細は、[Resolume AvenueのNDIについて](https://resolume.com/support/ja/NDI_inputs_and_outputs)を参照してください。
 
 ### OBS Studioの場合
