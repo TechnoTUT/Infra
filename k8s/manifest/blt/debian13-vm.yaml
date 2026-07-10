@@ -5,13 +5,16 @@ metadata:
   namespace: blt
   labels:
     kubevirt.io/os: linux
+
 spec:
   runStrategy: Always
+
   template:
     spec:
       domain:
         cpu:
           cores: 2
+
         devices:
           disks:
           - disk:
@@ -26,10 +29,11 @@ spec:
             masquerade: {}
           - name: vlan10
             bridge: {}
-          - name: vlan30
+          - name: vlan20
             bridge: {}
         machine:
           type: q35
+
         resources:
           requests:
             memory: 4096M
@@ -39,47 +43,102 @@ spec:
       - name: vlan10
         multus:
           networkName: kube-public/vlan10-bridge
-      - name: vlan30
+      - name: vlan20
         multus:
-          networkName: kube-public/vlan30-bridge
+          networkName: kube-public/vlan20-bridge
       volumes:
-      - name: disk0
-        persistentVolumeClaim:
-          claimName: blt-pvc
-      - cloudInitNoCloud:
-          userData: |
-            #cloud-config
-            hostname: blt
-            ssh_pwauth: true
-            disable_root: false
-            chpasswd:
-              list: |
-                root:password
-                debian:password
-              expire: False
-            packages:
-              - ifupdown
-        
-            write_files:
-              - path: /etc/network/interfaces
-                content: |
-                  auto lo
-                  iface lo inet loopback
-                  
-                  auto enp1s0
-                  iface enp1s0 inet dhcp
-                  
-                  auto enp2s0
-                  iface enp2s0 inet static
-                          address 192.168.13.100
-                          netmask 255.255.255.0
-                  
-                  auto enp3s0
-                  iface enp3s0 inet dhcp
-                          address 10.14.0.100
-                          netmask 255.255.0.0
-        
-          runcmd:
-            - ifdown -a || true
-            - ifup -a
-        name: cloudinitdisk
+        - name: disk0
+          dataVolume:
+            name: blt-dv
+
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |
+              #cloud-config
+
+              hostname: blt
+              ssh_pwauth: true
+              disable_root: false
+
+              users:
+                - default
+
+              chpasswd:
+                users:
+                  - name: root
+                    password: password
+                    type: text
+                  - name: debian
+                    password: password
+                    type: text
+                expire: false
+
+              packages:
+                - openjdk-21-jre
+                - curl
+                - ca-certificates
+                - xfce4
+                - xfce4-goodies
+                - lightdm
+                - xorg
+                - dbus-x11
+
+              write_files:
+                - path: /etc/network/interfaces
+                  owner: root:root
+                  permissions: "0644"
+                  content: |
+                    auto lo
+                    iface lo inet loopback
+
+                    auto enp1s0
+                    iface enp1s0 inet dhcp
+                    auto enp2s0
+                    iface enp2s0 inet dhcp
+                    auto enp3s0
+                    iface enp3s0 inet dhcp
+                - path: /home/debian/.config/autostart/blt.desktop
+                  owner: debian:debian
+                  permissions: "0644"
+                  defer: true
+                  content: |
+                    [Desktop Entry]
+                    Type=Application
+                    Name=Beat Link Trigger
+                    Exec=/usr/bin/java -jar /opt/blt/beat-link-trigger.jar
+                    Terminal=false
+                    X-GNOME-Autostart-enabled=true
+
+                - path: /etc/lightdm/lightdm.conf.d/50-autologin.conf
+                  owner: root:root
+                  permissions: "0644"
+                  defer: true
+                  content: |
+                    [Seat:*]
+                    autologin-user=debian
+                    autologin-user-timeout=0
+                    autologin-session=xfce
+
+              runcmd:
+                - install -d -o debian -g debian /home/debian/.config/autostart
+                - install -d -o root -g root /etc/lightdm/lightdm.conf.d
+                - install -d -o debian -g debian /opt/blt
+
+                - curl -fL --retry 3 --retry-delay 5 -o /opt/blt/beat-link-trigger.jar https://github.com/Deep-Symmetry/beat-link-trigger/releases/download/latest-preview/beat-link-trigger-8.1.0-Preview.jar
+
+                - chown debian:debian /opt/blt/beat-link-trigger.jar
+                - chmod 0644 /opt/blt/beat-link-trigger.jar
+
+                - systemctl disable --now blt.service || true
+                - rm -f /etc/systemd/system/blt.service
+                - systemctl daemon-reload
+                - systemctl reset-failed || true
+
+                - systemctl enable lightdm
+                - systemctl set-default graphical.target
+
+              power_state:
+                mode: reboot
+                message: Reboot after cloud-init setup
+                timeout: 300
+                condition: true

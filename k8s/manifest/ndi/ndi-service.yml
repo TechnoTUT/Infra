@@ -11,7 +11,7 @@ spec:
   selector:
     app: ndi-discovery-server
   type: LoadBalancer
-  loadBalancerIP: 10.11.230.254
+  loadBalancerIP: 10.12.230.254
   ports:
     - name: ndi
       protocol: TCP
