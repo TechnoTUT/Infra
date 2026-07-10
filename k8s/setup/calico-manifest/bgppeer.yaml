@@ -1,7 +1,0 @@
-apiVersion: projectcalico.org/v3
-kind: BGPPeer
-metadata:
-  name: bgp-peer
-spec:
-  peerIP: 192.168.99.129
-  asNumber: 64646
