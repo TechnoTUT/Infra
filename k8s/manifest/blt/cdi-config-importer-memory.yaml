@@ -1,0 +1,10 @@
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: CDIConfig
+metadata:
+  name: config
+spec:
+  podResourceRequirements:
+    limits:
+      memory: 2Gi
+    requests:
+      memory: 512Mi
