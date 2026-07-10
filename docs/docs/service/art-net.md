@@ -6,7 +6,7 @@ sidebar_position: 31
 
 ## LED BAR
 LED BARは電源を投入するとAPに接続され、任意のVLANからLED基盤に対して通信を行うことができるようになります。  
-LED BARはVLAN50に接続されています。[(参照)](/network/design)  
+LED BARはVLAN30に接続されています。[(参照)](/network/spec)  
 IPアドレスは`192.168.11.xxx`です。  
 xxxの部分は各LED BARごとに異なります。各基盤を参照してください。  
 

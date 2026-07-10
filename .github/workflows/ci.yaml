@@ -18,24 +18,41 @@ jobs:
         contents: read
         deployments: write
         statuses: write
-      name: Build Test
+      name: Build and Link Test
       steps:
         - name: Checkout
           uses: actions/checkout@v4
+
         - name: Setup Node.js
           uses: actions/setup-node@v4
           with:
-            node-version: 20
-        - uses: actions/cache@v3
-          id: node_modules_cache_id
-          env:
-            cache-name: cache-node-modules
-          with:
-            path: '**/node_modules'
-            key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-        - run: echo '${{ toJSON(steps.node_modules_cache_id.outputs) }}'
-        - if: ${{ steps.node_modules_cache_id.outputs.cache-hit != 'true' }}
+            node-version: 26
+
+        - name: Install dependencies
           run: npm install
-        - name: Build
+
+        - name: Build site
           run: npm run build
+
+        - name: Run Docusaurus Serve
+          run: |
+            npm run serve -- --host 127.0.0.1 --port 3000 &
+            
+            # サーバーの起動を待機
+            echo "Waiting for Docusaurus to start..."
+            for i in {1..30}; do
+              if curl -s http://127.0.0.1:3000 > /dev/null; then
+                echo "Docusaurus is up!"
+                break
+              fi
+              echo "Waiting..."
+              sleep 2
+            done
+
+        - name: Run URL Tests
+          run: |
+            chmod +x test-urls.sh
+            ./test-urls.sh http://127.0.0.1:3000
+
+
           
