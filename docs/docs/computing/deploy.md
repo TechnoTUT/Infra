@@ -123,18 +123,6 @@ https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/rfc21
 ## Create TSIG key for RFC2136 and copy to secret.yaml
 tsig-keygen -a hmac-sha256 externaldns
 ```
-参照: [secret.yaml](https://github.com/TechnoTUT/Infra/blob/main/k8s/setup/bind9/secret.yaml) [externaldns.yaml](https://github.com/TechnoTUT/Infra/blob/main/k8s/setup/bind9/externaldns.yaml)
-```bash
-kubectl create namespace bind
-vim secret.yaml  ## paste the key you generated
-vim externaldns.yaml  ## edit the secret
-kubectl apply -f secret.yaml
-kubectl apply -f externaldns.yaml
-```
-Deploy BIND9
-```bash
-kubectl apply -f .
-```
 
 ## GitOpsの導入
 ArgoCDをインストールする．  
