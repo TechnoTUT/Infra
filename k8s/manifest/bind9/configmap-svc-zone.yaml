@@ -16,3 +16,4 @@ data:
         IN  NS  ns.svc.technotut.net.
     ns  IN  A   10.11.254.254
     pa  IN  A   192.168.12.126
+    drive  IN  A  192.168.30.199

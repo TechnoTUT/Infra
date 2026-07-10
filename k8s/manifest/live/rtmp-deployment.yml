@@ -17,9 +17,17 @@ spec:
     spec:
       containers:
       - name: rtmp-live-server
-        image: ghcr.io/technotut/rtmp-live-server:external
+        image: ghcr.io/technotut/rtmp-live-server:alqutami-rtmp-hls
         imagePullPolicy: Always
         ports:
         - containerPort: 1935
         - containerPort: 8080
+        volumeMounts:
+        - name: rtmp-config
+          mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf
+      volumes:
+      - name: rtmp-config
+        configMap:
+          name: rtmp-config
       restartPolicy: Always
