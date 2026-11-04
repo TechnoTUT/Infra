@@ -8,36 +8,42 @@
   --code-bg: #f6f7f8;
   --nav-h: 60px;
   --footer-bg: #fff;
+  --hover: var(--bg-alt);
+  --logo-fg: #3a3a3a;
+  --link: #c7000a;
   --tk-comment: #6a737d; --tk-keyword: #d73a49; --tk-string: #032f62;
   --tk-number: #005cc5; --tk-fn: #6f42c1; --tk-punct: #393a34;
 }
 [data-theme='dark'] {
+  /* technotut.net のダークテーマに合わせた配色 */
   --bg: #050505;
+  --bg-alt: #0c0c0c;
   --footer-bg: #050505;
-  --bg-alt: #242526;
-  --fg: #e3e3e3;
-  --muted: #a0a4ab;
-  --border: #3a3b3d;
-  --code-bg: #282a36;
-  --tk-comment: #6272a4; --tk-keyword: #ff79c6; --tk-string: #f1fa8c;
-  --tk-number: #bd93f9; --tk-fn: #50fa7b; --tk-punct: #f8f8f2;
+  --fg: #fff;
+  --muted: rgba(255, 255, 255, 0.6);
+  --border: rgba(255, 255, 255, 0.2);
+  --hover: rgba(255, 255, 255, 0.08);
+  --code-bg: #0c0c0c;
+  --logo-fg: #fff;
+  --link: #e0202a; /* 本文リンクのみ、黒背景で読める同系色(technotut.net でも使用) */
+  --tk-comment: #6b7280; --tk-keyword: #ff6b73; --tk-string: #9ca3af;
+  --tk-number: #00b1e0; --tk-fn: #f28c28; --tk-punct: #e5e7eb;
 }
 * { box-sizing: border-box; }
 body {
   margin: 0; background: var(--bg); color: var(--fg); line-height: 1.65;
-  font-family: system-ui, -apple-system, 'Segoe UI', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+  font-family: 'Noto Sans JP', system-ui, -apple-system, 'Segoe UI', 'Hiragino Sans', sans-serif;
 }
-a { color: var(--primary); }
-[data-theme='dark'] a { color: #ff6b73; }
+a { color: var(--link); }
 
 .navbar {
   position: sticky; top: 0; z-index: 10; height: var(--nav-h); display: flex; align-items: center;
   gap: 1rem; padding: 0 1rem; background: var(--bg); border-bottom: 1px solid var(--border);
 }
-.brand { display: flex; align-items: center; gap: .5rem; text-decoration: none; color: var(--fg) !important; }
+.brand { display: flex; color: var(--fg); align-items: center; gap: .5rem; text-decoration: none; color: var(--fg) !important; }
 .nav-links { display: flex; gap: .25rem; flex: 1; overflow-x: auto; }
 .nav-links a, .nav-gh { padding: .4rem .7rem; border-radius: 6px; text-decoration: none; color: var(--fg); }
-.nav-links a:hover, .nav-gh:hover { background: var(--bg-alt); }
+.nav-links a:hover, .nav-gh:hover { background: var(--hover); }
 .nav-links a.active { color: var(--primary); font-weight: 600; }
 .nav-right { display: flex; align-items: center; gap: .5rem; }
 .theme-switch {
@@ -65,7 +71,7 @@ a { color: var(--primary); }
   box-shadow: 0 4px 16px rgba(0,0,0,.2); max-height: 70vh; overflow: auto;
 }
 .search-results a { display: block; padding: .5rem .7rem; border-radius: 6px; text-decoration: none; color: var(--fg); }
-.search-results a:hover { background: var(--bg-alt); }
+.search-results a:hover { background: var(--hover); }
 .search-results span { display: block; font-size: .8rem; color: var(--muted); }
 .search-results .empty { padding: .5rem .7rem; color: var(--muted); }
 
@@ -77,8 +83,8 @@ a { color: var(--primary); }
 }
 .sidebar ul { list-style: none; margin: 0; padding: 0; }
 .sidebar a { display: block; padding: .4rem .75rem; border-radius: 6px; color: var(--fg); text-decoration: none; }
-.sidebar a:hover { background: var(--bg-alt); }
-.sidebar a.active { background: var(--bg-alt); color: var(--primary); font-weight: 600; }
+.sidebar a:hover { background: var(--hover); }
+.sidebar a.active { background: var(--hover); color: var(--primary); font-weight: 600; }
 .content { padding: 2rem 1.5rem 3rem; max-width: 860px; width: 100%; margin: 0 auto; }
 
 .markdown h1 { font-size: 2.1rem; margin-top: 0; }

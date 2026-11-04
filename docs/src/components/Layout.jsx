@@ -1,6 +1,7 @@
 import { Link, Outlet, useLocation } from 'react-router';
 import { pageByPath, sectionPages, sectionStart } from '../content.js';
 import { site } from '../site.config.js';
+import Logo from './Logo.jsx';
 import Search from './Search.jsx';
 import ThemeToggle from './ThemeToggle.jsx';
 
@@ -15,7 +16,7 @@ export default function Layout() {
     <>
       <header className="navbar">
         <Link to="/" className="brand">
-          <img src={site.logo} alt="TechnoTUT Logo" height="32" />
+          <Logo height={32} />
           <strong>{site.navTitle}</strong>
         </Link>
         <nav className="nav-links">
