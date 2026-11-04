@@ -15,3 +15,7 @@
 - name: アドオンの導入
   hosts: control_plane
   roles: [addons]
+
+- name: DNS (bind9 と ExternalDNS) の導入
+  hosts: control_plane
+  roles: [dns]
