@@ -20,7 +20,7 @@
     src: "{{ item }}.j2"
     dest: "{{ ansible_facts.env.HOME }}/.k8s-addons/{{ item }}"
     mode: "0600"
-  loop: [cilium-values.yaml, nfs-values.yaml, argocd-values.yaml, cilium-bgp.yaml]
+  loop: [cilium-values.yaml, nfs-values.yaml, argocd-values.yaml, cilium-bgp.yaml, cilium-lb-pool.yaml]
 
 # ---- Cilium（CNI がないと他が起動しないので最初）----
 - name: Cilium
@@ -36,6 +36,10 @@
 - name: ノードが Ready になるのを待つ
   ansible.builtin.command: kubectl wait --for=condition=Ready node --all --timeout=300s
   changed_when: false
+
+- name: LoadBalancer の IP プール
+  ansible.builtin.command: kubectl apply -f {{ ansible_facts.env.HOME }}/.k8s-addons/cilium-lb-pool.yaml
+  changed_when: true
 
 - name: Cilium BGP の設定
   ansible.builtin.command: kubectl apply -f {{ ansible_facts.env.HOME }}/.k8s-addons/cilium-bgp.yaml
