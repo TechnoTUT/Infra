@@ -11,7 +11,7 @@ fi
 
 echo "Extracting URLs from $SITEMAP_FILE..."
 # <loc>http://.../path</loc> から URL を抽出
-# Docusaurus の設定した baseUrl や url に基づいて出力されているため、TARGET_HOST に差し替える
+# site.config.js の url に基づいて出力されているため、TARGET_HOST に差し替える
 URLS=$(grep -oP '<loc>\K[^<]+' "$SITEMAP_FILE")
 
 if [ -z "$URLS" ]; then
