@@ -13,7 +13,7 @@ spec:
       labels:
         app: qlcplus
     spec:
-      nodeName: maimai
+      nodeName: packard
       containers:
       - name: qlcplus
         image: ghcr.io/technotut/qlcplus-artnet-to-dmx-converter:main

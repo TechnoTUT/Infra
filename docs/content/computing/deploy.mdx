@@ -9,13 +9,13 @@ sidebar_position: 2
 
 ## 環境
 Operating System: Debian GNU/Linux 13 (Trixie)
-Nodes: 3 (pjsekai, maimai, chunithm)
+Nodes: 3 (becky, packard, marie)
 
 | Node | CPU | Memory | Disk | IP Address | Role |
 |------|-----|--------|------|------------|------|
-| pjsekai | 4CPU | 8GB | 500GB HDD | 192.168.99.200/25 | Control-Plane |
-| maimai | 2CPU | 12GB | 320GB HDD | 192.168.99.201/25 | Worker |
-| chunithm | 2CPU | 12GB | 500GB HDD | 192.168.99.202/25 | Worker |
+| becky | 4CPU | 8GB | - | 192.168.99.200/25 | Control-Plane |
+| packard | 4CPU | 12GB | - | 192.168.99.201/25 | Worker |
+| marie | 4CPU | 12GB | - | 192.168.99.202/25 | Worker |
 
 ## Kubernetesのインストール
 コンテナランタイム containerd をインストールする。\
@@ -24,14 +24,14 @@ https://kubernetes.io/ja/docs/setup/production-environment/container-runtimes/\
 https://github.com/cri-o/packaging/blob/main/README.md#usage
 
 ## クラスタの作成
-Control-Planeノード (pjsekai) で以下のコマンドを実行してクラスタを作成する。\
+Control-Planeノード (becky) で以下のコマンドを実行してクラスタを作成する。\
 https://kubernetes.io/ja/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/
 ```bash
-kubeadm init --pod-network-cidr=10.11.0.0/16
+kubeadm init --pod-network-cidr=10.11.0.0/16 --service-cidr=10.12.0.0/16
 ```
 
 コマンドの実行が成功すると、Workerノードをクラスタに参加させるためのコマンドが表示される。
-Workerノード (maimai, chunithm) で、Control-Planeノードから表示されたコマンドを実行してクラスタに参加させる。
+Workerノード (packard, marie) で、Control-Planeノードから表示されたコマンドを実行してクラスタに参加させる。
 ```bash
 kubeadm join ... 
 ```
