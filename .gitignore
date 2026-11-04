@@ -6,8 +6,7 @@
 /docs/build
 
 # Generated files
-/docs/.docusaurus
-/docs/.cache-loader
+/docs/.ssr
 
 # Misc
 /docs/.DS_Store
