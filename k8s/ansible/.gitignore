@@ -1,3 +1,4 @@
 # Vault のパスワードは Git に入れない（becky の ~/.vault_pass に置く）
 .vault_pass
 *.retry
+.ansible/
