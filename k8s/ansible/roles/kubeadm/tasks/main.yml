@@ -50,7 +50,9 @@
       become: true
 
     - name: kubeadm init
-      ansible.builtin.command: kubeadm init --config /etc/kubernetes/kubeadm-init.yaml
+      ansible.builtin.command: >
+        kubeadm init --config /etc/kubernetes/kubeadm-init.yaml
+        {% if kubeadm_ignore_preflight_errors %}--ignore-preflight-errors={{ kubeadm_ignore_preflight_errors | join(',') }}{% endif %}
       args:
         creates: /etc/kubernetes/admin.conf
       become: true
@@ -89,7 +91,9 @@
   when: inventory_hostname in groups['workers']
 
 - name: kubeadm join
-  ansible.builtin.command: "{{ kubeadm_join_cmd.stdout }}"
+  ansible.builtin.command: >-
+    {{ kubeadm_join_cmd.stdout }}
+    {% if kubeadm_ignore_preflight_errors %}--ignore-preflight-errors={{ kubeadm_ignore_preflight_errors | join(',') }}{% endif %}
   args:
     creates: /etc/kubernetes/kubelet.conf
   become: true

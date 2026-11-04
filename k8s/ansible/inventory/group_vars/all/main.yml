@@ -31,6 +31,18 @@ cilium_bgp_peers:
     address: "192.168.99.129"
     asn: 64646
 
+# ===== swap（コンテナでのテスト時だけ変える。ホストの swap を止めないため）=====
+common_disable_swap: true
+kubelet_fail_swap_on: true
+
+# ===== カーネル設定（br_netfilter のないカーネルでのテスト時だけ変える）=====
+common_kernel_modules: [overlay, br_netfilter]
+common_sysctls:
+  - { name: net.bridge.bridge-nf-call-iptables, value: "1" }
+  - { name: net.bridge.bridge-nf-call-ip6tables, value: "1" }
+  - { name: net.ipv4.ip_forward, value: "1" }
+kubeadm_ignore_preflight_errors: []   # テスト時だけ使う
+
 # ===== kubelet のメモリ予約（メモリが少ないため）=====
 kubelet_system_reserved_memory: "512Mi"
 kubelet_kube_reserved_memory: "512Mi"
@@ -48,6 +60,8 @@ argocd_apps:
   # BLT は別ブランチでコンテナ化する。KubeVirt が要る間は有効にしない。
   # - { name: blt, path: blt, namespace: blt }
   # - { name: cdi-config, path: infrastructure/cdi }
+
+argocd_network_policy: true   # コンテナでのテスト時だけ false にする
 
 # ===== LoadBalancer の IP プール =====
 # TODO: 要確認。既存サービスの IP (10.11.210.253, 10.11.230.254, 10.11.254.254) を含む範囲にしている。

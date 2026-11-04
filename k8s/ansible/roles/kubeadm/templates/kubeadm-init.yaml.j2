@@ -21,6 +21,7 @@ networking:
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
 cgroupDriver: systemd
+failSwapOn: {{ kubelet_fail_swap_on | lower }}
 systemReserved:
   memory: {{ kubelet_system_reserved_memory }}
 kubeReserved:
