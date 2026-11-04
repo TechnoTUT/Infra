@@ -1,0 +1,97 @@
+---
+- name: Kubernetes の apt 鍵
+  ansible.builtin.shell: |
+    set -o pipefail
+    curl -fsSL https://pkgs.k8s.io/core:/stable:/v{{ k8s_minor }}/deb/Release.key \
+      | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+  args:
+    creates: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+    executable: /bin/bash
+  become: true
+
+- name: Kubernetes の apt リポジトリ
+  ansible.builtin.copy:
+    dest: /etc/apt/sources.list.d/kubernetes.list
+    mode: "0644"
+    content: >
+      deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg]
+      https://pkgs.k8s.io/core:/stable:/v{{ k8s_minor }}/deb/ /
+  become: true
+
+- name: kubelet kubeadm kubectl を入れる
+  ansible.builtin.apt:
+    name: [kubelet, kubeadm, kubectl]
+    state: present
+    update_cache: true
+  become: true
+
+- name: hold する（更新は kubeadm upgrade で行う）
+  ansible.builtin.dpkg_selections:
+    name: "{{ item }}"
+    selection: hold
+  loop: [kubelet, kubeadm, kubectl]
+  become: true
+
+- name: kubelet を有効化する
+  ansible.builtin.systemd_service:
+    name: kubelet
+    enabled: true
+  become: true
+
+# ===== コントロールプレーン =====
+- name: クラスタを初期化する（becky）
+  when: inventory_hostname in groups['control_plane']
+  block:
+    - name: kubeadm の設定を置く
+      ansible.builtin.template:
+        src: kubeadm-init.yaml.j2
+        dest: /etc/kubernetes/kubeadm-init.yaml
+        mode: "0600"
+      become: true
+
+    - name: kubeadm init
+      ansible.builtin.command: kubeadm init --config /etc/kubernetes/kubeadm-init.yaml
+      args:
+        creates: /etc/kubernetes/admin.conf
+      become: true
+
+    - name: ~/.kube を作る
+      ansible.builtin.file:
+        path: "{{ ansible_facts.env.HOME }}/.kube"
+        state: directory
+        mode: "0700"
+
+    - name: kubeconfig を配置する
+      ansible.builtin.copy:
+        src: /etc/kubernetes/admin.conf
+        dest: "{{ ansible_facts.env.HOME }}/.kube/config"
+        remote_src: true
+        owner: "{{ ansible_facts.user_id }}"
+        mode: "0600"
+      become: true
+
+# ===== ワーカー =====
+- name: join コマンドを取得する（トークンは Git に残さない）
+  ansible.builtin.command: kubeadm token create --print-join-command
+  delegate_to: "{{ groups['control_plane'][0] }}"
+  become: true
+  register: kubeadm_join_cmd
+  changed_when: false
+  no_log: true
+  when: inventory_hostname in groups['workers']
+
+- name: ワーカーの node-ip を設定する
+  ansible.builtin.copy:
+    dest: /etc/default/kubelet
+    content: "KUBELET_EXTRA_ARGS=--node-ip={{ node_ip }}\n"
+    mode: "0644"
+  become: true
+  when: inventory_hostname in groups['workers']
+
+- name: kubeadm join
+  ansible.builtin.command: "{{ kubeadm_join_cmd.stdout }}"
+  args:
+    creates: /etc/kubernetes/kubelet.conf
+  become: true
+  no_log: true
+  when: inventory_hostname in groups['workers']
