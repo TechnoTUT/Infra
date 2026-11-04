@@ -1,0 +1,50 @@
+---
+# ===== バージョン（導入時の最新安定版で固定。更新時はここだけ変える）=====
+k8s_minor: "1.37"            # pkgs.k8s.io のリポジトリ系列
+cilium_version: "1.20.4"
+helm_version: "v4.3.1"
+multus_version: "v4.3.1"
+argocd_chart_version: "10.12.1"
+nfs_provisioner_chart_version: "4.0.18"
+# containerd.io は Docker の apt リポジトリから入れ、apt-mark hold する（更新は手動）。
+
+# ===== ネットワーク =====
+api_endpoint: "192.168.99.200"   # becky
+api_port: 6443
+pod_cidr: "10.11.0.0/16"
+service_cidr: "10.12.0.0/16"
+
+# ===== ストレージ（NFS サーバは becky を兼用）=====
+nfs_server: "192.168.99.200"
+nfs_path: "/nfs"
+
+# ===== オプション =====
+kubevirt_enabled: false      # BLT のコンテナ化が済むまで入れない
+multus_enabled: true         # PRO DJ LINK / Ableton Link 用の L2 接続
+
+# ===== Cilium BGP（必須）=====
+# ピアの値は未確定。実際の値に置き換えてから true にする。
+cilium_bgp_enabled: false
+cilium_bgp_local_asn: 64512          # TODO: 要確認
+cilium_bgp_peers:                    # TODO: 要確認
+  - name: router
+    address: "192.168.99.129"
+    asn: 64646
+
+# ===== kubelet のメモリ予約（メモリが少ないため）=====
+kubelet_system_reserved_memory: "512Mi"
+kubelet_kube_reserved_memory: "512Mi"
+kubelet_eviction_memory: "256Mi"
+
+# ===== ArgoCD が管理するアプリ（k8s/manifest/<path>）=====
+argocd_repo_url: "https://github.com/TechnoTUT/Infra.git"
+argocd_apps:
+  - { name: cam1, path: cam1, namespace: cam1 }
+  - { name: cam2, path: cam2, namespace: cam2 }
+  - { name: dmx, path: dmx, namespace: qlcplus }
+  - { name: live, path: live, namespace: live }
+  - { name: speedtest, path: speedtest, namespace: speedtest }
+  - { name: time, path: time, namespace: time }
+  # BLT は別ブランチでコンテナ化する。KubeVirt が要る間は有効にしない。
+  # - { name: blt, path: blt, namespace: blt }
+  # - { name: cdi-config, path: infrastructure/cdi }
