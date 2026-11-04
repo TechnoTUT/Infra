@@ -11,13 +11,14 @@ export default function DocPage({ page }) {
   return (
     <>
       <article className="markdown">
+        <h1>{page.title}</h1>
         <Component components={mdxComponents} />
       </article>
       <div className="edit"><a href={editUrl(page)}>Edit this page</a></div>
       {(prev || next) && (
         <nav className="pager">
-          {prev ? <Link to={prev.path}><small>前へ</small><span>« {prev.title}</span></Link> : <span />}
-          {next ? <Link to={next.path} className="next"><small>次へ</small><span>{next.title} »</span></Link> : <span />}
+          {prev ? <Link to={prev.path}><small>前へ</small><span>« {prev.label}</span></Link> : <span />}
+          {next ? <Link to={next.path} className="next"><small>次へ</small><span>{next.label} »</span></Link> : <span />}
         </nav>
       )}
     </>

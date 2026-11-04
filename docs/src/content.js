@@ -13,6 +13,7 @@ function toPage(file, mod) {
     path,
     section,
     title: fm.title ?? parts.at(-1),
+    label: fm.sidebar_label ?? fm.title ?? parts.at(-1),
     position: fm.sidebar_position ?? Infinity,
     // リポジトリ上は docs/content/ 配下(editUrl は docs/ 起点)
     file,

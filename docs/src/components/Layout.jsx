@@ -10,7 +10,9 @@ export default function Layout() {
   const key = pathname.length > 1 ? pathname.replace(/\/$/, '') : pathname;
   const current = pageByPath.get(key);
   const section = current?.section ?? null;
-  const items = section ? sectionPages(section) : [];
+  // 1ページだけのセクションではサイドバーを出さない
+  const all = section ? sectionPages(section) : [];
+  const items = all.length > 1 ? all : [];
 
   return (
     <>
@@ -38,7 +40,7 @@ export default function Layout() {
             <ul>
               {items.map((p) => (
                 <li key={p.path}>
-                  <Link to={p.path} className={p.path === key ? 'active' : ''}>{p.title}</Link>
+                  <Link to={p.path} className={p.path === key ? 'active' : ''}>{p.label}</Link>
                 </li>
               ))}
             </ul>
