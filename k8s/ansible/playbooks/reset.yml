@@ -1,0 +1,25 @@
+---
+# 危険: クラスタとデータを全て消す。明示的に実行する（site.yml からは呼ばない）。
+- name: クラスタを破棄する
+  hosts: k8s
+  vars_prompt:
+    - name: confirm
+      prompt: "全ノードを初期化します。続けるには RESET と入力"
+      private: false
+  tasks:
+    - name: 確認
+      ansible.builtin.assert:
+        that: confirm == 'RESET'
+        fail_msg: 中止しました
+
+    - name: kubeadm reset
+      ansible.builtin.command: kubeadm reset -f
+      become: true
+      changed_when: true
+
+    - name: CNI の設定と kubeconfig を消す
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop: [/etc/cni/net.d, "{{ ansible_facts.env.HOME }}/.kube"]
+      become: true

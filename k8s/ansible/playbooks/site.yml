@@ -1,0 +1,17 @@
+---
+# 全ノードの準備 → CP の初期化 → ワーカーの join → アドオン の順。
+- name: ノードの準備
+  hosts: k8s
+  roles: [common, containerd]
+
+- name: コントロールプレーンの初期化
+  hosts: control_plane
+  roles: [kubeadm]
+
+- name: ワーカーの参加
+  hosts: workers
+  roles: [kubeadm]
+
+- name: アドオンの導入
+  hosts: control_plane
+  roles: [addons]
