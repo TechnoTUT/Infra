@@ -13,9 +13,9 @@ Nodes: 3 (pjsekai, maimai, chunithm)
 
 | Node | CPU | Memory | Disk | IP Address | Role |
 |------|-----|--------|------|------------|------|
-| pjsekai | 4CPU | 8GB | 500GB HDD | 192.168.99.200/24 | Control-Plane |
-| maimai | 2CPU | 12GB | 320GB HDD | 192.168.99.201/24 | Worker |
-| chunithm | 2CPU | 12GB | 500GB HDD | 192.168.99.202/24 | Worker |
+| pjsekai | 4CPU | 8GB | 500GB HDD | 192.168.99.200/25 | Control-Plane |
+| maimai | 2CPU | 12GB | 320GB HDD | 192.168.99.201/25 | Worker |
+| chunithm | 2CPU | 12GB | 500GB HDD | 192.168.99.202/25 | Worker |
 
 ## Kubernetesのインストール
 コンテナランタイム containerd をインストールする。\
@@ -200,8 +200,8 @@ iface eno1.30 inet manual
 auto eno1.100
 iface eno1.100 inet static
         vlan-raw-device eno1
-        address 192.168.99.200/24
-        gateway 192.168.99.1
+        address 192.168.99.200/25
+        gateway 192.168.99.129
         dns-nameservers 192.168.99.1
         dns-search srv.utone.technotut.net
 
