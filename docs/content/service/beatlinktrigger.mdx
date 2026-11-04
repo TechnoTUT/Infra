@@ -1,6 +1,6 @@
 ---
 title: Beat Link Trigger
-sidebar_position: 21
+sidebar_position: 3
 ---
 ## Beat Link Trigger とは
 Beat Link Trigger は、AlphaTheta(Pioneer DJ)のDJ機器と連携し、曲情報を取得するためのツールです。  
@@ -11,7 +11,7 @@ Beat Link Trigger は、AlphaTheta(Pioneer DJ)のDJ機器と連携し、曲情�
 ## 機能
 Beat Link Trigger は以下の機能を提供します。  
 - 曲情報・波形情報の取得・表示
-- [OSCによる対応外部機器との取得情報の共有](/service/osc)
+- [OSCによる対応外部機器との取得情報の共有](#oscによる情報送信)
 - httpによる取得情報の共有
 
 ## 使用方法
@@ -25,6 +25,13 @@ Beat Link Trigger は以下の機能を提供します。
    ![Beat Link Trigger](/img/service/beat-link-trigger_trackinfo.jpg)
 
 何らかの不具合が発生した場合は、一度ウィンドウを閉じて再度デスクトップ上の`blt-start.sh`を実行してください。  
+
+## OSCによる情報送信
+現在、[TechnoTUT Network](/)網内で送信をサポートしているOSCメッセージは以下の通りです。
+- Master Deckの曲名・アーティスト名  
+- Master Deckのビートごとのメッセージ送信  
+
+設定方法は、後述の「開発者向け情報」を参照してください。
 
 ## 開発者向け情報
 ### 各種機能の起動自動化
