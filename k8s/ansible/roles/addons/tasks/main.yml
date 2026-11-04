@@ -1,5 +1,11 @@
 ---
 # control_plane（becky）で実行する。kubeconfig は kubeadm ロールが配置する。
+- name: kubernetes.core の依存ライブラリを入れる
+  ansible.builtin.apt:
+    name: [python3-kubernetes, python3-yaml]
+    state: present
+  become: true
+
 - name: Helm を入れる
   ansible.builtin.unarchive:
     src: "https://get.helm.sh/helm-{{ helm_version }}-linux-amd64.tar.gz"
@@ -39,12 +45,14 @@
 
 - name: LoadBalancer の IP プール
   ansible.builtin.command: kubectl apply -f {{ ansible_facts.env.HOME }}/.k8s-addons/cilium-lb-pool.yaml
-  changed_when: true
+  register: addons_apply
+  changed_when: "'created' in addons_apply.stdout or 'configured' in addons_apply.stdout"
 
 - name: Cilium BGP の設定
   ansible.builtin.command: kubectl apply -f {{ ansible_facts.env.HOME }}/.k8s-addons/cilium-bgp.yaml
   when: cilium_bgp_enabled
-  changed_when: true
+  register: addons_apply
+  changed_when: "'created' in addons_apply.stdout or 'configured' in addons_apply.stdout"
 
 # ---- Multus（thin）----
 - name: Multus
@@ -52,7 +60,8 @@
     kubectl apply -f
     https://raw.githubusercontent.com/k8snetworkplumbingwg/multus-cni/{{ multus_version }}/deployments/multus-daemonset.yml
   when: multus_enabled
-  changed_when: true
+  register: addons_apply
+  changed_when: "'created' in addons_apply.stdout or 'configured' in addons_apply.stdout"
 
 # ---- ストレージ ----
 - name: NFS provisioner

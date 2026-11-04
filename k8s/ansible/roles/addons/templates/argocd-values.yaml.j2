@@ -1,3 +1,6 @@
+global:
+  networkPolicy:
+    create: {{ argocd_network_policy | lower }}
 # 使わないコンポーネントは無効にする（SSO・通知・ApplicationSet なし）。
 dex:
   enabled: false
