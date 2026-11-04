@@ -20,14 +20,14 @@ TechnoTUTでは、以下のリポジトリでKubernetesの管理を行ってい�
 [![TechnoTUT/Infra - GitHub](https://gh-card.dev/repos/TechnoTUT/Infra.svg?fullname=)](https://github.com/TechnoTUT/Infra)
 
 ## クラスタ構成
-Kubernetesのクラスタは、3台の物理サーバ(pjsekai, maimai, chunithm)で構成されています。各ノードには、Debian 13 trixieがインストールされ、Kubeadmでクラスタが構築されています。
-Kubernetesのバージョンは、1.34です。
+Kubernetesのクラスタは、3台の物理サーバ(becky, packard, marie)で構成されています。各ノードには、Debian 13 trixieがインストールされ、Kubeadmでクラスタが構築されています。
+Kubernetesのバージョンは、1.36です。
 
 | Node | CPU | Memory | IP Address | Role |
 |------|-----|--------|------------|------|
-| pjsekai | 4CPU | 8GB | 192.168.99.200/25 | Control-Plane |
-| maimai | 2CPU | 12GB | 192.168.99.201/25 | Worker |
-| chunithm | 2CPU | 12GB | 192.168.99.202/25 | Worker |
+| becky | 4CPU | 8GB | 192.168.99.200/25 | Control-Plane |
+| packard | 4CPU | 12GB | 192.168.99.201/25 | Worker |
+| marie | 4CPU | 12GB | 192.168.99.202/25 | Worker |
 
 Control-Planeノードは、Kubernetesの管理を担当し、APIサーバ、スケジューラー、コントローラマネージャなどのコンポーネントが動作しています。\
 Workerノードは、実際にコンテナが動作するノードであり、Podがスケジュールされます。
