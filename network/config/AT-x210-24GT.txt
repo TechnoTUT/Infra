@@ -1,3 +1,5 @@
+N-4#show run
+!
 service password-encryption
 !
 hostname N-4
@@ -6,20 +8,17 @@ no banner motd
 !
 username manager privilege 15 password 8 $1$bJoVec4D$JwOJGPr7YqoExA0GVasdE0
 !
-access-list 1 permit any
-!
 ssh server v2only
 ssh server allow-users manager
-service ssh ip
+service ssh
 !
 no service telnet
 !
 no service http
 !
-no clock timezone
+clock timezone Tokyo plus 9:00
 !
-no snmp-server ipv6
-snmp-server community univerge
+snmp-server
 !
 aaa authentication enable default local
 aaa authentication login default local
@@ -29,34 +28,45 @@ ip domain-lookup
 no service dhcp-server
 spanning-tree mode rstp
 !
-lacp global-passive-mode enable
+no lacp global-passive-mode enable
 !
 vlan database
- vlan 10 name dj
- vlan 16 name gw
- vlan 20 name pa
- vlan 30 name av
- vlan 40 name led-c
- vlan 50 name led-b
- vlan 60 name led-d
- vlan 70 name entrance
- vlan 80 name cam1
- vlan 90 name cam2
- vlan 99 name mgmt
- vlan 100 name srv
- vlan 10,16,20,30,40,50,60,70,80,90,99-100 state enable
+ vlan 10,20,30,40,42-45,99-100 state enable
 !
 interface port1.0.1-1.0.2
  switchport
  switchport mode access
- switchport access vlan 20
+ switchport access vlan 40
 !
-interface port1.0.3-1.0.22
+interface port1.0.3-1.0.8
  switchport
  switchport mode access
- switchport access vlan 30
+ switchport access vlan 20
 !
-interface port1.0.23-1.0.24
+interface port1.0.9-1.0.10
+ switchport
+ switchport mode access
+ switchport access vlan 20
+ channel-group 2 mode active
+!
+interface port1.0.11-1.0.12
+ switchport
+ switchport mode access
+ switchport access vlan 20
+ channel-group 3 mode active
+!
+interface port1.0.13-1.0.14
+ switchport
+ switchport mode access
+ switchport access vlan 99
+!
+interface port1.0.15-1.0.16
+ switchport
+ switchport mode trunk
+ switchport trunk allowed vlan all
+ switchport trunk native vlan none
+!
+interface port1.0.17-1.0.24
  switchport
  switchport mode trunk
  switchport trunk allowed vlan all
@@ -69,10 +79,17 @@ interface po1
  switchport trunk allowed vlan all
  switchport trunk native vlan none
 !
+interface po2-3
+ switchport
+ switchport mode access
+ switchport access vlan 20
+!
 interface vlan99
- ip address 192.168.99.4/24
+ ip address 192.168.99.4/25
 !
 line con 0
 line vty 0 4
 !
 end
+
+N-4#
