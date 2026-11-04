@@ -1,0 +1,26 @@
+ipv4:
+  enabled: true
+routingMode: native
+ipam:
+  mode: kubernetes
+ipv4NativeRoutingCIDR: {{ pod_cidr }}
+autoDirectNodeRoutes: true
+kubeProxyReplacement: true
+k8sRequireIPv4PodCIDR: true
+# DNS が使えない段階でも API に届くよう IP を指定する。
+k8sServiceHost: {{ api_endpoint }}
+k8sServicePort: {{ api_port }}
+bgpControlPlane:
+  enabled: true
+enableIPv4Masquerade: false
+ingressController:
+  enabled: true
+  loadbalancerMode: shared
+  service:
+    labels:
+      announce: bgp
+# メモリが少ないため常駐を減らす。Hubble は使わない。
+hubble:
+  enabled: false
+operator:
+  replicas: 1

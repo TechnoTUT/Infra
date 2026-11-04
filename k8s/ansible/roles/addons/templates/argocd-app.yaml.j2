@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: {{ item.name }}
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: {{ argocd_repo_url }}
+    targetRevision: HEAD
+    path: k8s/manifest/{{ item.path }}
+  destination:
+    server: https://kubernetes.default.svc
+{% if item.namespace is defined %}
+    namespace: {{ item.namespace }}
+{% endif %}
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+{% if item.namespace is defined %}
+    syncOptions:
+      - CreateNamespace=true
+{% endif %}
