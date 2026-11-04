@@ -205,14 +205,15 @@ spec:
     }
 ```
 
-### ExternalDNS
+### DNS (bind9 と ExternalDNS)
+`svc.technotut.net` ゾーンを bind9 で提供し、ExternalDNS (RFC2136) が Service・Ingress のレコードを自動登録する。Ansible の `dns` ロールが導入する。\
 https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/rfc2136.md
 
+TSIG の鍵を作り、Ansible Vault の `inventory/group_vars/all/vault.yml` に `vault_externaldns_tsig_secret` として保存する。鍵は Git に平文で置かない。
 ```bash
-## Create TSIG key for RFC2136 and copy to secret.yaml
-tsig-keygen -a hmac-sha256 externaldns
+tsig-keygen -a hmac-sha256 externaldns-key
+ansible-vault create inventory/group_vars/all/vault.yml
 ```
-Ansible への組み込みは未対応。キーは Ansible Vault で管理する予定。
 
 ### KubeVirt
 BLT をコンテナに移すまでは、KubeVirt と CDI を入れない (`kubevirt_enabled: false`)。VM が必要な場合は、`k8s/manifest/blt` と `infrastructure/cdi` の Application を有効にして、KubeVirt を導入する。\
