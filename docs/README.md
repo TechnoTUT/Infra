@@ -1,4 +1,4 @@
-# TechnoTUT NOC Docs
+# TechnoTUT Network Docs
 
 React + [Vite](https://vite.dev/) + [MDX](https://mdxjs.com/) による独自実装の静的ドキュメントサイトです。
 ビルド時に全ページを静的 HTML としてプリレンダリングし、ブラウザ側で hydrate します。

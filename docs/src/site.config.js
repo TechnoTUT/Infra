@@ -1,6 +1,6 @@
 export const site = {
-  title: 'TechnoTUT NOC',
-  tagline: 'TechnoTUT Network Operation Center Team',
+  title: 'TechnoTUT Network',
+  tagline: 'TechnoTUT Network',
   url: 'https://noc.technotut.net',
   navTitle: 'Network',
   logo: '/img/technotut_logo.svg',
