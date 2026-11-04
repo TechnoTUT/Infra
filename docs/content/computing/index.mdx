@@ -4,14 +4,13 @@ sidebar_label: 概要
 slug: /computing
 sidebar_position: 1
 ---
-# Computing
 [TechnoTUT Network](/) では、コンテナ型の仮想化手法を採用し、計算資源を提供しています。
 仮想化技術を活用することで、ソフトウェアとハードウェアの間に抽象化レイヤーを設け効率的に利用できるようにしています。    
 
 コンテナ型仮想化は、Linux カーネルの機能を利用してプロセスを隔離する方式です。Linux カーネルを共有することで、仮想マシンよりも軽量で高速に動作します。
 TechnoTUT Network では、Kubernetes をコンテナオーケストレーションツールとして採用しています。Infrastructure as Code (IaC) による運用が可能であり、運用の効率化を実現します。
 
-構築方法については、[GitHub](https://github.com/TechnoTUT/Infra/blob/main/k8s/k8s.md) を参照してください。
+構築方法については、[Kubernetes (k8s) 構築方法](/computing/deploy)を参照してください。
 
 ## Kubernetes とは
 Kubernetesは、複数サーバで複数のコンテナを管理するためのツールです。  
@@ -25,9 +24,9 @@ Kubernetesのバージョンは、1.34です。
 
 | Node | CPU | Memory | IP Address | Role |
 |------|-----|--------|------------|------|
-| pjsekai | 4CPU | 8GB | 192.168.30.200/24 | Control-Plane |
-| maimai | 2CPU | 12GB | 192.168.30.201/24 | Worker |
-| chunithm | 2CPU | 12GB | 192.168.30.202/24 | Worker |
+| pjsekai | 4CPU | 8GB | 192.168.99.200/24 | Control-Plane |
+| maimai | 2CPU | 12GB | 192.168.99.201/24 | Worker |
+| chunithm | 2CPU | 12GB | 192.168.99.202/24 | Worker |
 
 Control-Planeノードは、Kubernetesの管理を担当し、APIサーバ、スケジューラー、コントローラマネージャなどのコンポーネントが動作しています。  
 Workerノードは、実際にコンテナが動作するノードであり、Podがスケジュールされます。

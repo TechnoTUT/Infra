@@ -1,9 +1,8 @@
 ---
-title: VLAN
+title: VLAN・IPアドレス設計
+sidebar_label: VLAN
 sidebar_position: 3
 ---
-
-## VLAN・IPアドレス設計一覧
 
 | VLAN ID | VLAN名 | サブネット | 主な用途・接続機器 |
 | :--- | :--- | :--- | :--- |
@@ -18,7 +17,7 @@ sidebar_position: 3
 | **99** | `mgmt` | `192.168.99.0/25` | ネットワーク機器管理  |
 | **100** | `sv` | `192.168.99.128/25` | サーバ用セグメント |
 
-### 各VLAN詳細設定
+## 各VLAN詳細設定
 1. **`DJ` VLAN (VLAN 10)**: PRO DJ LINK対応のVLAN。CDJやXDJなどのDJ機器やRekordboxが動作しているPCを接続。  
 ゲートウェイIPは `10.10.0.1`、DHCPは `10.10.10.1 ~ 10.10.15.254` の範囲で提供。マルチキャスト通信が必要であるため、IGMP Snoopingが有効であり、L3スイッチはIGMP Snooping Querierとして機能する。
 
@@ -49,10 +48,10 @@ sidebar_position: 3
 10. **`SV` VLAN (VLAN 100)**: サーバ用のVLAN。  
 ゲートウェイIPは `192.168.99.129`、DHCPは `192.168.99.130 ~ 192.168.99.150` の範囲で提供。
 
-### 特殊用途VLAN (内部リンク用)
+## 特殊用途VLAN (内部リンク用)
 - **`wan`**: 対外接続回線 〜 IX3110 接続用: `192.168.8.0/24`
 - **`peer`(VLAN 101)**: ダイナミックルーティング(RIP/BGP)用セグメント (`192.168.200.0/29`)
 
-### Kubernetes
+## Kubernetes
 - **Pod CIDR**: `10.11.0.0/16`
 - **Service CIDR**: `10.12.0.0/16`
