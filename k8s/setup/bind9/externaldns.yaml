@@ -82,7 +82,7 @@ spec:
         - --txt-prefix=external-dns-
         - --txt-owner-id=k8s
         - --provider=rfc2136
-        - --rfc2136-host=10.11.254.254
+        - --rfc2136-host=10.12.254.254
         - --rfc2136-port=53
         - --rfc2136-zone=svc.technotut.net
         - --rfc2136-tsig-secret=Tq/74pwBk4hTAJEMrtc8gr6ReE06OrK2qbHdhcSkSTA=

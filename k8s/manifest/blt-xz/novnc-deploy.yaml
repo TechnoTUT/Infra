@@ -18,7 +18,7 @@ spec:
       containers:
       - name: novnc
         image: ghcr.io/technotut/novnc:main
-        args: ["6080", "10.11.210.253:5901"]
+        args: ["6080", "10.12.210.253:5901"]
         imagePullPolicy: Always
         ports:
         - containerPort: 6080

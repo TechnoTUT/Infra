@@ -9,7 +9,7 @@ data:
       errors
       health
       hosts {
-        10.11.77.252 api.ustream.tv
+        10.12.77.252 api.ustream.tv
         fallthrough
       }
       ready

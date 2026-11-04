@@ -11,7 +11,7 @@ spec:
   selector:
     app: cam2-sonycam-nginx
   type: LoadBalancer
-  loadBalancerIP: 10.11.77.251
+  loadBalancerIP: 10.12.77.251
   ports:
     - name: rtmp
       protocol: TCP
