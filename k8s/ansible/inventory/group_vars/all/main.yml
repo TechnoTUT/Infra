@@ -71,6 +71,7 @@ cilium_lb_pool_cidr: "10.11.192.0/18"
 dns_namespace: bind9
 dns_zone: svc.technotut.net
 bind9_lb_ip: "10.11.254.254"          # bind9 の LoadBalancer IP（上のプール内）
+bind9_storage_class: nfs-client
 bind9_image: "docker.io/ubuntu/bind9:latest"   # TODO: タグを固定する
 externaldns_chart_version: "1.21.1"
 externaldns_tsig_keyname: externaldns-key

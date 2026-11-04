@@ -74,7 +74,7 @@ spec:
   resources:
     requests:
       storage: 1Gi
-  storageClassName: nfs-client
+  storageClassName: {{ bind9_storage_class }}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -98,7 +98,8 @@ spec:
           image: docker.io/busybox
           command: ["/bin/sh", "-c"]
           args:
-            - if [ ! -f /data/svc.zone ]; then cp /config/svc.zone /data/svc.zone; fi
+            # bind（非 root）が更新用のジャーナルを作れるよう、書き込みを許可する。
+            - chmod 0777 /data && if [ ! -f /data/svc.zone ]; then cp /config/svc.zone /data/svc.zone; fi
           volumeMounts:
             - { name: bind-svc-zone-config, mountPath: /config }
             - { name: bind-svc-zone-pvc, mountPath: /data }
