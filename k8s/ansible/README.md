@@ -32,4 +32,3 @@ ansible-playbook playbooks/reset.yml         # 全消去（RESET と入力）
 - network ロール（`/etc/network/interfaces`）: 手動設定が完成してから追加する。
 - ExternalDNS / bind9。
 - KubeVirt / CDI（`kubevirt_enabled: false`）。BLT のコンテナ化が済むまで入れない。
-- Cilium BGP のピア設定（`cilium_bgp_enabled: false`）。値が確定してから有効にする。

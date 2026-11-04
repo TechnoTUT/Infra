@@ -23,10 +23,10 @@ kubevirt_enabled: false      # BLT のコンテナ化が済むまで入れない
 multus_enabled: true         # PRO DJ LINK / Ableton Link 用の L2 接続
 
 # ===== Cilium BGP（必須）=====
-# ピアの値は未確定。実際の値に置き換えてから true にする。
-cilium_bgp_enabled: false
-cilium_bgp_local_asn: 64512          # TODO: 要確認
-cilium_bgp_peers:                    # TODO: 要確認
+# 全体で AS 64646 を使う（iBGP）。ピアは 192.168.99.129。
+cilium_bgp_enabled: true
+cilium_bgp_local_asn: 64646
+cilium_bgp_peers:
   - name: router
     address: "192.168.99.129"
     asn: 64646
