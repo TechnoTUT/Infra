@@ -13,7 +13,7 @@ export default function DocPage({ page }) {
       <article className="markdown">
         <Component components={mdxComponents} />
       </article>
-      <div className="edit"><a href={editUrl(page)}>✏️ Edit this page</a></div>
+      <div className="edit"><a href={editUrl(page)}>Edit this page</a></div>
       {(prev || next) && (
         <nav className="pager">
           {prev ? <Link to={prev.path}><small>前へ</small><span>« {prev.title}</span></Link> : <span />}
