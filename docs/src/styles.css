@@ -7,11 +7,13 @@
   --border: #dadde1;
   --code-bg: #f6f7f8;
   --nav-h: 60px;
+  --footer-bg: #fff;
   --tk-comment: #6a737d; --tk-keyword: #d73a49; --tk-string: #032f62;
   --tk-number: #005cc5; --tk-fn: #6f42c1; --tk-punct: #393a34;
 }
 [data-theme='dark'] {
   --bg: #1b1b1d;
+  --footer-bg: #050505;
   --bg-alt: #242526;
   --fg: #e3e3e3;
   --muted: #a0a4ab;
@@ -113,8 +115,8 @@ a { color: var(--primary); }
 .pager .next { text-align: right; margin-left: auto; }
 .pager small { color: var(--muted); }
 
-.footer { background: #303846; color: #ebedf0; padding: 2rem 1rem; text-align: center; font-size: .9rem; }
-.footer a { color: #ebedf0; margin: 0 .6rem; }
+.footer { background: var(--footer-bg); color: var(--fg); border-top: 1px solid var(--border); padding: 2rem 1rem; text-align: center; font-size: .9rem; }
+.footer a { color: var(--fg); margin: 0 .6rem; }
 .footer-links { margin-bottom: .8rem; }
 
 @media (max-width: 900px) {
