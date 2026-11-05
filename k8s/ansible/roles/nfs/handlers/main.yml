@@ -1,0 +1,5 @@
+---
+- name: exportfs
+  ansible.builtin.command: exportfs -ra
+  become: true
+  changed_when: true

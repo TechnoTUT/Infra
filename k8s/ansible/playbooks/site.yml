@@ -10,6 +10,10 @@
   hosts: k8s
   roles: [common, containerd]
 
+- name: NFS サーバ（becky）
+  hosts: control_plane
+  roles: [nfs]
+
 - name: コントロールプレーンの初期化
   hosts: control_plane
   roles: [kubeadm]
@@ -24,4 +28,8 @@
 
 - name: DNS (bind9 と ExternalDNS) の導入
   hosts: control_plane
-  roles: [dns]
+  tasks:
+    - name: DNS
+      ansible.builtin.include_role:
+        name: addons
+        tasks_from: dns

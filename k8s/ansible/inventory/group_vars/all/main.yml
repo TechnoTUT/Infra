@@ -19,6 +19,7 @@ service_cidr: "10.96.0.0/12"   # ClusterIP の範囲（kubeadm の既定値。LB
 # ===== ストレージ（NFS サーバは becky を兼用）=====
 nfs_server: "192.168.99.200"
 nfs_path: "/nfs"
+nfs_export_network: "192.168.99.128/25"
 
 # ===== ネットワーク（VLAN とブリッジのみ。管理用 VLAN は手動）=====
 network_manage_vlans: true
@@ -27,6 +28,26 @@ network_mgmt_vlan: 100
 network_vlans:                       # Multus の NetworkAttachmentDefinition が使うブリッジ
   - { id: 10, bridge: br10 }
   - { id: 20, bridge: br20 }
+
+# ===== 作業用ディレクトリ（control_plane のホーム）=====
+addons_dir: "{{ ansible_facts.env.HOME }}/.k8s-addons"
+
+# ===== ノードのパッケージ（全ノードで同じ構成にする。余計なものは入れない）=====
+common_packages_keep: [openssh-server, openssh-sftp-server, sudo, python3, ifupdown, curl, ca-certificates]
+common_packages_absent:
+  - docker-ce            # クラスタは containerd.io を直接使う
+  - docker-ce-cli
+  - docker-ce-rootless-extras
+  - docker-buildx-plugin
+  - docker-compose-plugin
+  - bind9                # ホストの bind9 は未使用（DNS はクラスタ内の bind9）
+  - bind9-utils
+  - golang
+  - golang-go
+  - fastfetch
+  - task-japanese
+  - task-ssh-server
+  - firmware-amd-graphics
 
 # ===== オプション =====
 kubevirt_enabled: true       # BLT を VM で動かす間は有効にする（コンテナ化したら false にできる）
@@ -86,8 +107,9 @@ cilium_lb_pool_cidr: "10.12.0.0/16"
 dns_namespace: bind9
 dns_zone: svc.technotut.net
 bind9_lb_ip: "10.12.254.254"          # bind9 の LoadBalancer IP（DNS サーバのアドレス。docs/service/basic.mdx）
-bind9_storage_class: nfs-client
-bind9_image: "docker.io/ubuntu/bind9:latest"   # TODO: タグを固定する
+bind9_image: "docker.io/internetsystemsconsortium/bind9:9.21"   # 現行と同じ（9.21 系）
+bind9_static_records:                  # ゾーンに固定で入れるレコード（他は ExternalDNS が登録する）
+  - { name: pa, ip: "192.168.12.22" }
 externaldns_chart_version: "1.21.1"
 externaldns_tsig_keyname: externaldns-key
 # TSIG の秘密鍵は vault.yml の vault_externaldns_tsig_secret に置く。

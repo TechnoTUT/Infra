@@ -1,4 +1,23 @@
 ---
+# meta パッケージ（task-ssh-server など）を消すと sshd まで autoremove されるため、先に手動扱いにする。
+- name: 必要なパッケージを手動インストール扱いにする
+  ansible.builtin.shell: |
+    for p in {{ common_packages_keep | join(' ') }}; do
+      dpkg -s "$p" >/dev/null 2>&1 && apt-mark manual "$p"
+    done
+    exit 0
+  become: true
+  register: common_keep
+  changed_when: "'set to manually installed' in common_keep.stdout"
+
+- name: 不要なパッケージを削除する（3 台を同じ構成にし、最小に保つ）
+  ansible.builtin.apt:
+    name: "{{ common_packages_absent }}"
+    state: absent
+    purge: true
+    autoremove: true
+  become: true
+
 - name: 必要なパッケージを入れる
   ansible.builtin.apt:
     name: [ca-certificates, curl, gpg, apt-transport-https, nfs-common]

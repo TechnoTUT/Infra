@@ -1,0 +1,31 @@
+---
+# becky を NFS サーバにする（nfs-subdir-external-provisioner の保存先）。
+- name: nfs-kernel-server を入れる
+  ansible.builtin.apt:
+    name: nfs-kernel-server
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+  become: true
+
+- name: 公開ディレクトリ
+  ansible.builtin.file:
+    path: "{{ nfs_path }}"
+    state: directory
+    mode: "0755"
+  become: true
+
+- name: /etc/exports
+  ansible.builtin.lineinfile:
+    path: /etc/exports
+    regexp: '^{{ nfs_path }}\s'
+    line: "{{ nfs_path }} {{ nfs_export_network }}(rw,sync,no_root_squash,no_subtree_check)"
+  become: true
+  notify: exportfs
+
+- name: nfs-server を有効化して起動する
+  ansible.builtin.systemd_service:
+    name: nfs-server
+    enabled: true
+    state: started
+  become: true
