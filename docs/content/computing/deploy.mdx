@@ -22,7 +22,7 @@ Nodes: 3 (becky, packard, marie)
 | Kubernetes | 1.37 |
 | コンテナランタイム | containerd (Docker の apt リポジトリの containerd.io) |
 | CNI | Cilium 1.20 (kube-proxy 置き換え、native routing、BGP、Ingress) |
-| Pod CIDR | 10.11.0.0/16 |
+| Pod CIDR | 10.11.0.0/16 (クラスタ内は NAT なし。外部へ出る通信はノードの IP に NAT する) |
 | Service CIDR (ClusterIP) | 10.96.0.0/12 (kubeadm の既定値) |
 | LoadBalancer IP | 10.12.0.0/16 (BGP で FortiGate に広報)。`10.12.0.0` は bind9 専用 (FortiGate の DNS 転送先) |
 | ノードの DNS | TUT の DNS サーバ (133.15.64.100, 133.15.64.102) |

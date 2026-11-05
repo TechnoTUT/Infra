@@ -12,7 +12,9 @@ k8sServiceHost: {{ api_endpoint }}
 k8sServicePort: {{ api_port }}
 bgpControlPlane:
   enabled: true
-enableIPv4Masquerade: false
+# Pod から外部（TUT の DNS、GitHub など）へ出る通信は、ノードの IP に NAT する。
+# Pod CIDR 宛て（ipv4NativeRoutingCIDR）の通信は NAT されない。
+enableIPv4Masquerade: true
 ingressController:
   enabled: true
   loadbalancerMode: shared
