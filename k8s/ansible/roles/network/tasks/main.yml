@@ -90,6 +90,7 @@
     label: "{{ item.item.bridge }}"
   when: item.rc != 0
   failed_when: false
+  changed_when: true
   become: true
 
 - name: ブリッジが存在することを確認する

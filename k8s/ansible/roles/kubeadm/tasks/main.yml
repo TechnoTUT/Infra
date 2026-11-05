@@ -18,10 +18,38 @@
       https://pkgs.k8s.io/core:/stable:/v{{ k8s_minor }}/deb/ /
   become: true
 
+# 以前のクラスタで hold されたままだと、apt install では指定の系列（{{ k8s_minor }}）に上がらない。
+# クラスタに参加する前のノードだけ、hold を外して指定の系列の最新パッチに揃える。
+# 参加済みのノードは勝手に上げない（バージョンを上げるときは kubeadm upgrade を使う）。
+- name: ノードがクラスタに参加済みか確認する
+  ansible.builtin.stat:
+    path: /etc/kubernetes/kubelet.conf
+  register: kubeadm_joined
+
+- name: インストール済みの kubeadm のバージョンを確認する
+  ansible.builtin.command: dpkg-query -W -f='${Version}' kubeadm
+  register: kubeadm_installed
+  failed_when: false
+  changed_when: false
+
+- name: 指定の系列に揃える必要があるか判定する
+  ansible.builtin.set_fact:
+    kubeadm_align: >-
+      {{ not kubeadm_joined.stat.exists
+         and not (kubeadm_installed.stdout.startswith(k8s_minor ~ '.')) }}
+
+- name: hold を外す（揃える場合のみ）
+  ansible.builtin.dpkg_selections:
+    name: "{{ item }}"
+    selection: install
+  loop: [kubelet, kubeadm, kubectl]
+  become: true
+  when: kubeadm_align | bool
+
 - name: kubelet kubeadm kubectl を入れる
   ansible.builtin.apt:
     name: [kubelet, kubeadm, kubectl]
-    state: present
+    state: "{{ 'latest' if kubeadm_align | bool else 'present' }}"
     update_cache: true
   become: true
 
