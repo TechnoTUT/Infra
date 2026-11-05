@@ -3,6 +3,9 @@ kind: CiliumBGPPeerConfig
 metadata:
   name: bgp-peer-config
 spec:
+  gracefulRestart:
+    enabled: true
+    restartTimeSeconds: 15
   timers:
     holdTimeSeconds: 90
     keepAliveTimeSeconds: 30
@@ -41,11 +44,18 @@ metadata:
     advertise: bgp
 spec:
   advertisements:
+    # 全ての LoadBalancer の IP を広報する
     - advertisementType: Service
       service:
         addresses:
           - LoadBalancerIP
       selector:
-        matchLabels:
-          announce: bgp
+        matchExpressions:
+          - key: not-exist-label-name
+            operator: NotIn
+            values: [dummy-value]
     - advertisementType: PodCIDR
+      attributes:
+        communities:
+          standard:
+            - "{{ cilium_bgp_local_asn }}:99"

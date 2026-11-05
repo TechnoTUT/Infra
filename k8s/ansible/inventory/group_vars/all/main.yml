@@ -12,7 +12,7 @@ nfs_provisioner_chart_version: "4.0.18"
 api_endpoint: "192.168.99.200"   # becky
 api_port: 6443
 pod_cidr: "10.11.0.0/16"
-service_cidr: "10.12.0.0/16"
+service_cidr: "10.96.0.0/12"   # ClusterIP の範囲（kubeadm の既定値。LB の IP とは別）
 
 # ===== ストレージ（NFS サーバは becky を兼用）=====
 nfs_server: "192.168.99.200"
@@ -21,13 +21,17 @@ nfs_path: "/nfs"
 # ===== オプション =====
 kubevirt_enabled: false      # BLT のコンテナ化が済むまで入れない
 multus_enabled: true         # PRO DJ LINK / Ableton Link 用の L2 接続
+# NetworkAttachmentDefinition（現行クラスタと同じ。ブリッジは各ノードの /etc/network/interfaces で作る）
+multus_nads:
+  - { name: vlan10-bridge, namespace: kube-public, network: vlan10, bridge: br10, subnet: "10.10.0.0/20" }
+  - { name: vlan20-bridge, namespace: kube-public, network: vlan20, bridge: br20, subnet: "10.10.16.0/20" }
 
 # ===== Cilium BGP（必須）=====
-# 全体で AS 64646 を使う（iBGP）。ピアは 192.168.99.129。
+# 全体で AS 64646 を使う（iBGP）。ピアは FortiGate の 192.168.99.129。
 cilium_bgp_enabled: true
 cilium_bgp_local_asn: 64646
 cilium_bgp_peers:
-  - name: router
+  - name: fortigate
     address: "192.168.99.129"
     asn: 64646
 
@@ -64,13 +68,13 @@ argocd_apps:
 argocd_network_policy: true   # コンテナでのテスト時だけ false にする
 
 # ===== LoadBalancer の IP プール =====
-# TODO: 要確認。既存サービスの IP (10.11.210.253, 10.11.230.254, 10.11.254.254) を含む範囲にしている。
-cilium_lb_pool_cidr: "10.11.192.0/18"
+# LoadBalancer の IP プール。BGP で広報する（現行クラスタと同じ 10.12.0.0/16）。
+cilium_lb_pool_cidr: "10.12.0.0/16"
 
 # ===== DNS (bind9 + ExternalDNS) =====
 dns_namespace: bind9
 dns_zone: svc.technotut.net
-bind9_lb_ip: "10.11.254.254"          # bind9 の LoadBalancer IP（上のプール内）
+bind9_lb_ip: "10.12.254.254"          # bind9 の LoadBalancer IP（DNS サーバのアドレス。docs/service/basic.mdx）
 bind9_storage_class: nfs-client
 bind9_image: "docker.io/ubuntu/bind9:latest"   # TODO: タグを固定する
 externaldns_chart_version: "1.21.1"

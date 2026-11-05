@@ -22,8 +22,6 @@ server:
     limits: { memory: 256Mi }
   service:
     type: LoadBalancer
-    labels:
-      announce: bgp
 redis:
   resources:
     requests: { cpu: 10m, memory: 32Mi }

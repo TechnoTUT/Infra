@@ -131,8 +131,6 @@ kind: Service
 metadata:
   name: bind9
   namespace: {{ dns_namespace }}
-  labels:
-    announce: bgp
 spec:
   type: LoadBalancer
   loadBalancerIP: {{ bind9_lb_ip }}

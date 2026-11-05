@@ -16,9 +16,6 @@ enableIPv4Masquerade: false
 ingressController:
   enabled: true
   loadbalancerMode: shared
-  service:
-    labels:
-      announce: bgp
 # メモリが少ないため常駐を減らす。Hubble は使わない。
 hubble:
   enabled: false

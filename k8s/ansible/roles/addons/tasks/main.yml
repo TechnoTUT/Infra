@@ -63,6 +63,13 @@
   register: addons_apply
   changed_when: "'created' in addons_apply.stdout or 'configured' in addons_apply.stdout"
 
+- name: NetworkAttachmentDefinition（vlan10 / vlan20 のブリッジ）
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('ansible.builtin.template', 'nad.yaml.j2') | from_yaml }}"
+  loop: "{{ multus_nads }}"
+  when: multus_enabled
+
 # ---- ストレージ ----
 - name: NFS provisioner
   kubernetes.core.helm:

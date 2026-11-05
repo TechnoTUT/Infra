@@ -36,7 +36,7 @@ sudo podman exec frr vtysh -c 'show ip bgp'
 | packard | 172.31.99.201 | ワーカー |
 | frr | 172.31.99.129 | FortiGate の代わり (iBGP, AS 64646, route-reflector) |
 
-Pod CIDR は 10.11.0.0/16、Service CIDR は 10.12.0.0/16 で、本番と同じ。
+Pod CIDR は 10.11.0.0/16、Service CIDR (ClusterIP) は 10.96.0.0/12、LB の IP プールは 10.12.0.0/16 で、本番と同じ。
 
 ## 検証できること
 `kubeadm init` / `join`、Pod / Service の CIDR、Cilium (kube-proxy 置き換え、Ingress、LB IP プール)、BGP (FRR での経路確認)、ArgoCD、bind9 と ExternalDNS (Service の annotation から A レコードが登録される)。
