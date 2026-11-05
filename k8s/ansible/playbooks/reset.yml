@@ -18,6 +18,16 @@
       become: true
       changed_when: true
 
+    # Cilium が /var/run/cilium/cgroupv2 に cgroup2 をマウントしている。外さないと削除できない。
+    - name: Cilium のマウントを外す
+      ansible.builtin.shell: |
+        for m in /var/run/cilium/cgroupv2 /run/cilium/cgroupv2; do
+          mountpoint -q "$m" && umount "$m"
+        done
+        exit 0
+      become: true
+      changed_when: true
+
     - name: CNI・Cilium・kubelet の残りを消す
       ansible.builtin.file:
         path: "{{ item }}"
