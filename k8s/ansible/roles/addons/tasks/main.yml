@@ -33,6 +33,14 @@
     helm_version: "{{ cilium_version }}"
     helm_ns: kube-system
     helm_values: cilium-values.yaml
+    # --wait は LoadBalancer の IP を待つが、IP プールは Cilium の CRD ができてから作る。
+    # 待ち合わせになって止まるため、ここでは待たずに DaemonSet の起動を別に待つ。
+    helm_wait: false
+
+- name: Cilium の起動を待つ
+  ansible.builtin.command: kubectl rollout status {{ item }} -n kube-system --timeout=1800s
+  loop: [daemonset/cilium, deployment/cilium-operator]
+  changed_when: false
 
 - name: ノードが Ready になるのを待つ
   ansible.builtin.command: kubectl wait --for=condition=Ready node --all --timeout=900s
