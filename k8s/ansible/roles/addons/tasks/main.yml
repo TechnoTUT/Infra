@@ -35,7 +35,7 @@
     helm_values: cilium-values.yaml
 
 - name: ノードが Ready になるのを待つ
-  ansible.builtin.command: kubectl wait --for=condition=Ready node --all --timeout=300s
+  ansible.builtin.command: kubectl wait --for=condition=Ready node --all --timeout=900s
   changed_when: false
 
 - name: LoadBalancer の IP プール
@@ -102,7 +102,7 @@
       changed_when: "'created' in addons_apply.stdout or 'configured' in addons_apply.stdout"
 
     - name: KubeVirt が使えるようになるのを待つ
-      ansible.builtin.command: kubectl wait kubevirt/kubevirt -n kubevirt --for=condition=Available --timeout=600s
+      ansible.builtin.command: kubectl wait kubevirt/kubevirt -n kubevirt --for=condition=Available --timeout=1800s
       changed_when: false
 
     - name: virtctl を入れる
