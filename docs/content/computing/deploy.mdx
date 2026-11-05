@@ -34,7 +34,7 @@ Nodes: 3 (becky, packard, marie)
 構築は [k8s/ansible/](https://github.com/TechnoTUT/Infra/tree/main/k8s/ansible) の Ansible で行う。becky にログインして実行する。\
 バージョン、CIDR、BGP のピアなどの設定は `inventory/group_vars/all/main.yml` に集約している。
 
-1. 事前準備 (手動): ネットワーク、NFS サーバ
+1. 事前準備 (手動): 管理用ネットワーク、NFS サーバ
 2. Ansible の準備
 3. Ansible の実行
 4. ルーター (FortiGate) の BGP 設定
@@ -42,11 +42,11 @@ Nodes: 3 (becky, packard, marie)
 6. 任意: Multus、ExternalDNS、KubeVirt
 
 ## 1. 事前準備
-### ネットワーク
-各ノードの `/etc/network/interfaces` を手動で設定する。VLAN (10, 20, 100) と、Multus 用のブリッジ (br10, br20) を作る。`bridge-utils` と `vlan` のパッケージが必要。\
-ネットワークの設定が完成したら、Ansible のロールで管理する予定。
+### ネットワーク (管理用 VLAN は手動)
+各ノードの NIC と、管理用の VLAN 100 (IP アドレス、ゲートウェイ、DNS) は手動で設定する。この設定がないと、Ansible でノードに接続できない。\
+Multus 用の VLAN 10・20 とブリッジ (br10, br20) は、Ansible の `network` ロールが設定する。
 
-Sample (becky。packard と marie は NIC 名が `enp2s0`):
+`/etc/network/interfaces` の例 (becky。packard と marie は NIC 名が `enp2s0`)。
 ```
 source /etc/network/interfaces.d/*
 
@@ -65,29 +65,17 @@ iface eno1.100 inet static
         vlan_raw_device eno1
         dns-nameservers 192.168.99.129
         dns-search srv.utone.technotut.net
-
-auto eno1.10
-iface eno1.10 inet manual
-        vlan_raw_device eno1
-
-auto eno1.20
-iface eno1.20 inet manual
-        vlan_raw_device eno1
-
-## Multus が使うブリッジ。メンバーは bridge_ports で指定する (bridge_port ではない)。
-auto br10
-iface br10 inet manual
-        bridge_ports eno1.10
-        bridge_stp off
-        bridge_maxwait 1
-
-auto br20
-iface br20 inet manual
-        bridge_ports eno1.20
-        bridge_stp off
-        bridge_maxwait 1
 ```
-設定後、`ip -br link show type bridge` で `br10` と `br20` があること、`ip -br link show master br10` でメンバーがあることを確認する。
+`vlan` パッケージが必要 (`apt install vlan`)。
+
+`network` ロールは、次のことを行う。
+- `bridge-utils`、`vlan`、`dhcpcd-base` を入れ、`8021q` を読み込む。
+- `/etc/network/interfaces` にある VLAN 10・20 と br10・br20 の古い定義を取り除く (バックアップを取る)。二重に定義されていると `ifup -a` が失敗する。
+- `/etc/network/interfaces.d/k8s-vlans` に、VLAN 10・20 とブリッジを書く。ブリッジは DHCP でアドレスを取得する。
+- `/etc/dhcpcd.conf` で、ブリッジはデフォルトゲートウェイと DNS を受け取らない設定にする (管理用 VLAN の経路と `resolv.conf` を壊さないため)。
+- 対象のインターフェースだけを `ifup` する。`networking` の再起動や、管理用 VLAN には触れない。
+
+設定後、`ip -br link show type bridge` で `br10` と `br20` があること、`ip -4 -br addr show br10` でアドレスが付いていることを確認する。VLAN の DHCP サーバがないと、アドレスは付かない (ブリッジ自体は起動する)。
 
 ### NFS サーバ
 becky を NFS サーバにする。
@@ -127,6 +115,7 @@ ansible-playbook playbooks/site.yml
 
 | ロール | 内容 |
 |--------|------|
+| network | VLAN 10・20 とブリッジ (br10, br20) の設定 (DHCP) |
 | common | swap 無効化、カーネルモジュール、sysctl、nfs-common |
 | containerd | containerd.io のインストール (hold) |
 | kubeadm | kubelet・kubeadm・kubectl のインストール、`kubeadm init`、`kubeadm join` |
@@ -182,7 +171,7 @@ PRO DJ LINK や Ableton Link のネットワークと L2 で接続する場合�
 | `kube-public/vlan10-bridge` | br10 | 10.10.0.0/20 |
 | `kube-public/vlan20-bridge` | br20 | 10.10.16.0/20 |
 
-ブリッジ (br10, br20) は各ノードで事前に作っておく。
+ブリッジ (br10, br20) は `network` ロールが作る。
 
 ### DNS (bind9 と ExternalDNS)
 `svc.technotut.net` ゾーンを bind9 で提供し、ExternalDNS (RFC2136) が Service・Ingress のレコードを自動登録する。Ansible の `dns` ロールが導入する。\
