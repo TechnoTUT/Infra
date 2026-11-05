@@ -1,5 +1,6 @@
 ---
 # 危険: クラスタとデータを全て消す。明示的に実行する（site.yml からは呼ばない）。
+# 各ノードを kubeadm 導入前の状態に戻す（containerd と OS の設定は残す）。
 - name: クラスタを破棄する
   hosts: k8s
   vars_prompt:
@@ -17,9 +18,33 @@
       become: true
       changed_when: true
 
-    - name: CNI の設定と kubeconfig を消す
+    - name: CNI・Cilium・kubelet の残りを消す
       ansible.builtin.file:
         path: "{{ item }}"
         state: absent
-      loop: [/etc/cni/net.d, "{{ ansible_facts.env.HOME }}/.kube"]
+      loop:
+        - /etc/cni/net.d
+        - /var/lib/cilium
+        - /var/run/cilium
+        - /var/lib/kubelet
+        - /var/lib/etcd
+        - "{{ ansible_facts.env.HOME }}/.kube"
+        - "{{ ansible_facts.env.HOME }}/.k8s-addons"
       become: true
+
+    - name: Cilium のインターフェースを消す
+      ansible.builtin.shell: |
+        for i in cilium_host cilium_net cilium_vxlan; do
+          ip link show "$i" >/dev/null 2>&1 && ip link delete "$i"
+        done
+        exit 0
+      become: true
+      changed_when: true
+
+    - name: iptables のルールを消す
+      ansible.builtin.shell: |
+        iptables -F; iptables -t nat -F; iptables -t mangle -F; iptables -X
+        ip6tables -F; ip6tables -t nat -F; ip6tables -t mangle -F; ip6tables -X
+        exit 0
+      become: true
+      changed_when: true

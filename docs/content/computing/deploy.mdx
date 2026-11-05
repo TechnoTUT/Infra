@@ -31,10 +31,10 @@ Nodes: 3 (becky, packard, marie)
 ノードのメモリが少ないため、Hubble や Argo CD の dex・notifications など、使わないコンポーネントは入れない。
 
 ## 構築の流れ
-構築は [k8s/ansible/](https://github.com/TechnoTUT/Infra/tree/main/k8s/ansible) の Ansible で行う。becky にログインして実行する。\
+構築は [k8s/ansible/](https://github.com/TechnoTUT/Infra/tree/main/k8s/ansible) の Ansible で行う。管理用のマシンから SSH で実行し、ノードには Ansible を入れない (ノードを最小かつ同一の構成に保つため)。\
 バージョン、CIDR、BGP のピアなどの設定は `inventory/group_vars/all/main.yml` に集約している。
 
-1. 事前準備 (手動): 管理用ネットワーク、NFS サーバ
+1. 事前準備 (手動): 管理用ネットワーク
 2. Ansible の準備
 3. Ansible の実行
 4. ルーター (FortiGate) の BGP 設定
@@ -78,27 +78,18 @@ iface eno1.100 inet static
 設定後、`ip -br link show type bridge` で `br10` と `br20` があること、`ip -4 -br addr show br10` でアドレスが付いていることを確認する。VLAN の DHCP サーバがないと、アドレスは付かない (ブリッジ自体は起動する)。
 
 ### NFS サーバ
-becky を NFS サーバにする。
-```bash
-sudo apt install nfs-kernel-server
-sudo mkdir -p /nfs
-echo "/nfs 192.168.99.128/25(rw,sync,no_root_squash,no_subtree_check)" | sudo tee -a /etc/exports
-sudo exportfs -ra
-```
-https://www.server-world.info/query?os=Debian_13&p=nfs&f=1
+becky の NFS サーバ (`/nfs`) は Ansible の `nfs` ロールが設定する。手動の作業は不要。
 
 ## 2. Ansible の準備
-becky で実行する。
+管理用のマシンで実行する。ノードには `technotut` ユーザーで鍵認証の SSH ができ、sudo がパスワードなしで使えること。
 ```bash
-sudo apt install -y ansible-core
+pip install ansible-core
 git clone https://github.com/TechnoTUT/Infra.git
 cd Infra/k8s/ansible
 ansible-galaxy collection install -r requirements.yml
 ```
 
-packard と marie に、becky から SSH でログインできるようにしておく。
-
-Secret は Ansible Vault で暗号化する。パスワードは Git に入れず、becky の `~/.vault_pass` に置く。
+Secret は Ansible Vault で暗号化する。パスワードは Git に入れず、管理用マシンの `~/.vault_pass` に置く。
 ```bash
 install -m 600 /dev/null ~/.vault_pass
 $EDITOR ~/.vault_pass
@@ -116,10 +107,11 @@ ansible-playbook playbooks/site.yml
 | ロール | 内容 |
 |--------|------|
 | network | VLAN 10・20 とブリッジ (br10, br20) の設定 (DHCP) |
-| common | swap 無効化、カーネルモジュール、sysctl、nfs-common |
+| common | 不要パッケージの削除 (Docker、host の bind9 など)、swap 無効化、カーネルモジュール、sysctl、nfs-common |
 | containerd | containerd.io のインストール (hold) |
+| nfs | becky を NFS サーバにする (`/nfs`) |
 | kubeadm | kubelet・kubeadm・kubectl のインストール、`kubeadm init`、`kubeadm join` |
-| addons | Helm、Cilium、Multus、NFS provisioner、Argo CD と各 Application |
+| addons | Helm、Cilium、Multus と NAD、NFS provisioner、KubeVirt と CDI、Argo CD と各 Application、bind9 と ExternalDNS |
 
 `kubeadm init` は Pod CIDR を `10.11.0.0/16`、Service CIDR (ClusterIP) を `10.96.0.0/12` で作成する。LoadBalancer の IP は Cilium の IP プール (`10.12.0.0/16`) から割り当てる。固定したい IP は Service の `loadBalancerIP` で指定する。kube-proxy は Cilium で置き換えるため入れない。
 
