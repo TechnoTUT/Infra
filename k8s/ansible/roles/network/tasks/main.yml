@@ -71,6 +71,27 @@
 - name: 設定を反映する
   ansible.builtin.meta: flush_handlers
 
+# 起動時に失敗した ifup -a の状態（/run/network/ifstate）が残っていると、ifup は「設定済み」と判断して何もしない。
+# ブリッジがなければ、状態を解除して作り直す。
+- name: ブリッジの有無を確認する
+  ansible.builtin.command: ip -br link show {{ item.bridge }}
+  loop: "{{ network_vlans }}"
+  register: network_bridges
+  failed_when: false
+  changed_when: false
+
+- name: ブリッジがなければ作り直す
+  ansible.builtin.shell: |
+    ifdown --force {{ item.item.bridge }} {{ nic }}.{{ item.item.id }} || true
+    ifup {{ nic }}.{{ item.item.id }}
+    ifup {{ item.item.bridge }}
+  loop: "{{ network_bridges.results }}"
+  loop_control:
+    label: "{{ item.item.bridge }}"
+  when: item.rc != 0
+  failed_when: false
+  become: true
+
 - name: ブリッジが存在することを確認する
   ansible.builtin.command: ip -br link show {{ item }}
   loop: "{{ network_vlans | map(attribute='bridge') | list }}"
