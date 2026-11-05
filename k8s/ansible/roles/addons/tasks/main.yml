@@ -110,7 +110,7 @@
       changed_when: "'created' in addons_apply.stdout or 'configured' in addons_apply.stdout"
 
     - name: KubeVirt が使えるようになるのを待つ
-      ansible.builtin.command: kubectl wait kubevirt/kubevirt -n kubevirt --for=condition=Available --timeout=1800s
+      ansible.builtin.command: kubectl wait kubevirt/kubevirt -n kubevirt --for=condition=Available --timeout=3600s
       changed_when: false
 
     - name: virtctl を入れる
