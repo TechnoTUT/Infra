@@ -21,5 +21,8 @@ ingressController:
 # メモリが少ないため常駐を減らす。Hubble は使わない。
 hubble:
   enabled: false
+# 設定（ConfigMap）を変えたとき、agent と operator を自動で再起動する。
+rollOutCiliumPods: true
 operator:
+  rollOutPods: true
   replicas: 1
