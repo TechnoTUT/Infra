@@ -24,7 +24,8 @@ Nodes: 3 (becky, packard, marie)
 | CNI | Cilium 1.20 (kube-proxy 置き換え、native routing、BGP、Ingress) |
 | Pod CIDR | 10.11.0.0/16 |
 | Service CIDR (ClusterIP) | 10.96.0.0/12 (kubeadm の既定値) |
-| LoadBalancer IP | 10.12.0.0/16 (BGP で FortiGate に広報) |
+| LoadBalancer IP | 10.12.0.0/16 (BGP で FortiGate に広報)。`10.12.0.0` は bind9 専用 (FortiGate の DNS 転送先) |
+| ノードの DNS | TUT の DNS サーバ (133.15.64.100, 133.15.64.102) |
 | ストレージ | NFS (becky の /nfs) と nfs-subdir-external-provisioner |
 | GitOps | Argo CD |
 
@@ -107,7 +108,7 @@ ansible-playbook playbooks/site.yml
 | ロール | 内容 |
 |--------|------|
 | network | VLAN 10・20 とブリッジ (br10, br20) の設定 (DHCP) |
-| common | 不要パッケージの削除 (Docker、host の bind9 など)、swap 無効化、カーネルモジュール、sysctl、nfs-common |
+| common | 不要パッケージの削除 (Docker、host の bind9 など)、ノードの DNS (TUT の DNS サーバ) の設定、swap 無効化、カーネルモジュール、sysctl、nfs-common |
 | containerd | containerd.io のインストール (hold) |
 | nfs | becky を NFS サーバにする (`/nfs`) |
 | kubeadm | kubelet・kubeadm・kubectl のインストール、`kubeadm init`、`kubeadm join` |
