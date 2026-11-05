@@ -1,0 +1,5 @@
+---
+# ノード準備 → kubeadm init → join
+- { name: prep, hosts: k8s, roles: [common, containerd] }
+- { name: cp, hosts: control_plane, roles: [kubeadm] }
+- { name: workers, hosts: workers, roles: [kubeadm] }
