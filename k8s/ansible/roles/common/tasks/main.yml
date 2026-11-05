@@ -26,6 +26,23 @@
     cache_valid_time: 3600
   become: true
 
+# DHCP（dhcpcd）に resolv.conf を上書きさせず、DNS は TUT の DNS サーバに固定する。
+- name: dhcpcd に resolv.conf を触らせない
+  ansible.builtin.lineinfile:
+    path: /etc/dhcpcd.conf
+    regexp: '^nohook\s+resolv\.conf'
+    line: nohook resolv.conf
+    create: true
+    mode: "0644"
+  become: true
+
+- name: ノードの DNS を設定する
+  ansible.builtin.template:
+    src: resolv.conf.j2
+    dest: /etc/resolv.conf
+    mode: "0644"
+  become: true
+
 - name: swap を無効化する
   ansible.builtin.command: swapoff -a
   become: true

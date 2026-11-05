@@ -32,6 +32,10 @@ network_vlans:                       # Multus の NetworkAttachmentDefinition �
 # ===== 作業用ディレクトリ（control_plane のホーム）=====
 addons_dir: "{{ ansible_facts.env.HOME }}/.k8s-addons"
 
+# ===== ノードの DNS（TUT の DNS サーバ。https://imc.tut.ac.jp/hosting/faq-dns-server.html）=====
+node_dns_servers: ["133.15.64.100", "133.15.64.102"]
+node_dns_search: srv.utone.technotut.net
+
 # ===== ノードのパッケージ（全ノードで同じ構成にする。余計なものは入れない）=====
 common_packages_keep: [openssh-server, openssh-sftp-server, sudo, python3, ifupdown, curl, ca-certificates]
 common_packages_absent:
@@ -100,13 +104,15 @@ argocd_apps:
 argocd_network_policy: true   # コンテナでのテスト時だけ false にする
 
 # ===== LoadBalancer の IP プール =====
-# LoadBalancer の IP プール。BGP で広報する（現行クラスタと同じ 10.12.0.0/16）。
-cilium_lb_pool_cidr: "10.12.0.0/16"
+# LoadBalancer の IP プール（現行クラスタと同じ 10.12.0.0/16。BGP で広報する）。
+# 10.12.0.0 は FortiGate の DNS 転送先で bind9 専用にする。自動割り当てに取られないよう別のプールに分ける。
+cilium_lb_pool_start: "10.12.0.1"
+cilium_lb_pool_stop: "10.12.255.254"
 
 # ===== DNS (bind9 + ExternalDNS) =====
 dns_namespace: bind9
 dns_zone: svc.technotut.net
-bind9_lb_ip: "10.12.254.254"          # bind9 の LoadBalancer IP（DNS サーバのアドレス。docs/service/basic.mdx）
+bind9_lb_ip: "10.12.0.0"              # bind9 の LoadBalancer IP。FortiGate の DNS 転送先がこの IP を向いている
 bind9_image: "docker.io/internetsystemsconsortium/bind9:9.21"   # 現行と同じ（9.21 系）
 bind9_static_records:                  # ゾーンに固定で入れるレコード（他は ExternalDNS が登録する）
   - { name: pa, ip: "192.168.12.22" }

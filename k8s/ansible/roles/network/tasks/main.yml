@@ -45,7 +45,7 @@
   notify: ifup network
   tags: [cleanup]
 
-# DHCP で受け取るのはアドレスだけ。管理用 VLAN のデフォルト経路と /etc/resolv.conf を上書きさせない。
+# DHCP で受け取るのはアドレスだけ。管理用 VLAN のデフォルト経路を上書きさせない（DNS は common ロールで固定）。
 - name: dhcpcd の設定（ゲートウェイと DNS を受け取らない）
   ansible.builtin.blockinfile:
     path: /etc/dhcpcd.conf
@@ -56,7 +56,6 @@
       {% for v in network_vlans %}
       interface {{ v.bridge }}
       nogateway
-      nohook resolv.conf
       {% endfor %}
   become: true
 
