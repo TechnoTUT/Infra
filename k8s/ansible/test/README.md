@@ -53,6 +53,7 @@ KubeVirt / CDI と BLT の VM、実機の VLAN とブリッジ、Multus の L2 �
 | `common_kernel_modules`, `common_sysctls` | RHEL 系のホストカーネルには `br_netfilter` がないため |
 | `kubeadm_ignore_preflight_errors` | 上記に伴う preflight の無視 |
 | `argocd_network_policy` | 入れ子のコンテナでは NetworkPolicy 下の probe が通らないため |
+| `node_dns_servers` | テストを動かす PC から TUT の DNS サーバに届かないため、公開 DNS を使う |
 | `kubevirt_enabled`, `argocd_apps` | 入れ子のコンテナでは VM を動かさない (メモリ節約)。`blt` / `cdi-config` も外す |
 
 `up.sh` は、Cilium が `/sys/fs/bpf` を使えるように bpffs を shared でマウントする。

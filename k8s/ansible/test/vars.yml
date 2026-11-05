@@ -17,6 +17,9 @@ argocd_apps:
   - { name: cam1, path: cam1, namespace: cam1 }
   - { name: dmx, path: dmx, namespace: qlcplus }
 
+# このテスト環境（TUT の外）からは TUT の DNS サーバに届かないため、公開 DNS を使う
+node_dns_servers: ["1.1.1.1"]
+
 # コンテナ内の制約への対処
 argocd_network_policy: false          # 入れ子のコンテナでは probe が通らない
 
