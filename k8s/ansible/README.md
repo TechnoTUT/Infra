@@ -21,6 +21,7 @@ ansible-playbook playbooks/reset.yml         # 全消去（RESET と入力）
 ## 構成
 | ロール | 内容 |
 |---|---|
+| network | VLAN 10・20 とブリッジ br10・br20（DHCP）。管理用 VLAN は手動 |
 | common | swap 無効化、カーネルモジュール、sysctl、nfs-common |
 | containerd | Docker の apt から containerd.io（hold） |
 | kubeadm | kubelet/kubeadm/kubectl、`kubeadm init` / `join` |
@@ -30,5 +31,5 @@ ansible-playbook playbooks/reset.yml         # 全消去（RESET と入力）
 バージョンと CIDR は `inventory/group_vars/all/main.yml` に集約している。
 
 ## 未対応
-- network ロール（`/etc/network/interfaces`）: 手動設定が完成してから追加する。
+- 管理用ネットワーク（NIC と VLAN 100 の IP・ゲートウェイ・DNS）: 手動で設定する。
 - KubeVirt / CDI（`kubevirt_enabled: false`）。BLT のコンテナ化が済むまで入れない。

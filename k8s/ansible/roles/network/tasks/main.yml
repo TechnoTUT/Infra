@@ -1,0 +1,92 @@
+---
+# VLAN 10/20 とブリッジ (br10/br20) だけを管理する。管理用の VLAN・IP・ゲートウェイには触れない。
+- name: bridge-utils と vlan を入れる
+  ansible.builtin.apt:
+    name: [bridge-utils, vlan, dhcpcd-base]
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+  become: true
+
+- name: 8021q を読み込む設定
+  ansible.builtin.copy:
+    dest: /etc/modules-load.d/8021q.conf
+    content: "8021q\n"
+    mode: "0644"
+  become: true
+
+- name: 8021q をロードする
+  community.general.modprobe:
+    name: 8021q
+    state: present
+  become: true
+
+# 既存の定義と二重になると ifup が失敗するため、メインのファイルから該当の定義だけを取り除く。
+- name: 古い VLAN・ブリッジの定義（auto 行）を取り除く
+  ansible.builtin.replace:
+    path: "{{ network_interfaces_file }}"
+    regexp: '(?m)^(?:auto|allow-hotplug)[ \t]+(?:{{ names | map("regex_escape") | join("|") }})[ \t]*\n'
+    replace: ""
+    backup: true
+  vars:
+    names: "{{ network_vlans | map(attribute='id') | map('regex_replace', '^(.*)$', nic ~ '.\\1') | list + network_vlans | map(attribute='bridge') | list }}"
+  become: true
+  notify: ifup network
+  tags: [cleanup]
+
+- name: 古い VLAN・ブリッジの定義（iface ブロック）を取り除く
+  ansible.builtin.replace:
+    path: "{{ network_interfaces_file }}"
+    regexp: '(?m)^iface[ \t]+(?:{{ names | map("regex_escape") | join("|") }})[ \t]+.*\n(?:[ \t]+.*\n)*'
+    replace: ""
+  vars:
+    names: "{{ network_vlans | map(attribute='id') | map('regex_replace', '^(.*)$', nic ~ '.\\1') | list + network_vlans | map(attribute='bridge') | list }}"
+  become: true
+  notify: ifup network
+  tags: [cleanup]
+
+# DHCP で受け取るのはアドレスだけ。管理用 VLAN のデフォルト経路と /etc/resolv.conf を上書きさせない。
+- name: dhcpcd の設定（ゲートウェイと DNS を受け取らない）
+  ansible.builtin.blockinfile:
+    path: /etc/dhcpcd.conf
+    create: true
+    mode: "0644"
+    marker: "# {mark} ANSIBLE MANAGED (k8s bridges)"
+    block: |
+      {% for v in network_vlans %}
+      interface {{ v.bridge }}
+      nogateway
+      nohook resolv.conf
+      {% endfor %}
+  become: true
+
+- name: VLAN とブリッジの設定を置く
+  ansible.builtin.template:
+    src: k8s-vlans.j2
+    dest: /etc/network/interfaces.d/k8s-vlans
+    mode: "0644"
+  become: true
+  notify: ifup network
+
+# 即時に反映する。networking の再起動はしない（管理用の VLAN を落とさないため）。
+- name: 設定を反映する
+  ansible.builtin.meta: flush_handlers
+
+- name: ブリッジが存在することを確認する
+  ansible.builtin.command: ip -br link show {{ item }}
+  loop: "{{ network_vlans | map(attribute='bridge') | list }}"
+  changed_when: false
+
+- name: ブリッジの IPv4 アドレスを確認する
+  ansible.builtin.command: ip -4 -br addr show {{ item }}
+  loop: "{{ network_vlans | map(attribute='bridge') | list }}"
+  register: network_addr
+  changed_when: false
+
+- name: DHCP でアドレスが付かなかったブリッジを警告する
+  ansible.builtin.debug:
+    msg: "{{ item.item }} に IPv4 アドレスがない。VLAN の DHCP サーバとスイッチの設定を確認する。"
+  loop: "{{ network_addr.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+  when: item.stdout.split() | length < 3

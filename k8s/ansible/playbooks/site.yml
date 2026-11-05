@@ -1,5 +1,11 @@
 ---
 # 全ノードの準備 → CP の初期化 → ワーカーの join → アドオン の順。
+- name: ネットワーク（VLAN とブリッジ）
+  hosts: k8s
+  roles:
+    - role: network
+      when: network_manage_vlans
+
 - name: ノードの準備
   hosts: k8s
   roles: [common, containerd]

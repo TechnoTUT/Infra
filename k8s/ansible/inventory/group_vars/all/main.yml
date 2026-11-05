@@ -20,6 +20,14 @@ service_cidr: "10.96.0.0/12"   # ClusterIP の範囲（kubeadm の既定値。LB
 nfs_server: "192.168.99.200"
 nfs_path: "/nfs"
 
+# ===== ネットワーク（VLAN とブリッジのみ。管理用 VLAN は手動）=====
+network_manage_vlans: true
+network_interfaces_file: /etc/network/interfaces
+network_mgmt_vlan: 100
+network_vlans:                       # Multus の NetworkAttachmentDefinition が使うブリッジ
+  - { id: 10, bridge: br10 }
+  - { id: 20, bridge: br20 }
+
 # ===== オプション =====
 kubevirt_enabled: true       # BLT を VM で動かす間は有効にする（コンテナ化したら false にできる）
 multus_enabled: true         # PRO DJ LINK / Ableton Link 用の L2 接続
