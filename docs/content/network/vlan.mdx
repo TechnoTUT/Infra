@@ -54,4 +54,5 @@ sidebar_position: 3
 
 ## Kubernetes
 - **Pod CIDR**: `10.11.0.0/16`
-- **Service CIDR**: `10.12.0.0/16`
+- **Service CIDR** (ClusterIP): `10.96.0.0/12` (kubeadm の既定値)
+- **LoadBalancer IP**: `10.12.0.0/16` (BGPでFortiGateに広報)

@@ -23,7 +23,8 @@ Nodes: 3 (becky, packard, marie)
 | コンテナランタイム | containerd (Docker の apt リポジトリの containerd.io) |
 | CNI | Cilium 1.20 (kube-proxy 置き換え、native routing、BGP、Ingress) |
 | Pod CIDR | 10.11.0.0/16 |
-| Service CIDR | 10.12.0.0/16 |
+| Service CIDR (ClusterIP) | 10.96.0.0/12 (kubeadm の既定値) |
+| LoadBalancer IP | 10.12.0.0/16 (BGP で FortiGate に広報) |
 | ストレージ | NFS (becky の /nfs) と nfs-subdir-external-provisioner |
 | GitOps | Argo CD |
 
@@ -42,65 +43,58 @@ Nodes: 3 (becky, packard, marie)
 
 ## 1. 事前準備
 ### ネットワーク
-各ノードの `/etc/network/interfaces` を手動で設定する。VLAN と、Multus 用のブリッジ (br10, br30) を作る。\
+各ノードの `/etc/network/interfaces` を手動で設定する。VLAN (10, 20, 100) と、Multus 用のブリッジ (br10, br20) を作る。`bridge-utils` と `vlan` のパッケージが必要。\
 ネットワークの設定が完成したら、Ansible のロールで管理する予定。
 
-Sample:
+Sample (becky。packard と marie は NIC 名が `enp2s0`):
 ```
-# This file describes the network interfaces available on your system
-# and how to activate them. For more information, see interfaces(5).
-
 source /etc/network/interfaces.d/*
 
-# The loopback network interface
 auto lo
 iface lo inet loopback
 
-# The primary network interface
 allow-hotplug eno1
 iface eno1 inet manual
-        ## avoid Intel NIC e1000e hardware unit hang
-        ## post-up /sbin/ethtool -K eno1 gro off tso off gso off rx off tx off rxvlan off txvlan off sg off
 
-# vlan setting
-auto eno1.10
-iface eno1.10 inet manual
-        vlan-raw-device eno1
-
-auto eno1.30
-iface eno1.30 inet manual
-        vlan-raw-device eno1
-
+auto eno1
 auto eno1.100
 iface eno1.100 inet static
-        vlan-raw-device eno1
-        address 192.168.99.200/25
+        address 192.168.99.200
+        netmask 255.255.255.128
         gateway 192.168.99.129
-        dns-nameservers 192.168.99.1
+        vlan_raw_device eno1
+        dns-nameservers 192.168.99.129
         dns-search srv.utone.technotut.net
 
+auto eno1.10
+iface eno1.10 inet manual
+        vlan_raw_device eno1
+
+auto eno1.20
+iface eno1.20 inet manual
+        vlan_raw_device eno1
+
+## Multus が使うブリッジ。メンバーは bridge_ports で指定する (bridge_port ではない)。
 auto br10
-allow-hotplug br10
 iface br10 inet manual
-  bridge_ports eno1.10
-  bridge_stp off
-  bridge_maxwait 1
+        bridge_ports eno1.10
+        bridge_stp off
+        bridge_maxwait 1
 
-auto br30
-allow-hotplug br30
-iface br30 inet manual
-  bridge_ports eno1.30
-  bridge_stp off
-  bridge_maxwait 1
-
+auto br20
+iface br20 inet manual
+        bridge_ports eno1.20
+        bridge_stp off
+        bridge_maxwait 1
 ```
+設定後、`ip -br link show type bridge` で `br10` と `br20` があること、`ip -br link show master br10` でメンバーがあることを確認する。
 
 ### NFS サーバ
 becky を NFS サーバにする。
 ```bash
 sudo apt install nfs-kernel-server
 sudo mkdir -p /nfs
-echo "/nfs 192.168.99.0/24(rw,no_root_squash)" | sudo tee -a /etc/exports
+echo "/nfs 192.168.99.128/25(rw,sync,no_root_squash,no_subtree_check)" | sudo tee -a /etc/exports
 sudo exportfs -ra
 ```
 https://www.server-world.info/query?os=Debian_13&p=nfs&f=1
@@ -138,10 +132,10 @@ ansible-playbook playbooks/site.yml
 | kubeadm | kubelet・kubeadm・kubectl のインストール、`kubeadm init`、`kubeadm join` |
 | addons | Helm、Cilium、Multus、NFS provisioner、Argo CD と各 Application |
 
-`kubeadm init` は Pod CIDR を `10.11.0.0/16`、Service CIDR を `10.12.0.0/16` で作成する。kube-proxy は Cilium で置き換えるため入れない。
+`kubeadm init` は Pod CIDR を `10.11.0.0/16`、Service CIDR (ClusterIP) を `10.96.0.0/12` で作成する。LoadBalancer の IP は Cilium の IP プール (`10.12.0.0/16`) から割り当てる。固定したい IP は Service の `loadBalancerIP` で指定する。kube-proxy は Cilium で置き換えるため入れない。
 
 ## 4. ルーター (FortiGate) の BGP 設定
-Cilium は、LoadBalancer の IP と Pod CIDR を BGP で広報する。\
+Cilium は、全ての LoadBalancer の IP (`10.12.0.0/16`) と Pod CIDR (`10.11.0.0/16`) を BGP で広報する。\
 AS 番号は全体で `64646` (iBGP)、ピアは FortiGate (192.168.99.129) である。
 
 iBGP では、受け取った経路を他の iBGP ピアに再広報しないため、FortiGate 側でノードを route reflector client にする。\
@@ -181,29 +175,14 @@ kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.pas
 
 ## 6. 任意の設定
 ### Multus
-PRO DJ LINK や Ableton Link のネットワークと L2 で接続する場合に使う。Multus は Ansible で導入済み (`multus_enabled`)。\
-NetworkAttachmentDefinition を作成する。
+PRO DJ LINK や Ableton Link のネットワークと L2 で接続する場合に使う。Multus と NetworkAttachmentDefinition は Ansible で導入する (`multus_enabled`、`multus_nads`)。
 
-Create NetworkAttachmentDefinition for vlan10
-```yaml
-apiVersion: "k8s.cni.cncf.io/v1"
-kind: NetworkAttachmentDefinition
-metadata:
-  name: vlan10-bridge
-  namespace: kube-public
-spec:
-  config: |
-    {
-      "cniVersion": "0.3.1",
-      "name": "vlan10",
-      "type": "bridge",
-      "bridge": "br10",
-      "ipam": {
-          "type": "host-local",
-          "subnet": "10.10.0.0/16"
-      }
-    }
-```
+| NetworkAttachmentDefinition | ブリッジ | サブネット |
+|---|---|---|
+| `kube-public/vlan10-bridge` | br10 | 10.10.0.0/20 |
+| `kube-public/vlan20-bridge` | br20 | 10.10.16.0/20 |
+
+ブリッジ (br10, br20) は各ノードで事前に作っておく。
 
 ### DNS (bind9 と ExternalDNS)
 `svc.technotut.net` ゾーンを bind9 で提供し、ExternalDNS (RFC2136) が Service・Ingress のレコードを自動登録する。Ansible の `dns` ロールが導入する。\
