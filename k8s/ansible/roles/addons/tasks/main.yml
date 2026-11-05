@@ -26,7 +26,7 @@
     src: "{{ item }}.j2"
     dest: "{{ ansible_facts.env.HOME }}/.k8s-addons/{{ item }}"
     mode: "0600"
-  loop: [cilium-values.yaml, nfs-values.yaml, argocd-values.yaml, cilium-bgp.yaml, cilium-lb-pool.yaml]
+  loop: [cilium-values.yaml, nfs-values.yaml, argocd-values.yaml, cilium-bgp.yaml, cilium-lb-pool.yaml, kubevirt-cr.yaml]
 
 # ---- Cilium（CNI がないと他が起動しないので最初）----
 - name: Cilium
@@ -79,6 +79,41 @@
     chart_version: "{{ nfs_provisioner_chart_version }}"
     release_namespace: kube-system
     values_files: ["{{ ansible_facts.env.HOME }}/.k8s-addons/nfs-values.yaml"]
+
+# ---- KubeVirt と CDI（BLT の VM 用）----
+# CDI の CR は ArgoCD の cdi-config が管理するので、ここでは operator だけを入れる。
+- name: KubeVirt と CDI
+  when: kubevirt_enabled
+  block:
+    - name: KubeVirt operator
+      ansible.builtin.command: >
+        kubectl apply -f
+        https://github.com/kubevirt/kubevirt/releases/download/{{ kubevirt_version }}/kubevirt-operator.yaml
+      register: addons_apply
+      changed_when: "'created' in addons_apply.stdout or 'configured' in addons_apply.stdout"
+
+    - name: KubeVirt の CR
+      ansible.builtin.command: kubectl apply -f {{ ansible_facts.env.HOME }}/.k8s-addons/kubevirt-cr.yaml
+      register: addons_apply
+      changed_when: "'created' in addons_apply.stdout or 'configured' in addons_apply.stdout"
+
+    - name: CDI operator
+      ansible.builtin.command: >
+        kubectl apply -f
+        https://github.com/kubevirt/containerized-data-importer/releases/download/{{ cdi_version }}/cdi-operator.yaml
+      register: addons_apply
+      changed_when: "'created' in addons_apply.stdout or 'configured' in addons_apply.stdout"
+
+    - name: KubeVirt が使えるようになるのを待つ
+      ansible.builtin.command: kubectl wait kubevirt/kubevirt -n kubevirt --for=condition=Available --timeout=600s
+      changed_when: false
+
+    - name: virtctl を入れる
+      ansible.builtin.get_url:
+        url: "https://github.com/kubevirt/kubevirt/releases/download/{{ kubevirt_version }}/virtctl-{{ kubevirt_version }}-linux-amd64"
+        dest: /usr/local/bin/virtctl
+        mode: "0755"
+      become: true
 
 # ---- ArgoCD ----
 - name: ArgoCD

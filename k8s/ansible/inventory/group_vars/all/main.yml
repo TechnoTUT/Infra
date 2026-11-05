@@ -4,6 +4,8 @@ k8s_minor: "1.37"            # pkgs.k8s.io のリポジトリ系列
 cilium_version: "1.20.4"
 helm_version: "v4.3.1"
 multus_version: "v4.3.1"
+kubevirt_version: "v1.9.1"
+cdi_version: "v1.66.1"
 argocd_chart_version: "10.12.1"
 nfs_provisioner_chart_version: "4.0.18"
 # containerd.io は Docker の apt リポジトリから入れ、apt-mark hold する（更新は手動）。
@@ -19,7 +21,7 @@ nfs_server: "192.168.99.200"
 nfs_path: "/nfs"
 
 # ===== オプション =====
-kubevirt_enabled: false      # BLT のコンテナ化が済むまで入れない
+kubevirt_enabled: true       # BLT を VM で動かす間は有効にする（コンテナ化したら false にできる）
 multus_enabled: true         # PRO DJ LINK / Ableton Link 用の L2 接続
 # NetworkAttachmentDefinition（現行クラスタと同じ。ブリッジは各ノードの /etc/network/interfaces で作る）
 multus_nads:
@@ -61,9 +63,10 @@ argocd_apps:
   - { name: live, path: live, namespace: live }
   - { name: speedtest, path: speedtest, namespace: speedtest }
   - { name: time, path: time, namespace: time }
-  # BLT は別ブランチでコンテナ化する。KubeVirt が要る間は有効にしない。
-  # - { name: blt, path: blt, namespace: blt }
-  # - { name: cdi-config, path: infrastructure/cdi }
+  # BLT は VM で動かす（KubeVirt と CDI が必要。kubevirt_enabled: true）。
+  # BLT をコンテナ化する別ブランチがマージされたら、この 2 行と kubevirt_enabled を見直す。
+  - { name: blt, path: blt, namespace: blt }
+  - { name: cdi-config, path: infrastructure/cdi }
 
 argocd_network_policy: true   # コンテナでのテスト時だけ false にする
 

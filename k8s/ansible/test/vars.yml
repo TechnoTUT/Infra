@@ -11,6 +11,12 @@ kubeadm_ignore_preflight_errors:
   - FileContent--proc-sys-net-bridge-bridge-nf-call-iptables
   - Swap
 
+# 入れ子のコンテナでは VM を動かさない（メモリ節約）。blt / cdi-config の Application も外す
+kubevirt_enabled: false
+argocd_apps:
+  - { name: cam1, path: cam1, namespace: cam1 }
+  - { name: dmx, path: dmx, namespace: qlcplus }
+
 # コンテナ内の制約への対処
 argocd_network_policy: false          # 入れ子のコンテナでは probe が通らない
 bind9_storage_class: test-local       # NFS の代わりに hostPath（stage3 で PV を作る）

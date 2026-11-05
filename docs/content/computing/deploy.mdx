@@ -194,9 +194,25 @@ tsig-keygen -a hmac-sha256 externaldns-key
 ansible-vault create inventory/group_vars/all/vault.yml
 ```
 
-### KubeVirt
-BLT をコンテナに移すまでは、KubeVirt と CDI を入れない (`kubevirt_enabled: false`)。VM が必要な場合は、`k8s/manifest/blt` と `infrastructure/cdi` の Application を有効にして、KubeVirt を導入する。\
-https://kubevirt.io/user-guide/cluster_admin/installation/#installing-kubevirt-on-kubernetes
+### KubeVirt と BLT の VM
+BLT (Beat Link Trigger) は、KubeVirt の VM (`blt`) で動かす。KubeVirt と CDI は Ansible が導入する (`kubevirt_enabled: true`)。
+
+| コンポーネント | 内容 |
+|---|---|
+| KubeVirt | operator と CR。メモリ節約のため、制御コンポーネントは 1 レプリカ (`infra.replicas: 1`) |
+| CDI | operator のみ。CDI の CR は Argo CD の `cdi-config` が管理する |
+| virtctl | becky の `/usr/local/bin/virtctl` |
+
+VM と関連リソースは、Argo CD の `blt` Application が `k8s/manifest/blt` から作る。
+- 仮想マシンは 2CPU・メモリ 4GB。ディスクは CDI が Debian 13 のクラウドイメージを取得して、NFS 上の PVC (15Gi) に展開する。取得に時間がかかる。
+- VM は `kube-public/vlan10-bridge` と `kube-public/vlan20-bridge` につながる。各ノードにブリッジ (br10, br20) がないと、VM は起動しない。
+- 全ノードで `/dev/kvm` が使えること。
+
+```bash
+kubectl get vm,vmi,dv -n blt
+virtctl console blt -n blt
+```
+VM の cloud-init の初期パスワードは、構築後に変更する。
 
 ## クラスタを作り直す
 全ノードのクラスタを破棄して、データも消える。実行前に確認のプロンプトが出る。

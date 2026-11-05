@@ -1,0 +1,12 @@
+apiVersion: kubevirt.io/v1
+kind: KubeVirt
+metadata:
+  name: kubevirt
+  namespace: kubevirt
+spec:
+  imagePullPolicy: IfNotPresent
+  # メモリが少ないため、制御コンポーネントは 1 レプリカにする。
+  infra:
+    replicas: 1
+  configuration:
+    developerConfiguration: {}
