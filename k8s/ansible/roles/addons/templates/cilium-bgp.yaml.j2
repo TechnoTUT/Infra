@@ -1,0 +1,61 @@
+apiVersion: cilium.io/v2
+kind: CiliumBGPPeerConfig
+metadata:
+  name: bgp-peer-config
+spec:
+  gracefulRestart:
+    enabled: true
+    restartTimeSeconds: 15
+  timers:
+    holdTimeSeconds: 90
+    keepAliveTimeSeconds: 30
+  families:
+    - afi: ipv4
+      safi: unicast
+      advertisements:
+        matchLabels:
+          advertise: bgp
+---
+apiVersion: cilium.io/v2
+kind: CiliumBGPClusterConfig
+metadata:
+  name: bgp-cluster-config
+spec:
+  nodeSelector:
+    matchLabels:
+      kubernetes.io/os: linux
+  bgpInstances:
+    - name: instance-{{ cilium_bgp_local_asn }}
+      localASN: {{ cilium_bgp_local_asn }}
+      peers:
+{% for p in cilium_bgp_peers %}
+        - name: {{ p.name }}
+          peerAddress: "{{ p.address }}"
+          peerASN: {{ p.asn }}
+          peerConfigRef:
+            name: bgp-peer-config
+{% endfor %}
+---
+apiVersion: cilium.io/v2
+kind: CiliumBGPAdvertisement
+metadata:
+  name: bgp-advertisement
+  labels:
+    advertise: bgp
+spec:
+  advertisements:
+    # 全ての LoadBalancer の IP を広報する
+    - advertisementType: Service
+      service:
+        addresses:
+          - LoadBalancerIP
+      selector:
+        matchExpressions:
+          - key: not-exist-label-name
+            operator: NotIn
+            values: [dummy-value]
+    - advertisementType: PodCIDR
+      attributes:
+        communities:
+          standard:
+            - "{{ cilium_bgp_local_asn }}:99"

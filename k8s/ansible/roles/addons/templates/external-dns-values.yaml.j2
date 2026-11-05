@@ -1,0 +1,33 @@
+provider:
+  name: rfc2136
+sources: [service, ingress, crd]
+domainFilters:
+  - {{ dns_zone }}
+policy: sync
+txtOwnerId: external-dns
+interval: 10s
+logLevel: info
+extraArgs:
+  - --rfc2136-host=bind9.{{ dns_namespace }}.svc.cluster.local.
+  - --rfc2136-port=53
+  - --rfc2136-zone={{ dns_zone }}
+  - --rfc2136-tsig-keyname={{ externaldns_tsig_keyname }}
+  - --rfc2136-tsig-secret-alg=hmac-sha256
+  - --rfc2136-tsig-axfr
+  - --create-ptr
+  - --managed-record-types=A
+  - --managed-record-types=AAAA
+  - --managed-record-types=CNAME
+  - --managed-record-types=PTR
+# 秘密鍵は Secret から環境変数で渡す（Deployment に平文で残さない）。
+env:
+  - name: EXTERNAL_DNS_RFC2136_TSIG_SECRET
+    valueFrom:
+      secretKeyRef:
+        name: external-dns-tsig
+        key: secret
+rbac:
+  create: true
+resources:
+  requests: { cpu: 20m, memory: 32Mi }
+  limits: { memory: 128Mi }

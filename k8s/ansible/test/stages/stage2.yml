@@ -1,0 +1,3 @@
+---
+# Cilium・BGP・Multus・NFS provisioner・ArgoCD
+- { name: addons, hosts: control_plane, roles: [addons] }

@@ -1,0 +1,4 @@
+FROM docker.io/library/debian:trixie
+RUN apt-get update && apt-get install -y --no-install-recommends systemd systemd-sysv sudo python3 ca-certificates curl gpg iproute2 kmod procps iptables conntrack ethtool socat iputils-ping && rm -rf /var/lib/apt/lists/*
+STOPSIGNAL SIGRTMIN+3
+CMD ["/sbin/init"]

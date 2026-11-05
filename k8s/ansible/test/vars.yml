@@ -1,0 +1,34 @@
+---
+# テスト環境用の上書き。本番の値は inventory/group_vars/all/main.yml にある。
+
+# ホストを変更しない・ホストにないものを使わない
+common_disable_swap: false            # ホストの swap を止めない
+kubelet_fail_swap_on: false
+common_kernel_modules: [overlay]      # RHEL 系カーネルには br_netfilter がない
+common_sysctls:
+  - { name: net.ipv4.ip_forward, value: "1" }
+kubeadm_ignore_preflight_errors:
+  - FileContent--proc-sys-net-bridge-bridge-nf-call-iptables
+  - Swap
+
+# 入れ子のコンテナでは VM を動かさない（メモリ節約）。blt / cdi-config の Application も外す
+kubevirt_enabled: false
+argocd_apps:
+  - { name: cam1, path: cam1, namespace: cam1 }
+  - { name: dmx, path: dmx, namespace: qlcplus }
+
+# このテスト環境（TUT の外）からは TUT の DNS サーバに届かないため、公開 DNS を使う
+node_dns_servers: ["1.1.1.1"]
+
+# コンテナ内の制約への対処
+argocd_network_policy: false          # 入れ子のコンテナでは probe が通らない
+
+# テスト用のアドレス（podman ネットワーク 172.31.99.0/24）
+api_endpoint: 172.31.99.200
+nfs_server: 172.31.99.1               # 未使用（NFS provisioner は検証しない）
+cilium_bgp_enabled: true
+cilium_bgp_peers:
+  - { name: router, address: "172.31.99.129", asn: 64646 }
+
+# ダミーの鍵（テスト専用）
+vault_externaldns_tsig_secret: "dGVzdC10c2lnLXNlY3JldC1mb3ItcG9kbWFuLW9ubHk="

@@ -1,0 +1,16 @@
+# Ansible (network ロール) が管理する。Multus 用の VLAN とブリッジ。
+# 管理用の VLAN ({{ network_mgmt_vlan }}) はここでは扱わない。
+# ブリッジは DHCP でアドレスを取得する（VLAN のインターフェースには付けない）。
+# デフォルトゲートウェイと DNS は dhcpcd.conf で受け取らない設定にしている。
+{% for v in network_vlans %}
+
+auto {{ nic }}.{{ v.id }}
+iface {{ nic }}.{{ v.id }} inet manual
+        vlan_raw_device {{ nic }}
+
+auto {{ v.bridge }}
+iface {{ v.bridge }} inet dhcp
+        bridge_ports {{ nic }}.{{ v.id }}
+        bridge_stp off
+        bridge_maxwait 1
+{% endfor %}

@@ -1,0 +1,124 @@
+---
+# ===== バージョン（導入時の最新安定版で固定。更新時はここだけ変える）=====
+k8s_minor: "1.37"            # pkgs.k8s.io のリポジトリ系列
+cilium_version: "1.20.4"
+helm_version: "v4.3.1"
+multus_version: "v4.3.1"
+kubevirt_version: "v1.9.1"
+cdi_version: "v1.66.1"
+argocd_chart_version: "10.12.1"
+nfs_provisioner_chart_version: "4.0.18"
+# containerd.io は Docker の apt リポジトリから入れ、apt-mark hold する（更新は手動）。
+
+# ===== ネットワーク =====
+api_endpoint: "192.168.99.200"   # becky
+api_port: 6443
+pod_cidr: "10.11.0.0/16"
+service_cidr: "10.96.0.0/12"   # ClusterIP の範囲（kubeadm の既定値。LB の IP とは別）
+
+# ===== ストレージ（NFS サーバは becky を兼用）=====
+nfs_server: "192.168.99.200"
+nfs_path: "/nfs"
+nfs_export_network: "192.168.99.128/25"
+
+# ===== ネットワーク（VLAN とブリッジのみ。管理用 VLAN は手動）=====
+network_manage_vlans: true
+network_interfaces_file: /etc/network/interfaces
+network_mgmt_vlan: 100
+network_vlans:                       # Multus の NetworkAttachmentDefinition が使うブリッジ
+  - { id: 10, bridge: br10 }
+  - { id: 20, bridge: br20 }
+
+# イメージの取得が遅いネットワークなので、待ち時間を長めにする。
+addons_helm_timeout: 30m
+
+# ===== 作業用ディレクトリ（control_plane のホーム）=====
+addons_dir: "{{ ansible_facts.env.HOME }}/.k8s-addons"
+
+# ===== ノードの DNS（TUT の DNS サーバ。https://imc.tut.ac.jp/hosting/faq-dns-server.html）=====
+node_dns_servers: ["133.15.64.100", "133.15.64.102"]
+node_dns_search: srv.utone.technotut.net
+
+# ===== ノードのパッケージ（全ノードで同じ構成にする。余計なものは入れない）=====
+common_packages_keep: [openssh-server, openssh-sftp-server, sudo, python3, ifupdown, curl, ca-certificates]
+common_packages_absent:
+  - docker-ce            # クラスタは containerd.io を直接使う
+  - docker-ce-cli
+  - docker-ce-rootless-extras
+  - docker-buildx-plugin
+  - docker-compose-plugin
+  - bind9                # ホストの bind9 は未使用（DNS はクラスタ内の bind9）
+  - bind9-utils
+  - golang
+  - golang-go
+  - fastfetch
+  - task-japanese
+  - task-ssh-server
+  - firmware-amd-graphics
+
+# ===== オプション =====
+kubevirt_enabled: true       # BLT を VM で動かす間は有効にする（コンテナ化したら false にできる）
+multus_enabled: true         # PRO DJ LINK / Ableton Link 用の L2 接続
+# NetworkAttachmentDefinition（現行クラスタと同じ。ブリッジは各ノードの /etc/network/interfaces で作る）
+multus_nads:
+  - { name: vlan10-bridge, namespace: kube-public, network: vlan10, bridge: br10, subnet: "10.10.0.0/20" }
+  - { name: vlan20-bridge, namespace: kube-public, network: vlan20, bridge: br20, subnet: "10.10.16.0/20" }
+
+# ===== Cilium BGP（必須）=====
+# 全体で AS 64646 を使う（iBGP）。ピアは FortiGate の 192.168.99.129。
+cilium_bgp_enabled: true
+cilium_bgp_local_asn: 64646
+cilium_bgp_peers:
+  - name: fortigate
+    address: "192.168.99.129"
+    asn: 64646
+
+# ===== swap（コンテナでのテスト時だけ変える。ホストの swap を止めないため）=====
+common_disable_swap: true
+kubelet_fail_swap_on: true
+
+# ===== カーネル設定（br_netfilter のないカーネルでのテスト時だけ変える）=====
+common_kernel_modules: [overlay, br_netfilter]
+common_sysctls:
+  - { name: net.bridge.bridge-nf-call-iptables, value: "1" }
+  - { name: net.bridge.bridge-nf-call-ip6tables, value: "1" }
+  - { name: net.ipv4.ip_forward, value: "1" }
+kubeadm_ignore_preflight_errors: []   # テスト時だけ使う
+
+# ===== kubelet のメモリ予約（メモリが少ないため）=====
+kubelet_system_reserved_memory: "512Mi"
+kubelet_kube_reserved_memory: "512Mi"
+kubelet_eviction_memory: "256Mi"
+
+# ===== ArgoCD が管理するアプリ（k8s/manifest/<path>）=====
+argocd_repo_url: "https://github.com/TechnoTUT/Infra.git"
+argocd_apps:
+  - { name: cam1, path: cam1, namespace: cam1 }
+  - { name: cam2, path: cam2, namespace: cam2 }
+  - { name: dmx, path: dmx, namespace: qlcplus }
+  - { name: live, path: live, namespace: live }
+  - { name: speedtest, path: speedtest, namespace: speedtest }
+  - { name: time, path: time, namespace: time }
+  # BLT は VM で動かす（KubeVirt と CDI が必要。kubevirt_enabled: true）。
+  # BLT をコンテナ化する別ブランチがマージされたら、この 2 行と kubevirt_enabled を見直す。
+  - { name: blt, path: blt, namespace: blt }
+  - { name: cdi-config, path: infrastructure/cdi }
+
+argocd_network_policy: true   # コンテナでのテスト時だけ false にする
+
+# ===== LoadBalancer の IP プール =====
+# LoadBalancer の IP プール（現行クラスタと同じ 10.12.0.0/16。BGP で広報する）。
+# 10.12.0.0 は FortiGate の DNS 転送先で bind9 専用にする。自動割り当てに取られないよう別のプールに分ける。
+cilium_lb_pool_start: "10.12.0.1"
+cilium_lb_pool_stop: "10.12.255.254"
+
+# ===== DNS (bind9 + ExternalDNS) =====
+dns_namespace: bind9
+dns_zone: svc.technotut.net
+bind9_lb_ip: "10.12.0.0"              # bind9 の LoadBalancer IP。FortiGate の DNS 転送先がこの IP を向いている
+bind9_image: "docker.io/internetsystemsconsortium/bind9:9.21"   # 現行と同じ（9.21 系）
+bind9_static_records:                  # ゾーンに固定で入れるレコード（他は ExternalDNS が登録する）
+  - { name: pa, ip: "192.168.12.22" }
+externaldns_chart_version: "1.21.1"
+externaldns_tsig_keyname: externaldns-key
+# TSIG の秘密鍵は vault.yml の vault_externaldns_tsig_secret に置く。

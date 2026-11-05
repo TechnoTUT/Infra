@@ -1,0 +1,129 @@
+---
+- name: Kubernetes の apt 鍵
+  ansible.builtin.shell: |
+    set -o pipefail
+    curl -fsSL https://pkgs.k8s.io/core:/stable:/v{{ k8s_minor }}/deb/Release.key \
+      | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+  args:
+    creates: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+    executable: /bin/bash
+  become: true
+
+- name: Kubernetes の apt リポジトリ
+  ansible.builtin.copy:
+    dest: /etc/apt/sources.list.d/kubernetes.list
+    mode: "0644"
+    content: >
+      deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg]
+      https://pkgs.k8s.io/core:/stable:/v{{ k8s_minor }}/deb/ /
+  become: true
+
+# 以前のクラスタで hold されたままだと、apt install では指定の系列（{{ k8s_minor }}）に上がらない。
+# クラスタに参加する前のノードだけ、hold を外して指定の系列の最新パッチに揃える。
+# 参加済みのノードは勝手に上げない（バージョンを上げるときは kubeadm upgrade を使う）。
+- name: ノードがクラスタに参加済みか確認する
+  ansible.builtin.stat:
+    path: /etc/kubernetes/kubelet.conf
+  register: kubeadm_joined
+
+- name: インストール済みの kubeadm のバージョンを確認する
+  ansible.builtin.command: dpkg-query -W -f='${Version}' kubeadm
+  register: kubeadm_installed
+  failed_when: false
+  changed_when: false
+
+- name: 指定の系列に揃える必要があるか判定する
+  ansible.builtin.set_fact:
+    kubeadm_align: >-
+      {{ not kubeadm_joined.stat.exists
+         and not (kubeadm_installed.stdout.startswith(k8s_minor ~ '.')) }}
+
+- name: hold を外す（揃える場合のみ）
+  ansible.builtin.dpkg_selections:
+    name: "{{ item }}"
+    selection: install
+  loop: [kubelet, kubeadm, kubectl]
+  become: true
+  when: kubeadm_align | bool
+
+- name: kubelet kubeadm kubectl を入れる
+  ansible.builtin.apt:
+    name: [kubelet, kubeadm, kubectl]
+    state: "{{ 'latest' if kubeadm_align | bool else 'present' }}"
+    update_cache: true
+  become: true
+
+- name: hold する（更新は kubeadm upgrade で行う）
+  ansible.builtin.dpkg_selections:
+    name: "{{ item }}"
+    selection: hold
+  loop: [kubelet, kubeadm, kubectl]
+  become: true
+
+- name: kubelet を有効化する
+  ansible.builtin.systemd_service:
+    name: kubelet
+    enabled: true
+  become: true
+
+# ===== コントロールプレーン =====
+- name: クラスタを初期化する（becky）
+  when: inventory_hostname in groups['control_plane']
+  block:
+    - name: kubeadm の設定を置く
+      ansible.builtin.template:
+        src: kubeadm-init.yaml.j2
+        dest: /etc/kubernetes/kubeadm-init.yaml
+        mode: "0600"
+      become: true
+
+    - name: kubeadm init
+      ansible.builtin.command: >
+        kubeadm init --config /etc/kubernetes/kubeadm-init.yaml
+        {% if kubeadm_ignore_preflight_errors %}--ignore-preflight-errors={{ kubeadm_ignore_preflight_errors | join(',') }}{% endif %}
+      args:
+        creates: /etc/kubernetes/admin.conf
+      become: true
+
+    - name: ~/.kube を作る
+      ansible.builtin.file:
+        path: "{{ ansible_facts.env.HOME }}/.kube"
+        state: directory
+        mode: "0700"
+
+    - name: kubeconfig を配置する
+      ansible.builtin.copy:
+        src: /etc/kubernetes/admin.conf
+        dest: "{{ ansible_facts.env.HOME }}/.kube/config"
+        remote_src: true
+        owner: "{{ ansible_facts.user_id }}"
+        mode: "0600"
+      become: true
+
+# ===== ワーカー =====
+- name: join コマンドを取得する（トークンは Git に残さない）
+  ansible.builtin.command: kubeadm token create --print-join-command
+  delegate_to: "{{ groups['control_plane'][0] }}"
+  become: true
+  register: kubeadm_join_cmd
+  changed_when: false
+  no_log: true
+  when: inventory_hostname in groups['workers']
+
+- name: ワーカーの node-ip を設定する
+  ansible.builtin.copy:
+    dest: /etc/default/kubelet
+    content: "KUBELET_EXTRA_ARGS=--node-ip={{ node_ip }}\n"
+    mode: "0644"
+  become: true
+  when: inventory_hostname in groups['workers']
+
+- name: kubeadm join
+  ansible.builtin.command: >-
+    {{ kubeadm_join_cmd.stdout }}
+    {% if kubeadm_ignore_preflight_errors %}--ignore-preflight-errors={{ kubeadm_ignore_preflight_errors | join(',') }}{% endif %}
+  args:
+    creates: /etc/kubernetes/kubelet.conf
+  become: true
+  no_log: true
+  when: inventory_hostname in groups['workers']

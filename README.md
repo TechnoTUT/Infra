@@ -20,4 +20,4 @@ TechnoTUT Networkでは、DJ機器との通信に用いるPRO DJ LINKや、映�
 TechnoTUT Network網内では、Kubernetesを用いたコンテナオーケストレーション基盤を提供しています。  
 コンテナオーケストレーションを採用することで、複数の計算機にまたがるコンテナのデプロイ・スケーリング・管理を自動化し、効率的なリソース利用と高可用性を実現しています。また、GitOps・IaC(Infrastructure as Code)を導入することで、インフラの構成管理と自動化を推進し、運用の一貫性と信頼性を向上させています。
 
-構築方法については、[k8s.md](./k8s/k8s.md)を参照してください。
+構築方法については、[構築方法](./docs/content/computing/deploy.mdx)を参照してください。

@@ -1,0 +1,5 @@
+# Ansible (common ロール) が管理する。
+{% for ns in node_dns_servers %}
+nameserver {{ ns }}
+{% endfor %}
+search {{ node_dns_search }}

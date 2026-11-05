@@ -1,0 +1,130 @@
+# 現行クラスタの構成に合わせる。ゾーンは emptyDir に置き、レコードは ExternalDNS が再登録する。
+apiVersion: v1
+kind: Secret
+metadata:
+  name: bind-named-conf
+  namespace: {{ dns_namespace }}
+type: Opaque
+stringData:
+  named.conf: |
+    options {
+      directory "/data";
+      listen-on { any; };
+      listen-on-v6 { any; };
+      allow-query { any; };
+      allow-transfer { none; };
+      recursion no;
+      dnssec-validation no;
+    };
+
+    key "{{ externaldns_tsig_keyname }}" {
+      algorithm hmac-sha256;
+      secret "{{ vault_externaldns_tsig_secret }}";
+    };
+
+    zone "{{ dns_zone }}" {
+      type primary;
+      file "/data/db.{{ dns_zone }}";
+      allow-update { key {{ externaldns_tsig_keyname }}; };
+      allow-transfer { key {{ externaldns_tsig_keyname }}; };
+    };
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: external-dns-tsig
+  namespace: {{ dns_namespace }}
+type: Opaque
+stringData:
+  secret: "{{ vault_externaldns_tsig_secret }}"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bind-zone
+  namespace: {{ dns_namespace }}
+data:
+  db.forward: |
+    $TTL 86400
+    @   IN  SOA ns.{{ dns_zone }}. admin.{{ dns_zone }}. (
+            {{ '%Y%m%d' | strftime }}01 ; serial
+            3600       ; refresh
+            1800       ; retry
+            604800     ; expire
+            86400 )    ; minimum
+        IN  NS  ns.{{ dns_zone }}.
+    ns  IN  A   {{ bind9_lb_ip }}
+{% for r in bind9_static_records %}
+    {{ r.name }}  IN  A   {{ r.ip }}
+{% endfor %}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bind9
+  namespace: {{ dns_namespace }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: bind9
+  template:
+    metadata:
+      labels:
+        app: bind9
+    spec:
+      securityContext:
+        fsGroup: 0
+        runAsUser: 0
+      initContainers:
+        - name: init-zones
+          image: docker.io/library/busybox:1.36
+          command: ["sh", "-c"]
+          args:
+            - |
+              cp /named/named.conf /data/named.conf
+              cp /zone/db.forward /data/db.{{ dns_zone }}
+              chmod -R 777 /data
+          volumeMounts:
+            - { name: named-conf, mountPath: /named }
+            - { name: zone, mountPath: /zone }
+            - { name: bind-data, mountPath: /data }
+      containers:
+        - name: bind9
+          image: {{ bind9_image }}
+          command: ["named", "-g", "-u", "root", "-c", "/data/named.conf"]
+          ports:
+            - { containerPort: 53, protocol: UDP }
+            - { containerPort: 53, protocol: TCP }
+          readinessProbe:
+            tcpSocket: { port: 53 }
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests: { cpu: 20m, memory: 64Mi }
+            limits: { memory: 256Mi }
+          volumeMounts:
+            - { name: bind-data, mountPath: /data }
+      volumes:
+        - name: named-conf
+          secret: { secretName: bind-named-conf }
+        - name: zone
+          configMap: { name: bind-zone }
+        - name: bind-data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bind9
+  namespace: {{ dns_namespace }}
+spec:
+  type: LoadBalancer
+  loadBalancerIP: {{ bind9_lb_ip }}
+  selector:
+    app: bind9
+  ports:
+    - { name: dns-tcp, protocol: TCP, port: 53, targetPort: 53 }
+    - { name: dns-udp, protocol: UDP, port: 53, targetPort: 53 }
