@@ -3,12 +3,14 @@
 - name: 必要なパッケージを手動インストール扱いにする
   ansible.builtin.shell: |
     for p in {{ common_packages_keep | join(' ') }}; do
-      dpkg -s "$p" >/dev/null 2>&1 && apt-mark manual "$p"
+      if dpkg -s "$p" >/dev/null 2>&1 && [ -n "$(apt-mark showauto "$p")" ]; then
+        apt-mark manual "$p" >/dev/null && echo "CHANGED $p"
+      fi
     done
     exit 0
   become: true
   register: common_keep
-  changed_when: "'set to manually installed' in common_keep.stdout"
+  changed_when: "'CHANGED' in common_keep.stdout"
 
 - name: 不要なパッケージを削除する（3 台を同じ構成にし、最小に保つ）
   ansible.builtin.apt:
@@ -41,6 +43,7 @@
     src: resolv.conf.j2
     dest: /etc/resolv.conf
     mode: "0644"
+    unsafe_writes: true   # バインドマウントされた resolv.conf（コンテナ）でも書けるように
   become: true
 
 - name: swap を無効化する
