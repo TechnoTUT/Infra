@@ -109,10 +109,6 @@
       register: addons_apply
       changed_when: "'created' in addons_apply.stdout or 'configured' in addons_apply.stdout"
 
-    - name: KubeVirt が使えるようになるのを待つ
-      ansible.builtin.command: kubectl wait kubevirt/kubevirt -n kubevirt --for=condition=Available --timeout=3600s
-      changed_when: false
-
     - name: virtctl を入れる
       ansible.builtin.get_url:
         url: "https://github.com/kubevirt/kubevirt/releases/download/{{ kubevirt_version }}/virtctl-{{ kubevirt_version }}-linux-amd64"
@@ -136,3 +132,10 @@
   vars:
     apply_content: "{{ lookup('ansible.builtin.template', 'argocd-app.yaml.j2') }}"
   loop: "{{ argocd_apps }}"
+
+# KubeVirt の virt-template-controller は CDI の DataVolume CRD を必要とする。
+# CRD は Argo CD の cdi-config が CDI の CR を作った後に現れるので、待つのは Application を作った後にする。
+- name: KubeVirt が使えるようになるのを待つ
+  when: kubevirt_enabled
+  ansible.builtin.command: kubectl wait kubevirt/kubevirt -n kubevirt --for=condition=Available --timeout=3600s
+  changed_when: false
