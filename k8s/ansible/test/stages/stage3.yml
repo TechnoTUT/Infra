@@ -2,19 +2,8 @@
 # bind9 と ExternalDNS
 - name: dns
   hosts: control_plane
-  pre_tasks:
-    - name: テスト用の PV（NFS の代わり）
-      ansible.builtin.shell: |
-        kubectl apply -f - <<'EOF'
-        apiVersion: v1
-        kind: PersistentVolume
-        metadata: { name: bind-test-pv }
-        spec:
-          capacity: { storage: 1Gi }
-          accessModes: [ReadWriteOnce]
-          storageClassName: test-local
-          hostPath: { path: /var/lib/bind-test, type: DirectoryOrCreate }
-        EOF
-      register: test_pv
-      changed_when: "'created' in test_pv.stdout"
-  roles: [dns]
+  tasks:
+    - name: DNS
+      ansible.builtin.include_role:
+        name: addons
+        tasks_from: dns

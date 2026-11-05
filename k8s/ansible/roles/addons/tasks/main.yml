@@ -1,11 +1,6 @@
 ---
 # control_plane（becky）で実行する。kubeconfig は kubeadm ロールが配置する。
-- name: kubernetes.core の依存ライブラリを入れる
-  ansible.builtin.apt:
-    name: [python3-kubernetes, python3-yaml]
-    state: present
-  become: true
-
+# ノードに Python ライブラリを入れないよう、helm と kubectl のコマンドだけを使う。
 - name: Helm を入れる
   ansible.builtin.unarchive:
     src: "https://get.helm.sh/helm-{{ helm_version }}-linux-amd64.tar.gz"
@@ -17,68 +12,70 @@
 
 - name: 作業用ディレクトリ
   ansible.builtin.file:
-    path: "{{ ansible_facts.env.HOME }}/.k8s-addons"
+    path: "{{ addons_dir }}"
     state: directory
     mode: "0700"
 
 - name: values と manifest を配置する
   ansible.builtin.template:
     src: "{{ item }}.j2"
-    dest: "{{ ansible_facts.env.HOME }}/.k8s-addons/{{ item }}"
+    dest: "{{ addons_dir }}/{{ item }}"
     mode: "0600"
-  loop: [cilium-values.yaml, nfs-values.yaml, argocd-values.yaml, cilium-bgp.yaml, cilium-lb-pool.yaml, kubevirt-cr.yaml]
+  loop: [cilium-values.yaml, nfs-values.yaml, argocd-values.yaml]
 
 # ---- Cilium（CNI がないと他が起動しないので最初）----
 - name: Cilium
-  kubernetes.core.helm:
-    name: cilium
-    chart_ref: cilium
-    chart_repo_url: https://helm.cilium.io
-    chart_version: "{{ cilium_version }}"
-    release_namespace: kube-system
-    values_files: ["{{ ansible_facts.env.HOME }}/.k8s-addons/cilium-values.yaml"]
-    wait: true
+  ansible.builtin.include_tasks: helm.yml
+  vars:
+    helm_name: cilium
+    helm_chart: cilium
+    helm_repo: https://helm.cilium.io
+    helm_version: "{{ cilium_version }}"
+    helm_ns: kube-system
+    helm_values: cilium-values.yaml
 
 - name: ノードが Ready になるのを待つ
   ansible.builtin.command: kubectl wait --for=condition=Ready node --all --timeout=300s
   changed_when: false
 
 - name: LoadBalancer の IP プール
-  ansible.builtin.command: kubectl apply -f {{ ansible_facts.env.HOME }}/.k8s-addons/cilium-lb-pool.yaml
-  register: addons_apply
-  changed_when: "'created' in addons_apply.stdout or 'configured' in addons_apply.stdout"
+  ansible.builtin.include_tasks: apply.yml
+  vars:
+    apply_content: "{{ lookup('ansible.builtin.template', 'cilium-lb-pool.yaml.j2') }}"
 
 - name: Cilium BGP の設定
-  ansible.builtin.command: kubectl apply -f {{ ansible_facts.env.HOME }}/.k8s-addons/cilium-bgp.yaml
+  ansible.builtin.include_tasks: apply.yml
+  vars:
+    apply_content: "{{ lookup('ansible.builtin.template', 'cilium-bgp.yaml.j2') }}"
   when: cilium_bgp_enabled
-  register: addons_apply
-  changed_when: "'created' in addons_apply.stdout or 'configured' in addons_apply.stdout"
 
 # ---- Multus（thin）----
 - name: Multus
   ansible.builtin.command: >
     kubectl apply -f
     https://raw.githubusercontent.com/k8snetworkplumbingwg/multus-cni/{{ multus_version }}/deployments/multus-daemonset.yml
-  when: multus_enabled
   register: addons_apply
   changed_when: "'created' in addons_apply.stdout or 'configured' in addons_apply.stdout"
+  when: multus_enabled
 
 - name: NetworkAttachmentDefinition（vlan10 / vlan20 のブリッジ）
-  kubernetes.core.k8s:
-    state: present
-    definition: "{{ lookup('ansible.builtin.template', 'nad.yaml.j2') | from_yaml }}"
+  ansible.builtin.include_tasks: apply.yml
+  vars:
+    apply_content: "{{ lookup('ansible.builtin.template', 'nad.yaml.j2') }}"
   loop: "{{ multus_nads }}"
   when: multus_enabled
 
 # ---- ストレージ ----
 - name: NFS provisioner
-  kubernetes.core.helm:
-    name: nfs-subdir-external-provisioner
-    chart_ref: nfs-subdir-external-provisioner
-    chart_repo_url: https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/
-    chart_version: "{{ nfs_provisioner_chart_version }}"
-    release_namespace: kube-system
-    values_files: ["{{ ansible_facts.env.HOME }}/.k8s-addons/nfs-values.yaml"]
+  ansible.builtin.include_tasks: helm.yml
+  vars:
+    helm_name: nfs-subdir-external-provisioner
+    helm_chart: nfs-subdir-external-provisioner
+    helm_repo: https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/
+    helm_version: "{{ nfs_provisioner_chart_version }}"
+    helm_ns: kube-system
+    helm_values: nfs-values.yaml
+    helm_wait: false
 
 # ---- KubeVirt と CDI（BLT の VM 用）----
 # CDI の CR は ArgoCD の cdi-config が管理するので、ここでは operator だけを入れる。
@@ -93,9 +90,9 @@
       changed_when: "'created' in addons_apply.stdout or 'configured' in addons_apply.stdout"
 
     - name: KubeVirt の CR
-      ansible.builtin.command: kubectl apply -f {{ ansible_facts.env.HOME }}/.k8s-addons/kubevirt-cr.yaml
-      register: addons_apply
-      changed_when: "'created' in addons_apply.stdout or 'configured' in addons_apply.stdout"
+      ansible.builtin.include_tasks: apply.yml
+      vars:
+        apply_content: "{{ lookup('ansible.builtin.template', 'kubevirt-cr.yaml.j2') }}"
 
     - name: CDI operator
       ansible.builtin.command: >
@@ -117,18 +114,17 @@
 
 # ---- ArgoCD ----
 - name: ArgoCD
-  kubernetes.core.helm:
-    name: argocd
-    chart_ref: argo-cd
-    chart_repo_url: https://argoproj.github.io/argo-helm
-    chart_version: "{{ argocd_chart_version }}"
-    release_namespace: argocd
-    create_namespace: true
-    values_files: ["{{ ansible_facts.env.HOME }}/.k8s-addons/argocd-values.yaml"]
-    wait: true
+  ansible.builtin.include_tasks: helm.yml
+  vars:
+    helm_name: argocd
+    helm_chart: argo-cd
+    helm_repo: https://argoproj.github.io/argo-helm
+    helm_version: "{{ argocd_chart_version }}"
+    helm_ns: argocd
+    helm_values: argocd-values.yaml
 
 - name: ArgoCD の Application を作る
-  kubernetes.core.k8s:
-    state: present
-    definition: "{{ lookup('ansible.builtin.template', 'argocd-app.yaml.j2') | from_yaml }}"
+  ansible.builtin.include_tasks: apply.yml
+  vars:
+    apply_content: "{{ lookup('ansible.builtin.template', 'argocd-app.yaml.j2') }}"
   loop: "{{ argocd_apps }}"
