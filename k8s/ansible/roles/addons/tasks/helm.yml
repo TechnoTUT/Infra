@@ -1,12 +1,14 @@
 ---
 # Helm でチャートを入れる（Python ライブラリ不要）。
-# 入力: helm_name, helm_chart, helm_repo, helm_version, helm_ns, helm_values, [helm_wait, helm_timeout]
+# 入力: helm_name, helm_chart, [helm_repo], helm_version, helm_ns, helm_values, [helm_wait, helm_timeout]
+# helm_repo を省くと、helm_chart を OCI の参照 (oci://...) として扱う。
 # 変更の報告は「新規インストール」のときだけ。
 - name: "Helm: {{ helm_name }}"
   ansible.builtin.command:
     argv: >-
-      {{ ['helm', 'upgrade', '--install', helm_name, helm_chart,
-          '--repo', helm_repo, '--version', helm_version,
+      {{ ['helm', 'upgrade', '--install', helm_name, helm_chart]
+         + (['--repo', helm_repo] if helm_repo | default('') | length > 0 else [])
+         + ['--version', helm_version,
           '-n', helm_ns, '--create-namespace',
           '-f', addons_dir ~ '/' ~ helm_values]
          + (['--wait', '--timeout', helm_timeout | default(addons_helm_timeout)] if helm_wait | default(true) else []) }}
