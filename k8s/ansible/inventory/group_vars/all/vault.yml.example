@@ -1,0 +1,5 @@
+---
+# 実際の vault.yml は次で作る（暗号化して Git に入れてよい）:
+#   ansible-vault create inventory/group_vars/all/vault.yml
+# 例: ExternalDNS (RFC2136) 用の TSIG キー
+vault_externaldns_tsig_secret: "CHANGE_ME"

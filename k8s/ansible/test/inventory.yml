@@ -1,0 +1,13 @@
+# Podman のコンテナを becky / packard に見立てたテスト用 inventory。
+all:
+  vars:
+    ansible_connection: containers.podman.podman
+    ansible_podman_executable: "{{ inventory_dir }}/podsudo"
+    ansible_python_interpreter: /usr/bin/python3
+  children:
+    control_plane:
+      hosts: { becky: { node_ip: 172.31.99.200 } }
+    workers:
+      hosts: { packard: { node_ip: 172.31.99.201 } }
+    k8s:
+      children: { control_plane: {}, workers: {} }

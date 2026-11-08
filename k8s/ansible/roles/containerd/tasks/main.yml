@@ -1,0 +1,61 @@
+---
+# Docker の apt リポジトリから containerd.io を入れる（runc を同梱）。
+# CNI は Cilium が入れるので CNI plugins は入れない。
+- name: apt の keyrings ディレクトリ
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: "0755"
+  become: true
+
+- name: Docker の GPG 鍵を置く
+  ansible.builtin.get_url:
+    url: https://download.docker.com/linux/debian/gpg
+    dest: /etc/apt/keyrings/docker.asc
+    mode: "0644"
+  become: true
+
+- name: Docker の apt リポジトリを登録する
+  ansible.builtin.copy:
+    dest: /etc/apt/sources.list.d/docker.sources
+    mode: "0644"
+    content: |
+      Types: deb
+      URIs: https://download.docker.com/linux/debian
+      Suites: {{ ansible_facts.distribution_release }}
+      Components: stable
+      Architectures: {{ 'amd64' if ansible_facts.architecture == 'x86_64' else ansible_facts.architecture }}
+      Signed-By: /etc/apt/keyrings/docker.asc
+  become: true
+
+- name: containerd.io を入れる
+  ansible.builtin.apt:
+    name: containerd.io
+    state: present
+    update_cache: true
+  become: true
+
+- name: containerd.io を hold する（更新は手動）
+  ansible.builtin.dpkg_selections:
+    name: containerd.io
+    selection: hold
+  become: true
+
+# パッケージの既定の設定は CRI が無効なので、生成し直す。
+- name: config.toml を生成する
+  ansible.builtin.shell: |
+    set -e
+    containerd config default > /etc/containerd/config.toml
+    sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml
+    touch /etc/containerd/.ansible-generated
+  args:
+    creates: /etc/containerd/.ansible-generated
+  become: true
+  notify: restart containerd
+
+- name: containerd を有効化して起動する
+  ansible.builtin.systemd_service:
+    name: containerd
+    enabled: true
+    state: started
+  become: true

@@ -1,0 +1,39 @@
+---
+# bind9 と ExternalDNS。site.yml からは tasks_from: dns で呼ぶ。
+- name: TSIG の秘密鍵が Vault にあることを確認する
+  ansible.builtin.assert:
+    that: vault_externaldns_tsig_secret is defined
+    fail_msg: >
+      inventory/group_vars/all/vault.yml に vault_externaldns_tsig_secret がない。
+      vault.yml.example を参照して ansible-vault create で作る。
+
+- name: Namespace
+  ansible.builtin.include_tasks: apply.yml
+  vars:
+    apply_content: |
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: {{ dns_namespace }}
+
+- name: bind9 と TSIG の Secret を適用する
+  ansible.builtin.include_tasks: apply.yml
+  vars:
+    apply_content: "{{ lookup('ansible.builtin.template', 'bind9.yaml.j2') }}"
+    apply_no_log: true
+
+- name: ExternalDNS の values を配置する
+  ansible.builtin.template:
+    src: external-dns-values.yaml.j2
+    dest: "{{ addons_dir }}/external-dns-values.yaml"
+    mode: "0600"
+
+- name: ExternalDNS
+  ansible.builtin.include_tasks: helm.yml
+  vars:
+    helm_name: external-dns
+    helm_chart: external-dns
+    helm_repo: https://kubernetes-sigs.github.io/external-dns/
+    helm_version: "{{ externaldns_chart_version }}"
+    helm_ns: "{{ dns_namespace }}"
+    helm_values: external-dns-values.yaml

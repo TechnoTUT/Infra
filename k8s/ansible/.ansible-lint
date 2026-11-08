@@ -1,0 +1,2 @@
+skip_list:
+  - name[casing]   # タスク名は日本語で書く

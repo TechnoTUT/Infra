@@ -1,0 +1,13 @@
+---
+# 設定を変えたときの反映。ifupdown が古い状態を持っていても作り直せるよう、先に ifdown --force する。
+- name: ifup network
+  ansible.builtin.shell: |
+    ifdown --force {{ item.bridge }} {{ nic }}.{{ item.id }} || true
+    ifup {{ nic }}.{{ item.id }}
+    ifup {{ item.bridge }}
+  loop: "{{ network_vlans }}"
+  # DHCP が応答しないと ifup は失敗するが、インターフェース自体は起動する。
+  # 結果はこのあとの確認タスクで判定するので、ここでは失敗にしない。
+  failed_when: false
+  changed_when: true
+  become: true

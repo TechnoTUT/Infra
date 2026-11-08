@@ -1,0 +1,9 @@
+---
+# bind9 と ExternalDNS
+- name: dns
+  hosts: control_plane
+  tasks:
+    - name: DNS
+      ansible.builtin.include_role:
+        name: addons
+        tasks_from: dns

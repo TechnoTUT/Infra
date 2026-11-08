@@ -1,0 +1,36 @@
+# bind9 専用（FortiGate の DNS 転送先）。
+apiVersion: cilium.io/v2
+kind: CiliumLoadBalancerIPPool
+metadata:
+  name: dns
+spec:
+  blocks:
+    - cidr: {{ bind9_lb_ip }}/32
+  serviceSelector:
+    matchLabels:
+      io.kubernetes.service.namespace: {{ dns_namespace }}
+      io.kubernetes.service.name: bind9
+---
+# IP を指定しない Service の自動割り当て用。
+apiVersion: cilium.io/v2
+kind: CiliumLoadBalancerIPPool
+metadata:
+  name: default
+spec:
+  blocks:
+    - start: "{{ cilium_lb_pool_start }}"
+      stop: "{{ cilium_lb_pool_stop }}"
+---
+# IP を固定する Service 用（loadBalancerIP で指定）。
+# ラベルを付けた Service だけが使えるので、自動割り当てで固定 IP が取られない。
+apiVersion: cilium.io/v2
+kind: CiliumLoadBalancerIPPool
+metadata:
+  name: static
+spec:
+  blocks:
+    - start: "{{ cilium_lb_static_start }}"
+      stop: "{{ cilium_lb_static_stop }}"
+  serviceSelector:
+    matchLabels:
+      {{ cilium_lb_static_label }}: "true"

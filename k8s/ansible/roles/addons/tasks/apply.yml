@@ -1,0 +1,10 @@
+---
+# マニフェストを kubectl apply -f - で適用する（Python ライブラリ不要）。
+# 入力: apply_content（YAML 文字列）, [apply_no_log]
+- name: kubectl apply
+  ansible.builtin.command: kubectl apply -f -
+  args:
+    stdin: "{{ apply_content }}"
+  register: addons_apply
+  changed_when: "'created' in addons_apply.stdout or 'configured' in addons_apply.stdout"
+  no_log: "{{ apply_no_log | default(false) }}"

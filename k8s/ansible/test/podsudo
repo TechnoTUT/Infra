@@ -1,0 +1,3 @@
+#!/bin/sh
+# rootful の podman を ansible から呼ぶためのラッパー。
+exec sudo -n podman "$@"

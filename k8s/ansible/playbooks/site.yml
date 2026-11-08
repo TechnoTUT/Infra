@@ -1,0 +1,35 @@
+---
+# 全ノードの準備 → CP の初期化 → ワーカーの join → アドオン の順。
+- name: ネットワーク（VLAN とブリッジ）
+  hosts: k8s
+  roles:
+    - role: network
+      when: network_manage_vlans
+
+- name: ノードの準備
+  hosts: k8s
+  roles: [common, containerd]
+
+- name: NFS サーバ（becky）
+  hosts: control_plane
+  roles: [nfs]
+
+- name: コントロールプレーンの初期化
+  hosts: control_plane
+  roles: [kubeadm]
+
+- name: ワーカーの参加
+  hosts: workers
+  roles: [kubeadm]
+
+- name: アドオンの導入
+  hosts: control_plane
+  roles: [addons]
+
+- name: DNS (bind9 と ExternalDNS) の導入
+  hosts: control_plane
+  tasks:
+    - name: DNS
+      ansible.builtin.include_role:
+        name: addons
+        tasks_from: dns
