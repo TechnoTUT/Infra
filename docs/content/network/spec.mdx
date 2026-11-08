@@ -4,35 +4,75 @@ sidebar_label: 仕様
 sidebar_position: 2
 ---
 
-## 主要ネットワーク機器の役割
+## 全体構成
 
-本ネットワークを構成する主要な機器とその役割は以下の通りです。
+対外接続回線から順に、IX3110 (対外接続ルータ)、FortiGate 100D (NGFW)、N-1 (コアスイッチ)、各エリアのスイッチとつながります。
 
-- **対外接続ルータ**: [NEC UNIVERGE IX3110](https://github.com/TechnoTUT/Infra/blob/main/network/config/IX3110.txt)
-- **コアスイッチ**: [Allied Telesis AT-SH510-28GTX](https://github.com/TechnoTUT/Infra/blob/main/network/config/AT-SH510-28GTX.txt)
-  - 会場内スイッチング・ルーティングの中心。各VLANのゲートウェイ(SVI)やDHCPサーバー機能を提供。
-- **NGFW (次世代ファイアウォール)**: Fortinet FortiGate 60D
-  - 対外接続ルータとコアスイッチの間で、セキュリティ制御を行う。
+- L3 の処理は FortiGate に集約しています。全ての VLAN のゲートウェイと DHCP サーバは FortiGate です。
+- N-1 から先のスイッチは L2 として動き、全ての VLAN をトランクで運びます。
+- VLAN とサブネットは [VLAN・IPアドレス設計](/network/vlan) を参照してください。
 
-主要機器同士はRIP/BGPによって経路情報を交換します。使用するAS番号は `64646` です。
+## 主要機器の役割
 
----
+| 役割 | 機器 | 内容 | 設定 |
+| :--- | :--- | :--- | :--- |
+| 対外接続ルータ | NEC UNIVERGE IX3110 | 対外接続回線の終端。FortiGate と BGP で経路を交換する | 準備中 |
+| NGFW | Fortinet FortiGate 100D | 全 VLAN のゲートウェイ、DHCP サーバ、セキュリティ制御。IX3110 と Kubernetes のノードの BGP ピア。DNS の転送先は Kubernetes 上の bind9 (`10.12.0.0`) | - |
+| コアスイッチ (N-1, ラック) | Allied Telesis AT-SH510-28GTX | L2 の中心。VLAN 10・20 の IGMP Snooping Querier | [AT-SH510-28GTX.txt](https://github.com/TechnoTUT/Infra/blob/main/network/config/AT-SH510-28GTX.txt) |
+| PA 用スイッチ (N-4, PA 卓) | Allied Telesis AT-x210-24GT | PA 機器と AV 機器の収容 | [AT-x210-24GT.txt](https://github.com/TechnoTUT/Infra/blob/main/network/config/AT-x210-24GT.txt) |
+
+## ルーティング
+
+経路交換には BGP だけを使います。AS 番号は全体で `64646` (iBGP) です。
+
+| ピア | セグメント | 交換する経路 |
+| :--- | :--- | :--- |
+| IX3110 (`192.168.200.1`) ⇔ FortiGate (`192.168.200.2`) | `peer` (VLAN 101, `192.168.200.0/30`) | 対外接続と会場内の経路 |
+| FortiGate (`192.168.99.129`) ⇔ Kubernetes のノード (`192.168.99.200` - `.202`) | `SV` (VLAN 100, `192.168.99.128/25`) | ノードから LoadBalancer IP (`10.12.0.0/16`) と Pod CIDR (`10.11.0.0/16`) |
+
+FortiGate は Kubernetes のノードを route reflector client として扱います。設定は [Kubernetes 構築方法](/computing/deploy) を参照してください。
+
+スイッチは L3 の経路を持ちません。N-1 は管理用に、デフォルトルートを FortiGate (`192.168.99.1`) に向けています。
+
+## L2
+
+- **VLAN**: 全てのスイッチで同じ VLAN (10, 20, 30, 40, 42-45, 99, 100) を有効にしています。トランクは全ての VLAN を通し、ネイティブ VLAN は使いません。
+- **スパニングツリー**: RSTP
+- **リンクアグリゲーション**:
+
+  | スイッチ | インターフェース | ポート | 方式 | 用途 |
+  | :--- | :--- | :--- | :--- | :--- |
+  | N-1 | `po1` | `port2.0.5` - `2.0.12` | LACP | トランク |
+  | N-1 | `po2` | `port2.0.13` - `2.0.20` | LACP | トランク |
+  | N-1 | `sa1` | `port2.0.21` - `2.0.22` | 静的 | トランク |
+  | N-4 | `po1` | `port1.0.17` - `1.0.24` | LACP | 上流へのトランク |
+  | N-4 | `po2` | `port1.0.9` - `1.0.10` | LACP | AV (VLAN 20) の機器 |
+  | N-4 | `po3` | `port1.0.11` - `1.0.12` | LACP | AV (VLAN 20) の機器 |
+
+- **IGMP Snooping**: マルチキャストを使う DJ (VLAN 10) と AV (VLAN 20) では、N-1 が Querier になります (`10.10.0.2`, `10.10.16.2`)。
+- **PoE**: 一部のスイッチは PoE で機器に給電できます。
+
+## 管理
+
+スイッチは MGMT (VLAN 99, `192.168.99.0/25`) で管理し、SSH (v2) で接続します。
+
+| スイッチ | 管理 IP |
+| :--- | :--- |
+| N-1 | `192.168.99.2` |
+| N-4 | `192.168.99.4` |
 
 ## 構成図
 ![topology](https://github.com/TechnoTUT/Infra/blob/main/network/topology.drawio.svg?raw=true)
 ![wire](https://github.com/TechnoTUT/Infra/blob/main/network/wire.drawio.svg?raw=true)
 
----
-
 ## 機材一覧
 
 ### L3
 [NEC UNIVERGE IX3110](https://jpn.nec.com/univerge/ix/Info/ix3110.html)\
-[Allied Telesis AT-SH510-28GTX](https://www.allied-telesis.co.jp/support/list/switch/x510/manual.html)\
-[Allied Telesis AT-x600-48Ts](https://www.allied-telesis.co.jp/support/list/switch/x600/manual.html)
+[Allied Telesis AT-SH510-28GTX](https://www.allied-telesis.co.jp/support/list/switch/x510/manual.html)
 
 ### Security
-[Fortinet FortiGate 60D](https://www.fgshop.jp/product/hanbaisyuryo/fortigate-60d/)
+Fortinet FortiGate 100D
 
 ### L2
 [Allied Telesis AT-x210-24GT](https://www.allied-telesis.co.jp/support/list/switch/x210/manual.html)\

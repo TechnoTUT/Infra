@@ -1,13 +1,9 @@
-on: 
+on:
     push:
-      paths-ignore:
-        - ".devcontainer/**"
-        - ".github/README.md"
-        - ".gitignore"
-        - "LICENSE"
-        - "network/**"
-        - "server/**"
-  
+      paths:
+        - "docs/**"
+        - ".github/workflows/ci.yaml"
+
 jobs:
     ci:
       defaults:

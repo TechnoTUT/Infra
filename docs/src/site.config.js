@@ -1,7 +1,7 @@
 export const site = {
   title: 'TechnoTUT Network',
   tagline: 'TechnoTUT Network',
-  url: 'https://noc.technotut.net',
+  url: 'https://network.technotut.net',
   navTitle: 'Network',
   logo: '/img/technotut_logo.svg',
   editUrl: 'https://github.com/TechnoTUT/Infra/tree/main/docs/',

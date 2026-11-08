@@ -97,6 +97,7 @@ argocd_apps:
   - { name: cam2, path: cam2, namespace: cam2 }
   - { name: dmx, path: dmx, namespace: qlcplus }
   - { name: live, path: live, namespace: live }
+  - { name: ndi, path: ndi, namespace: ndi }
   - { name: speedtest, path: speedtest, namespace: speedtest }
   - { name: time, path: time, namespace: time }
   # BLT は VM で動かす（KubeVirt と CDI が必要。kubevirt_enabled: true）。
