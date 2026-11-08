@@ -8,7 +8,10 @@ sidebar_position: 2
 
 対外接続回線から順に、IX3110 (対外接続ルータ)、FortiGate 100D (NGFW)、N-1 (コアスイッチ)、各エリアのスイッチとつながります。
 
-- L3 の処理は FortiGate に集約しています。全ての VLAN のゲートウェイと DHCP サーバは FortiGate です。
+- 対外接続回線は上流ルータ (`192.168.8.1`) です。IX3110 が NAPT を行い、デフォルトルートを上流ルータに向けます。
+- IX3110 は外部の 2 拠点と IPsec (IKEv2) VPN を張り、BGP で経路を交換します。
+
+- L3 の処理は FortiGate に集約しています。全ての VLAN のゲートウェイは FortiGate です。DHCP サーバと DNS サーバも FortiGate が兼ねます (詳細は [FortiGate](#fortigate))。
 - N-1 から先のスイッチは L2 として動き、全ての VLAN をトランクで運びます。
 - VLAN とサブネットは [VLAN・IPアドレス設計](/network/vlan) を参照してください。
 
@@ -16,28 +19,94 @@ sidebar_position: 2
 
 | 役割 | 機器 | 内容 | 設定 |
 | :--- | :--- | :--- | :--- |
-| 対外接続ルータ | NEC UNIVERGE IX3110 | 対外接続回線の終端。FortiGate と BGP で経路を交換する | 準備中 |
-| NGFW | Fortinet FortiGate 100D | 全 VLAN のゲートウェイ、DHCP サーバ、セキュリティ制御。IX3110 と Kubernetes のノードの BGP ピア。DNS の転送先は Kubernetes 上の bind9 (`10.12.0.0`) | - |
+| 対外接続ルータ (N-1-RT) | NEC UNIVERGE IX3110 | 対外接続回線の終端と NAPT。外部拠点との IPsec VPN。FortiGate・外部拠点と BGP で経路を交換する | [IX3110.txt](https://github.com/TechnoTUT/Infra/blob/main/network/config/IX3110.txt) |
+| NGFW (TTUT-FG) | Fortinet FortiGate 100D | 全 VLAN のゲートウェイ、DHCP・DNS サーバ、VLAN 間とインターネットへの通信制御。IX3110 と Kubernetes のノードの BGP ピア | [FG100D.txt](https://github.com/TechnoTUT/Infra/blob/main/network/config/FG100D.txt) |
 | コアスイッチ (N-1, ラック) | Allied Telesis AT-SH510-28GTX | L2 の中心。VLAN 10・20 の IGMP Snooping Querier | [AT-SH510-28GTX.txt](https://github.com/TechnoTUT/Infra/blob/main/network/config/AT-SH510-28GTX.txt) |
 | PA 用スイッチ (N-4, PA 卓) | Allied Telesis AT-x210-24GT | PA 機器と AV 機器の収容 | [AT-x210-24GT.txt](https://github.com/TechnoTUT/Infra/blob/main/network/config/AT-x210-24GT.txt) |
+| DJ・VJ 用スイッチ (N-3) | APRESIA ApresiaLightGM110GT-PoE | PRO DJ LINK (VLAN 10) と VJ (VLAN 20) の機器の収容、AP への PoE 給電 | [APLGM110GTPoE.txt](https://github.com/TechnoTUT/Infra/blob/main/network/config/APLGM110GTPoE.txt) |
 
 ## ルーティング
 
-経路交換には BGP だけを使います。AS 番号は全体で `64646` (iBGP) です。
+経路交換には BGP だけを使います。会場内の AS 番号は `64646` です。
 
-| ピア | セグメント | 交換する経路 |
+| ピア | 種別 | セグメント | 交換する経路 |
+| :--- | :--- | :--- | :--- |
+| IX3110 (`192.168.200.1`) ⇔ FortiGate (`192.168.200.2`) | iBGP | `peer` (VLAN 101, `192.168.200.0/30`) | 対外接続と会場内の経路 |
+| FortiGate (`192.168.99.129`) ⇔ Kubernetes のノード (`192.168.99.200` - `.202`) | iBGP | `SV` (VLAN 100, `192.168.99.128/25`) | ノードから LoadBalancer IP (`10.12.0.0/16`) と Pod CIDR (`10.11.0.0/16`) |
+| IX3110 (`192.168.250.2`) ⇔ 外部拠点 ddlia-net (`192.168.250.1`, AS `65000`) | eBGP | IPsec `Tunnel0.0` (`192.168.250.0/30`) | 拠点間の経路 |
+| IX3110 (`192.168.250.10`) ⇔ 外部拠点 kisarag1-net (`192.168.250.9`, AS `65500`) | eBGP | IPsec `Tunnel1.0` (`192.168.250.8/30`) | 拠点間の経路 |
+
+- IX3110 は FortiGate を、FortiGate は Kubernetes のノードを route reflector client として扱います。Kubernetes 側の設定は [Kubernetes 構築方法](/computing/deploy) を参照してください。
+- FortiGate は直結のネットワーク (各 VLAN のサブネット) を BGP に再配布します。
+- IX3110 は対外接続のセグメント (`192.168.8.0/24`) を BGP で広報します。
+- IPsec は IKEv2 の事前共有鍵認証で、IX3110 がイニシエータになります (NAT トラバーサル有効)。トンネル内の TCP MSS は 1300 に調整しています。
+
+### IX3110 のその他の機能
+
+| 機能 | 内容 |
+| :--- | :--- |
+| DNS | プロキシ DNS を有効にし、`1.1.1.1` に転送 |
+| NTP | 公開 NTP サーバ (`210.173.160.27`, `.57`, `.87`) に同期し、自身も NTP サーバとして動作 |
+| 管理 | SSH、Web コンソール (HTTP, ダイジェスト認証)、SNMP |
+
+FortiGate のデフォルトルートは 2 本あります。
+
+| 宛先 | インターフェース | ディスタンス | 用途 |
+| :--- | :--- | :--- | :--- |
+| IX3110 (`192.168.200.1`) | `wan1` | 10 (既定値) | 通常の対外接続 |
+| GL.iNet GL-AR300M (`192.168.9.1`) | `wan2` | 100 | 予備の対外接続。MGMT からの通信だけを NAT して通す |
+
+スイッチは L3 の経路を持ちません。N-1 と N-3 は管理用に、デフォルトルートを FortiGate (`192.168.99.1`) に向けています。
+
+## FortiGate
+
+### インターフェース
+
+| インターフェース | 別名 | アドレス | 接続先 |
+| :--- | :--- | :--- | :--- |
+| `wan1` | IX3110 | `192.168.200.2/30` | IX3110 (`peer`) |
+| `wan2` | AR300M | `192.168.9.99/24` | GL.iNet GL-AR300M (予備の対外接続) |
+| `po1` (`port1` - `port8`) | LAG-CORESW | - | N-1。VLAN 10 - 45 のサブインターフェース (`VLAN10` など) を載せる |
+| `mgmt` | - | `192.168.99.1/25` | MGMT (VLAN 99) |
+| `dmz` | SV | `192.168.99.129/25` | SV (VLAN 100) |
+| `port9` | NAS | `192.168.98.1/30` | NAS (`192.168.98.2`) |
+
+VLAN 99・100 は `po1` ではなく、それぞれ専用のポート (`mgmt`, `dmz`) で FortiGate に入ります。
+
+### DHCP・DNS
+
+- 各 VLAN の DHCP の範囲は [VLAN・IPアドレス設計](/network/vlan) を参照してください。DHCP で配る DNS サーバは FortiGate 自身です (CAM2 だけは FortiGate の上流 DNS サーバを直接配ります)。
+- FortiGate の上流 DNS サーバは `133.15.64.100`, `133.15.64.102` です。
+- `svc.technotut.net` のゾーンは Kubernetes 上の bind9 (`10.12.0.0`) に転送します。`drive.svc.technotut.net` (NAS, `192.168.98.2`) だけは FortiGate が直接答えます。
+- NTP は公開 NTP サーバに同期し、`mgmt` と `dmz` に NTP サーバとして時刻を配ります。
+
+### 通信制御
+
+許可したもの以外の通信は拒否します。IX3110 が NAPT を行うため、`wan1` への通信は NAT しません。
+
+| 送信元 | 宛先 | サービス |
 | :--- | :--- | :--- |
-| IX3110 (`192.168.200.1`) ⇔ FortiGate (`192.168.200.2`) | `peer` (VLAN 101, `192.168.200.0/30`) | 対外接続と会場内の経路 |
-| FortiGate (`192.168.99.129`) ⇔ Kubernetes のノード (`192.168.99.200` - `.202`) | `SV` (VLAN 100, `192.168.99.128/25`) | ノードから LoadBalancer IP (`10.12.0.0/16`) と Pod CIDR (`10.11.0.0/16`) |
+| MGMT | インターネット (`wan1`, `wan2`)、SV、NAS | 全て (NAS は HTTP, HTTPS, SMB, SSH) |
+| SV (ノードと Pod CIDR `10.11.0.0/16`) | インターネット | 全て |
+| NAS | インターネット | 全て |
+| DJ | Kubernetes の Service・Ingress | HTTP, HTTPS |
+| DJ | NAS | SMB, HTTP |
+| DJ | `technotut.net`, `www.msftconnecttest.com` | HTTP, HTTPS |
+| DJ | ENT, AV | 全て |
+| AV | Kubernetes の Service・Ingress | HTTP, HTTPS, RTMP, RDP, VNC |
+| AV | インターネット | HTTP, HTTPS |
+| AV | LDISP, LBAR | 全て |
+| PA | AV | 全て |
+| CAM1, CAM2 | Kubernetes の Service | HTTP, RTMP |
+| `wan1` 側 | SV、NAS | SSH |
 
-FortiGate は Kubernetes のノードを route reflector client として扱います。設定は [Kubernetes 構築方法](/computing/deploy) を参照してください。
-
-スイッチは L3 の経路を持ちません。N-1 は管理用に、デフォルトルートを FortiGate (`192.168.99.1`) に向けています。
+- Kubernetes の Service・Ingress の宛先は、Kubernetes SDN コネクタ (`192.168.99.200`) で取得した動的アドレスです。Ingress は `cilium.io/ingress=true` ラベルの付いたものです。
+- DJ (VLAN 10) はキャプティブポータルで認証します。`DJ-MEMBER` グループのユーザでログインすると通信できます。
 
 ## L2
 
 - **VLAN**: 全てのスイッチで同じ VLAN (10, 20, 30, 40, 42-45, 99, 100) を有効にしています。トランクは全ての VLAN を通し、ネイティブ VLAN は使いません。
-- **スパニングツリー**: RSTP
+- **スパニングツリー**: RSTP。N-3 (ApresiaLightGM110GT-PoE) は MSTP (インスタンス 0 のみ) で、RSTP と相互接続しています。端末を収容するポートはエッジポートにし、BPDU ガードで BPDU を受けたポートを shutdown します。
 - **リンクアグリゲーション**:
 
   | スイッチ | インターフェース | ポート | 方式 | 用途 |
@@ -50,7 +119,18 @@ FortiGate は Kubernetes のノードを route reflector client として扱い�
   | N-4 | `po3` | `port1.0.11` - `1.0.12` | LACP | AV (VLAN 20) の機器 |
 
 - **IGMP Snooping**: マルチキャストを使う DJ (VLAN 10) と AV (VLAN 20) では、N-1 が Querier になります (`10.10.0.2`, `10.10.16.2`)。
-- **PoE**: 一部のスイッチは PoE で機器に給電できます。
+- **PoE**: 一部のスイッチは PoE で機器に給電できます。N-3 はポート 1 - 8 で給電します (装置全体 125 W、ポートあたり最大 31.2 W)。
+
+### N-3 (ApresiaLightGM110GT-PoE) のポート割り当て
+
+| ポート | VLAN | 用途 |
+| :--- | :--- | :--- |
+| 1 - 4 | 10 (untagged) | PRO DJ LINK |
+| 5 - 6 | 20 (untagged) | VJ |
+| 7 - 9 | 全 VLAN (tagged) | 7: サーバ、8: AP、9: SFP (光) |
+| 10 | 99 (untagged) | 管理 |
+
+N-3 のポート 9・10 はコンボポートで、ポート 9 は SFP 側、ポート 10 は RJ-45 側を使います。
 
 ## 管理
 
@@ -58,7 +138,10 @@ FortiGate は Kubernetes のノードを route reflector client として扱い�
 
 | スイッチ | 管理 IP |
 | :--- | :--- |
+| IX3110 (N-1-RT) | MGMT VLAN には属さない (内部側は `peer` の `192.168.200.1`) |
+| FortiGate (TTUT-FG) | `192.168.99.1` (HTTP, HTTPS, SSH) |
 | N-1 | `192.168.99.2` |
+| N-3 | `192.168.99.3` |
 | N-4 | `192.168.99.4` |
 
 ## 構成図

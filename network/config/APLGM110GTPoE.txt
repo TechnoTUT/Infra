@@ -521,7 +521,7 @@ config dst disable
 
 # IP
 
-config ipif System vlan mgmt ipaddress 192.168.99.3/24 state enable
+config ipif System vlan mgmt ipaddress 192.168.99.3/25 state enable
 debug config after_reboot ipif 0.0.0.0/0
 enable telnet 23
 enable web 80
