@@ -227,11 +227,19 @@ VM の cloud-init の初期パスワードは、構築後に変更する。
 | 項目 | 内容 |
 |---|---|
 | アドレス | `10.96.0.100:5000` (固定の ClusterIP。HTTP。クラスタの外には公開しない) |
-| データ | NFS 上の PVC (20Gi) |
+| データ | becky の NFS の `/nfs/registry` (固定の PV。`reset.yml` で作り直しても残る) |
 | イメージの参照 | `10.96.0.100:5000/<名前>:<タグ>` (例: `10.96.0.100:5000/technotut/ndi-discovery-server:main`) |
 
 ノードは TUT の DNS を参照するため、クラスタ内の名前 (`*.svc.cluster.local`) は引けない。そのため、イメージは IP で指定する。ノードの containerd は、Cilium (kube-proxy の置き換え) を通じて ClusterIP に届く。\
 containerd が HTTP のレジストリから取得できるよう、`containerd` ロールが `/etc/containerd/certs.d/10.96.0.100:5000/hosts.toml` を置く。
+
+#### イメージの入れ直し
+`/nfs` のデータが消えたときなど、レジストリに必要なイメージがないときは、`site.yml` が GitHub Actions のワークフローを起動してビルドし直す。
+- 対象は `registry_images` に書く (イメージ名、タグ、リポジトリ、ワークフロー、ブランチ)。
+- `site.yml` の最後に、レジストリに各イメージがあるかを調べ、ないものだけワークフローを起動する。ビルドは self-hosted runner で進み、`site.yml` は完了を待たない。
+- ワークフローの起動には GitHub App (`technotut-k8s-runner`) を使う。App に Repository permissions の **Actions: Read and write** を付け、対象のリポジトリへのアクセスを許可しておく。起動できなかったときは、`site.yml` は止まらずに警告を出す。
+- 対象のワークフローには `workflow_dispatch` のトリガーが必要。
+
 
 ### GitHub Actions の self-hosted runner
 TechnoTUT の全リポジトリから使える self-hosted runner を、[Actions Runner Controller](https://github.com/actions/actions-runner-controller) (ARC) の runner scale set で動かす。Ansible が導入する (`arc_enabled: true`)。
@@ -258,9 +266,9 @@ ARC は GitHub App で GitHub に接続する。TechnoTUT の org owner が作�
 1. TechnoTUT の Settings → Developer settings → GitHub Apps → New GitHub App で作る。
    - Homepage URL: 任意 (例: リポジトリの URL)
    - Webhook: Active のチェックを外す
-   - 権限: Organization permissions の **Self-hosted runners** を Read and write にする (Repository permissions の Metadata は Read-only のまま)
+   - 権限: Organization permissions の **Self-hosted runners** を Read and write にする。イメージの入れ直しのため、Repository permissions の **Actions** も Read and write にする (Metadata は Read-only のまま)
 2. 作成後、App ID を控え、Private key を生成してダウンロードする。
-3. Install App から TechnoTUT にインストールする (All repositories)。インストール後の URL の末尾の数字が、インストール ID。
+3. Install App から TechnoTUT にインストールする。リポジトリは All repositories か、`registry_images` のリポジトリを含めて選ぶ。インストール後の URL の末尾の数字が、インストール ID。
 4. Ansible Vault に保存する。
 ```bash
 ansible-vault edit inventory/group_vars/all/vault.yml
