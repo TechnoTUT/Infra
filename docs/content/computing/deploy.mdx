@@ -199,6 +199,19 @@ tsig-keygen -a hmac-sha256 externaldns-key
 ansible-vault create inventory/group_vars/all/vault.yml
 ```
 
+### 非公開のコンテナイメージ (GHCR)
+`ghcr.io/technotut/` の非公開イメージ (`ndi-discovery-server` など) は、認証しないと取得できない (`401 Unauthorized`)。\
+GitHub の Personal access token (classic) を `read:packages` の権限だけで作り、Ansible Vault に保存する。
+```bash
+ansible-vault edit inventory/group_vars/all/vault.yml
+```
+```yaml
+vault_ghcr_username: "<GitHub のユーザー名>"
+vault_ghcr_token: "<トークン>"
+```
+`site.yml` を流すと、`ghcr_pull_secret_namespaces` の Namespace に `ghcr-pull` という Secret ができる。manifest では `imagePullSecrets` に `ghcr-pull` を指定する。\
+トークンが Vault にないときは Secret を作らず、`site.yml` は警告を出して先に進む。
+
 ### KubeVirt と BLT の VM
 BLT (Beat Link Trigger) は、KubeVirt の VM (`blt`) で動かす。KubeVirt と CDI は Ansible が導入する (`kubevirt_enabled: true`)。
 

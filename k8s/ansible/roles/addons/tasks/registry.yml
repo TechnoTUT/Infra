@@ -1,0 +1,16 @@
+---
+# 非公開のコンテナイメージ (GHCR) を取得するための imagePullSecret。
+# トークンは Vault の vault_ghcr_username / vault_ghcr_token に置く (read:packages の権限)。
+- name: GHCR のトークンが Vault にないことを知らせる
+  ansible.builtin.debug:
+    msg: >
+      vault.yml に vault_ghcr_username と vault_ghcr_token がないため、
+      {{ ghcr_pull_secret_name }} の Secret を作らない。非公開のイメージは取得できない。
+  when: vault_ghcr_token is not defined or vault_ghcr_username is not defined
+
+- name: GHCR の imagePullSecret
+  when: vault_ghcr_token is defined and vault_ghcr_username is defined
+  ansible.builtin.include_tasks: apply.yml
+  vars:
+    apply_content: "{{ lookup('ansible.builtin.template', 'ghcr-pull-secret.yaml.j2') }}"
+    apply_no_log: true

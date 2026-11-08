@@ -3,3 +3,7 @@
 #   ansible-vault create inventory/group_vars/all/vault.yml
 # 例: ExternalDNS (RFC2136) 用の TSIG キー
 vault_externaldns_tsig_secret: "CHANGE_ME"
+# 例: 非公開の GHCR イメージ (ndi など) を取得するためのトークン
+#     GitHub の Personal access token (classic) で read:packages だけを付ける
+vault_ghcr_username: "CHANGE_ME"
+vault_ghcr_token: "CHANGE_ME"
