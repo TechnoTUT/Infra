@@ -3,3 +3,11 @@
 #   ansible-vault create inventory/group_vars/all/vault.yml
 # 例: ExternalDNS (RFC2136) 用の TSIG キー
 vault_externaldns_tsig_secret: "CHANGE_ME"
+# 例: GitHub Actions の self-hosted runner (ARC) が使う GitHub App
+#     TechnoTUT の org に App を作ってインストールし、次の 3 つを入れる
+vault_arc_github_app_id: "CHANGE_ME"                 # App ID (または Client ID)
+vault_arc_github_app_installation_id: "CHANGE_ME"    # インストール ID
+vault_arc_github_app_private_key: |
+  -----BEGIN RSA PRIVATE KEY-----
+  CHANGE_ME
+  -----END RSA PRIVATE KEY-----

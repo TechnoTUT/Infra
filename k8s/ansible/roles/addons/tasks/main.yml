@@ -21,7 +21,7 @@
     src: "{{ item }}.j2"
     dest: "{{ addons_dir }}/{{ item }}"
     mode: "0600"
-  loop: [cilium-values.yaml, nfs-values.yaml, argocd-values.yaml]
+  loop: [cilium-values.yaml, nfs-values.yaml, argocd-values.yaml, arc-controller-values.yaml, arc-runner-values.yaml]
 
 # ---- Cilium（CNI がないと他が起動しないので最初）----
 - name: Cilium
@@ -85,6 +85,13 @@
     helm_values: nfs-values.yaml
     helm_wait: false
 
+# ---- クラスタ内のコンテナレジストリ（NFS の PVC を使う）----
+- name: コンテナレジストリ
+  ansible.builtin.include_tasks: apply.yml
+  vars:
+    apply_content: "{{ lookup('ansible.builtin.template', 'registry.yaml.j2') }}"
+  when: registry_enabled
+
 # ---- KubeVirt と CDI（BLT の VM 用）----
 # CDI の CR は ArgoCD の cdi-config が管理するので、ここでは operator だけを入れる。
 - name: KubeVirt と CDI
@@ -115,6 +122,11 @@
         dest: /usr/local/bin/virtctl
         mode: "0755"
       become: true
+
+# ---- GitHub Actions の self-hosted runner ----
+- name: GitHub Actions の self-hosted runner (ARC)
+  ansible.builtin.include_tasks: arc.yml
+  when: arc_enabled
 
 # ---- ArgoCD ----
 - name: ArgoCD

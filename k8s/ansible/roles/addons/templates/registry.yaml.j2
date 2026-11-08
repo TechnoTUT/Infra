@@ -1,0 +1,71 @@
+# クラスタ内のコンテナレジストリ。外部には公開せず、固定の ClusterIP で提供する。
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ registry_namespace }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: registry-data
+  namespace: {{ registry_namespace }}
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: nfs-client
+  resources:
+    requests:
+      storage: {{ registry_storage_size }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: registry
+  namespace: {{ registry_namespace }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: registry
+  template:
+    metadata:
+      labels:
+        app: registry
+    spec:
+      containers:
+        - name: registry
+          image: {{ registry_image }}
+          env:
+            - name: REGISTRY_STORAGE_DELETE_ENABLED
+              value: "true"
+          ports:
+            - containerPort: 5000
+          readinessProbe:
+            httpGet:
+              path: /v2/
+              port: 5000
+          resources:
+            requests: { cpu: 50m, memory: 64Mi }
+            limits: { memory: 256Mi }
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/registry
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: registry-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: registry
+  namespace: {{ registry_namespace }}
+spec:
+  type: ClusterIP
+  clusterIP: {{ registry_cluster_ip }}
+  selector:
+    app: registry
+  ports:
+    - port: {{ registry_port }}
+      targetPort: 5000

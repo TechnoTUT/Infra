@@ -59,3 +59,35 @@
     enabled: true
     state: started
   become: true
+
+# ---- クラスタ内のレジストリ (HTTP) からイメージを取得する ----
+- name: レジストリの設定を certs.d から読むようにする
+  ansible.builtin.replace:
+    path: /etc/containerd/config.toml
+    regexp: "(\\[plugins\\.'io\\.containerd\\.cri\\.v1\\.images'\\.registry\\]\\n\\s+config_path = )''"
+    replace: "\\1'/etc/containerd/certs.d'"
+  become: true
+  notify: restart containerd
+  when: registry_enabled
+
+- name: クラスタ内のレジストリの hosts.toml
+  when: registry_enabled
+  become: true
+  block:
+    - name: certs.d のディレクトリ
+      ansible.builtin.file:
+        path: "/etc/containerd/certs.d/{{ registry_address }}"
+        state: directory
+        mode: "0755"
+
+    - name: hosts.toml を置く
+      ansible.builtin.copy:
+        dest: "/etc/containerd/certs.d/{{ registry_address }}/hosts.toml"
+        mode: "0644"
+        content: |
+          # Ansible (containerd ロール) が管理する。クラスタ内のレジストリは HTTP。
+          server = "http://{{ registry_address }}"
+
+          [host."http://{{ registry_address }}"]
+            capabilities = ["pull", "resolve"]
+      notify: restart containerd

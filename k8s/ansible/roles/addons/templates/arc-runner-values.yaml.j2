@@ -1,0 +1,74 @@
+githubConfigUrl: {{ arc_github_config_url }}
+# GitHub App の情報 (Ansible が Vault から作る Secret)
+githubConfigSecret: arc-github-app
+runnerScaleSetName: {{ arc_runner_scale_set_name }}
+# ジョブが来たときだけ runner の Pod を作る。
+minRunners: 0
+maxRunners: {{ arc_max_runners }}
+listenerTemplate:
+  spec:
+    containers:
+      - name: listener
+        resources:
+          requests: { cpu: 10m, memory: 32Mi }
+          limits: { memory: 128Mi }
+# docker build を使うため dind にする。resources とクラスタ内のレジストリ (HTTP) の
+# 設定を加えるので、containerMode は使わずに Pod の定義を書く (チャートの dind の定義と同じ構成)。
+template:
+  spec:
+    initContainers:
+      - name: init-dind-externals
+        image: {{ arc_runner_image }}
+        command: ["cp", "-r", "/home/runner/externals/.", "/home/runner/tmpDir/"]
+        volumeMounts:
+          - name: dind-externals
+            mountPath: /home/runner/tmpDir
+      - name: dind
+        image: {{ arc_dind_image }}
+        args:
+          - dockerd
+          - --host=unix:///var/run/docker.sock
+          - --group=$(DOCKER_GROUP_GID)
+          - --insecure-registry={{ registry_address }}
+        env:
+          - name: DOCKER_GROUP_GID
+            value: "123"
+        securityContext:
+          privileged: true
+        restartPolicy: Always
+        startupProbe:
+          exec:
+            command: ["docker", "info"]
+          initialDelaySeconds: 0
+          failureThreshold: 24
+          periodSeconds: 5
+        resources: {{ arc_dind_resources | to_json }}
+        volumeMounts:
+          - name: work
+            mountPath: /home/runner/_work
+          - name: dind-sock
+            mountPath: /var/run
+          - name: dind-externals
+            mountPath: /home/runner/externals
+    containers:
+      - name: runner
+        image: {{ arc_runner_image }}
+        command: ["/home/runner/run.sh"]
+        env:
+          - name: DOCKER_HOST
+            value: unix:///var/run/docker.sock
+          - name: RUNNER_WAIT_FOR_DOCKER_IN_SECONDS
+            value: "120"
+        resources: {{ arc_runner_resources | to_json }}
+        volumeMounts:
+          - name: work
+            mountPath: /home/runner/_work
+          - name: dind-sock
+            mountPath: /var/run
+    volumes:
+      - name: work
+        emptyDir: {}
+      - name: dind-sock
+        emptyDir: {}
+      - name: dind-externals
+        emptyDir: {}

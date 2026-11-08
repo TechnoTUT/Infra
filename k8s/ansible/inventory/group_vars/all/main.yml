@@ -7,6 +7,7 @@ multus_version: "v4.3.1"
 kubevirt_version: "v1.9.1"
 cdi_version: "v1.66.1"
 argocd_chart_version: "10.12.1"
+arc_version: "0.15.1"                 # actions-runner-controller (gha-runner-scale-set)
 nfs_provisioner_chart_version: "4.0.18"
 # containerd.io は Docker の apt リポジトリから入れ、apt-mark hold する（更新は手動）。
 
@@ -106,6 +107,36 @@ argocd_apps:
   - { name: cdi-config, path: infrastructure/cdi }
 
 argocd_network_policy: true   # コンテナでのテスト時だけ false にする
+
+# ===== クラスタ内のコンテナレジストリ =====
+# 自前でビルドしたイメージ (ndi など) を置く。外部には公開せず、固定の ClusterIP で提供する。
+# ノードの containerd は Cilium の socket LB で ClusterIP に届く。名前ではなく IP で指定する
+# (ノードは TUT の DNS を参照するため、クラスタ内の名前は引けない)。
+# イメージの参照は {{ registry_address }}/<名前>:<タグ> (例: 10.96.0.100:5000/technotut/ndi-discovery-server:main)。
+registry_enabled: true
+registry_image: "docker.io/library/registry:3"
+registry_namespace: registry
+registry_cluster_ip: "10.96.0.100"   # Service CIDR の先頭 256 個は自動割り当てに使われにくい範囲
+registry_port: 5000
+registry_address: "{{ registry_cluster_ip }}:{{ registry_port }}"
+registry_storage_size: 20Gi
+
+# ===== GitHub Actions の self-hosted runner (ARC) =====
+# ジョブが来たときだけ runner の Pod を作る (minRunners: 0)。常駐するのは controller と listener だけ。
+# ワークフローでは runs-on: {{ arc_runner_scale_set_name }} と書く。
+# GitHub App の情報は Vault に置く (vault_arc_github_app_id など。vault.yml.example を参照)。
+arc_enabled: true
+arc_github_config_url: https://github.com/TechnoTUT
+arc_runner_scale_set_name: k8s
+arc_max_runners: 1                    # メモリが少ないため、同時に動かす runner は 1 つ
+arc_runner_image: "ghcr.io/actions/actions-runner:latest"   # GitHub が古い runner を拒否するため latest
+arc_dind_image: "docker.io/library/docker:dind"
+arc_runner_resources:                 # runner (ジョブのステップ) のコンテナ
+  requests: { cpu: 250m, memory: 256Mi }
+  limits: { memory: 1Gi }
+arc_dind_resources:                   # dind (docker build) のコンテナ
+  requests: { cpu: "1", memory: 1Gi }
+  limits: { memory: 4Gi }
 
 # ===== LoadBalancer の IP プール =====
 # LoadBalancer の IP は 10.12.0.0/16（BGP で広報する）。用途ごとにプールを分ける。

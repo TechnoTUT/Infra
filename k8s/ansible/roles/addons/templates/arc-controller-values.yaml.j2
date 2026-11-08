@@ -1,0 +1,5 @@
+# メモリが少ないため 1 レプリカで、上限を付ける。
+replicaCount: 1
+resources:
+  requests: { cpu: 50m, memory: 64Mi }
+  limits: { memory: 256Mi }

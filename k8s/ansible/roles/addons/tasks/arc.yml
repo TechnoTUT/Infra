@@ -1,0 +1,43 @@
+---
+# GitHub Actions の self-hosted runner (actions-runner-controller の runner scale set)。
+# GitHub App の情報が Vault にないときは、controller だけ入れて runner は作らない。
+- name: ARC の controller
+  ansible.builtin.include_tasks: helm.yml
+  vars:
+    helm_name: arc
+    helm_chart: oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set-controller
+    helm_version: "{{ arc_version }}"
+    helm_ns: arc-systems
+    helm_values: arc-controller-values.yaml
+
+- name: GitHub App の情報が Vault にあるか調べる
+  ansible.builtin.set_fact:
+    addons_arc_has_app: >-
+      {{ vault_arc_github_app_id is defined
+         and vault_arc_github_app_installation_id is defined
+         and vault_arc_github_app_private_key is defined }}
+
+- name: GitHub App の情報がないことを知らせる
+  ansible.builtin.debug:
+    msg: >
+      vault.yml に vault_arc_github_app_id、vault_arc_github_app_installation_id、
+      vault_arc_github_app_private_key がないため、runner scale set を作らない。
+  when: not (addons_arc_has_app | bool)
+
+- name: runner scale set
+  when: addons_arc_has_app | bool
+  block:
+    - name: GitHub App の Secret
+      ansible.builtin.include_tasks: apply.yml
+      vars:
+        apply_content: "{{ lookup('ansible.builtin.template', 'arc-github-app-secret.yaml.j2') }}"
+        apply_no_log: true
+
+    - name: runner scale set を入れる
+      ansible.builtin.include_tasks: helm.yml
+      vars:
+        helm_name: "{{ arc_runner_scale_set_name }}"
+        helm_chart: oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set
+        helm_version: "{{ arc_version }}"
+        helm_ns: arc-runners
+        helm_values: arc-runner-values.yaml
