@@ -1,10 +1,9 @@
-on: 
+on:
     push:
-      paths-ignore:
-        - ".devcontainer/**"
-        - ".gitignore"
-        - "network/**"
-  
+      paths:
+        - "docs/**"
+        - ".github/workflows/pages-deployment.yaml"
+
 jobs:
     deploy:
       defaults:
