@@ -15,9 +15,6 @@ spec:
       labels:
         app: ndi-discovery-server
     spec:
-      # 非公開の GHCR イメージ。Secret は Ansible が作る (ghcr_pull_secret_namespaces)。
-      imagePullSecrets:
-      - name: ghcr-pull
       containers:
       - name: ndi-discovery-server
         image: ghcr.io/technotut/ndi-discovery-server:main
