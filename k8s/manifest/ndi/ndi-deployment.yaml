@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: ndi-discovery-server
-        image: ghcr.io/technotut/ndi-discovery-server:main
+        image: registry.svc.technotut.net/technotut/ndi-discovery-server:main
         imagePullPolicy: Always
         ports:
         - containerPort: 5959
