@@ -120,6 +120,7 @@ registry_cluster_ip: "10.96.0.100"   # Service CIDR の先頭 256 個は自動�
 registry_port: 5000
 registry_address: "{{ registry_cluster_ip }}:{{ registry_port }}"
 registry_storage_size: 20Gi
+registry_nfs_path: "{{ nfs_path }}/registry"   # becky の NFS 上の固定の場所。再構築してもイメージが残る
 
 # ===== GitHub Actions の self-hosted runner (ARC) =====
 # ジョブが来たときだけ runner の Pod を作る (minRunners: 0)。常駐するのは controller と listener だけ。

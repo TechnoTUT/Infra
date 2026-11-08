@@ -15,6 +15,16 @@
     mode: "0755"
   become: true
 
+# クラスタ内のレジストリのデータ。PVC を動的に作ると作り直すたびに空になるので、
+# 決まった場所に置く。reset.yml は {{ nfs_path }} を消さないので、再構築後も残る。
+- name: レジストリのデータのディレクトリ
+  ansible.builtin.file:
+    path: "{{ registry_nfs_path }}"
+    state: directory
+    mode: "0755"
+  become: true
+  when: registry_enabled
+
 - name: /etc/exports
   ansible.builtin.lineinfile:
     path: /etc/exports

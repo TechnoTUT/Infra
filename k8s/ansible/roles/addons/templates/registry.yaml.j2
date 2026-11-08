@@ -4,6 +4,25 @@ kind: Namespace
 metadata:
   name: {{ registry_namespace }}
 ---
+# データは NFS 上の決まった場所 (registry_nfs_path) に置く。動的に PVC を作ると、
+# 作り直すたびに新しい空のディレクトリになるため。PV は Retain で、消してもデータは残る。
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: registry-data
+spec:
+  capacity:
+    storage: {{ registry_storage_size }}
+  accessModes: [ReadWriteOnce]
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  claimRef:
+    namespace: {{ registry_namespace }}
+    name: registry-data
+  nfs:
+    server: {{ nfs_server }}
+    path: {{ registry_nfs_path }}
+---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -11,7 +30,8 @@ metadata:
   namespace: {{ registry_namespace }}
 spec:
   accessModes: [ReadWriteOnce]
-  storageClassName: nfs-client
+  storageClassName: ""
+  volumeName: registry-data
   resources:
     requests:
       storage: {{ registry_storage_size }}
