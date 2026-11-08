@@ -57,8 +57,7 @@ DJ 機器の PRO DJ LINK、映像伝送の NDI・RTMP、テンポ同期の Ablet
 | `ndi/` | NDI Discovery Server |
 | `speedtest/` | 速度測定 |
 | `time/` | 時刻表示 |
-| `stat/` | 監視（Prometheus, Grafana, snmp_exporter, kube-state-metrics） |
-| `blt/`, `blt-xz/` | Beat Link Trigger（KubeVirt の VM と noVNC・xrdp） |
+| `blt/` | Beat Link Trigger（KubeVirt の VM と noVNC・xrdp） |
 | `infrastructure/cdi/` | CDI の設定 |
 
 Argo CD に登録するアプリケーションは [`k8s/ansible/inventory/group_vars/all/main.yml`](./k8s/ansible/inventory/group_vars/all/main.yml) の `argocd_apps` で管理しています。
