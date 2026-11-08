@@ -2,11 +2,8 @@ on:
     push:
       paths-ignore:
         - ".devcontainer/**"
-        - ".github/README.md"
         - ".gitignore"
-        - "LICENSE"
         - "network/**"
-        - "server/**"
   
 jobs:
     ci:
