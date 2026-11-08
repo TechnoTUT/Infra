@@ -28,6 +28,8 @@ Nodes: 3 (becky, packard, marie)
 | ノードの DNS | TUT の DNS サーバ (133.15.64.100, 133.15.64.102) |
 | ストレージ | NFS (becky の /nfs) と nfs-subdir-external-provisioner |
 | GitOps | Argo CD |
+| コンテナレジストリ | クラスタ内 (`10.96.0.100:5000`) |
+| CI | GitHub Actions の self-hosted runner (ARC。ジョブのときだけ Pod を作る) |
 
 ノードのメモリが少ないため、Hubble や Argo CD の dex・notifications など、使わないコンポーネントは入れない。
 
@@ -218,6 +220,62 @@ kubectl get vm,vmi,dv -n blt
 virtctl console blt -n blt
 ```
 VM の cloud-init の初期パスワードは、構築後に変更する。
+
+### クラスタ内のコンテナレジストリ
+自前でビルドしたイメージ (NDI Discovery Server など) は、クラスタ内のレジストリに置く。Ansible が導入する (`registry_enabled: true`)。
+
+| 項目 | 内容 |
+|---|---|
+| アドレス | `10.96.0.100:5000` (固定の ClusterIP。HTTP。クラスタの外には公開しない) |
+| データ | NFS 上の PVC (20Gi) |
+| イメージの参照 | `10.96.0.100:5000/<名前>:<タグ>` (例: `10.96.0.100:5000/technotut/ndi-discovery-server:main`) |
+
+ノードは TUT の DNS を参照するため、クラスタ内の名前 (`*.svc.cluster.local`) は引けない。そのため、イメージは IP で指定する。ノードの containerd は、Cilium (kube-proxy の置き換え) を通じて ClusterIP に届く。\
+containerd が HTTP のレジストリから取得できるよう、`containerd` ロールが `/etc/containerd/certs.d/10.96.0.100:5000/hosts.toml` を置く。
+
+### GitHub Actions の self-hosted runner
+TechnoTUT の全リポジトリから使える self-hosted runner を、[Actions Runner Controller](https://github.com/actions/actions-runner-controller) (ARC) の runner scale set で動かす。Ansible が導入する (`arc_enabled: true`)。
+- runner は常駐しない。ジョブが来たときだけ runner の Pod を作り、CPU とメモリを確保する。ジョブが終わると Pod は消える。
+- 常駐するのは、ジョブを待つ controller と listener の Pod だけ (合わせてメモリ 100MB 程度)。
+- runner は dind (Docker in Docker) で、`docker build` が使える。クラスタ内のレジストリに push できる。
+- 同時に動く runner は 1 つ (`arc_max_runners`)。メモリが少ないため。
+
+ワークフローでは、`runs-on` に runner scale set の名前 (`k8s`) を書く。
+```yaml
+jobs:
+  build:
+    runs-on: k8s
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/build-push-action@v5
+        with:
+          push: true
+          tags: 10.96.0.100:5000/technotut/<名前>:main
+```
+
+#### GitHub App の準備
+ARC は GitHub App で GitHub に接続する。TechnoTUT の org owner が作る。
+1. TechnoTUT の Settings → Developer settings → GitHub Apps → New GitHub App で作る。
+   - Homepage URL: 任意 (例: リポジトリの URL)
+   - Webhook: Active のチェックを外す
+   - 権限: Organization permissions の **Self-hosted runners** を Read and write にする (Repository permissions の Metadata は Read-only のまま)
+2. 作成後、App ID を控え、Private key を生成してダウンロードする。
+3. Install App から TechnoTUT にインストールする (All repositories)。インストール後の URL の末尾の数字が、インストール ID。
+4. Ansible Vault に保存する。
+```bash
+ansible-vault edit inventory/group_vars/all/vault.yml
+```
+```yaml
+vault_arc_github_app_id: "<App ID>"
+vault_arc_github_app_installation_id: "<インストール ID>"
+vault_arc_github_app_private_key: |
+  -----BEGIN RSA PRIVATE KEY-----
+  ...
+  -----END RSA PRIVATE KEY-----
+```
+5. `site.yml` を流す。GitHub App の情報が Vault にないときは、controller だけを入れて runner は作らない (警告が出る)。
+
+TechnoTUT の Settings → Actions → Runner groups で、`Default` グループを public リポジトリにも使わせる設定にしない。privileged な Pod でジョブが動くため。
 
 ## 構築済みのクラスタに設定変更を反映する
 `inventory/group_vars/all/main.yml` やロールを変えたときは、構築と同じコマンドで `site.yml` を流し直す。データは消えない。
