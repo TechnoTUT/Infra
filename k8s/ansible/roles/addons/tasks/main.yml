@@ -127,9 +127,6 @@
     helm_ns: argocd
     helm_values: argocd-values.yaml
 
-- name: 非公開イメージ用の imagePullSecret
-  ansible.builtin.include_tasks: registry.yml
-
 - name: ArgoCD の Application を作る
   ansible.builtin.include_tasks: apply.yml
   vars:

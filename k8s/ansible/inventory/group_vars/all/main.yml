@@ -107,11 +107,6 @@ argocd_apps:
 
 argocd_network_policy: true   # コンテナでのテスト時だけ false にする
 
-# ===== 非公開のコンテナイメージ (GHCR) =====
-# vault_ghcr_username / vault_ghcr_token があれば、次の Namespace に imagePullSecret を作る。
-ghcr_pull_secret_name: ghcr-pull
-ghcr_pull_secret_namespaces: [ndi]
-
 # ===== LoadBalancer の IP プール =====
 # LoadBalancer の IP は 10.12.0.0/16（BGP で広報する）。用途ごとにプールを分ける。
 # - dns:     10.12.0.0。bind9 専用（FortiGate の DNS 転送先）
