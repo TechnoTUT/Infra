@@ -216,6 +216,24 @@ virtctl console blt -n blt
 ```
 VM の cloud-init の初期パスワードは、構築後に変更する。
 
+## 構築済みのクラスタに設定変更を反映する
+`inventory/group_vars/all/main.yml` やロールを変えたときは、構築と同じコマンドで `site.yml` を流し直す。データは消えない。
+```bash
+ansible-playbook playbooks/site.yml
+```
+`site.yml` は何度流しても同じ状態になる (冪等) ように作っている。すでに設定済みの部分は変更されず、差分だけが反映される。`kubeadm init` と `kubeadm join` も、ノードがすでにクラスタに参加していれば実行されない。
+
+Ansible で反映するものと、Argo CD で反映するものがある。
+
+| 変更するもの | 反映の方法 |
+|---|---|
+| Cilium、LoadBalancer の IP プール、BGP、Multus、KubeVirt、Argo CD、bind9・ExternalDNS など (`k8s/ansible/`) | `site.yml` を流す |
+| Argo CD の Application の追加・削除 (`argocd_apps`) | `site.yml` を流す |
+| 各アプリの manifest (`k8s/manifest/`) | `main` にマージすると、Argo CD が同期する。`site.yml` は不要 |
+
+Argo CD は GitHub の `main` を参照する。manifest の変更と Ansible の変更が関係するときは、manifest を先に `main` に入れ、Argo CD の同期を確認してから `site.yml` を流す。\
+例: IP を固定する Service を足すときは、`lbipam.technotut.net/static` ラベルを付けた manifest が同期された後でないと、`static` プールから IP が割り当てられない。
+
 ## クラスタを作り直す
 全ノードのクラスタを破棄して、データも消える。実行前に確認のプロンプトが出る。
 ```bash

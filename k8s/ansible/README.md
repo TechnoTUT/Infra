@@ -15,7 +15,7 @@ ansible-vault create inventory/group_vars/all/vault.yml   # 例は vault.yml.exa
 
 ## 実行
 ```bash
-ansible-playbook playbooks/site.yml          # 構築
+ansible-playbook playbooks/site.yml          # 構築、設定変更の反映（何度流してもよい）
 ansible-playbook playbooks/reset.yml         # 全消去（RESET と入力）
 ```
 
