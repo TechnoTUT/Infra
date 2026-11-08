@@ -133,8 +133,8 @@
   ansible.builtin.include_tasks: helm.yml
   vars:
     helm_name: argocd
-    helm_chart: argo-cd
-    helm_repo: https://argoproj.github.io/argo-helm
+    # GitHub のリリース配信 (argoproj.github.io の index が指す先) が 504 を返すことがあるため OCI から取る。
+    helm_chart: oci://ghcr.io/argoproj/argo-helm/argo-cd
     helm_version: "{{ argocd_chart_version }}"
     helm_ns: argocd
     helm_values: argocd-values.yaml
