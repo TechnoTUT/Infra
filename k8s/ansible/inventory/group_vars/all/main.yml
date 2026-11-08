@@ -107,10 +107,16 @@ argocd_apps:
 argocd_network_policy: true   # コンテナでのテスト時だけ false にする
 
 # ===== LoadBalancer の IP プール =====
-# LoadBalancer の IP プール（現行クラスタと同じ 10.12.0.0/16。BGP で広報する）。
-# 10.12.0.0 は FortiGate の DNS 転送先で bind9 専用にする。自動割り当てに取られないよう別のプールに分ける。
+# LoadBalancer の IP は 10.12.0.0/16（BGP で広報する）。用途ごとにプールを分ける。
+# - dns:     10.12.0.0。bind9 専用（FortiGate の DNS 転送先）
+# - default: IP を指定しない Service に自動で割り当てる
+# - static:  loadBalancerIP で IP を固定する Service 用。cilium_lb_static_label を付けた Service だけが使える。
+#            自動割り当ての Service に、固定 IP を先に取られないようにするため。
 cilium_lb_pool_start: "10.12.0.1"
-cilium_lb_pool_stop: "10.12.255.254"
+cilium_lb_pool_stop: "10.12.63.255"
+cilium_lb_static_start: "10.12.64.0"
+cilium_lb_static_stop: "10.12.255.254"
+cilium_lb_static_label: lbipam.technotut.net/static
 
 # ===== DNS (bind9 + ExternalDNS) =====
 dns_namespace: bind9

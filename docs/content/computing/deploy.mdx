@@ -114,7 +114,27 @@ ansible-playbook playbooks/site.yml
 | kubeadm | kubelet・kubeadm・kubectl のインストール、`kubeadm init`、`kubeadm join` |
 | addons | Helm、Cilium、Multus と NAD、NFS provisioner、KubeVirt と CDI、Argo CD と各 Application、bind9 と ExternalDNS |
 
-`kubeadm init` は Pod CIDR を `10.11.0.0/16`、Service CIDR (ClusterIP) を `10.96.0.0/12` で作成する。LoadBalancer の IP は Cilium の IP プール (`10.12.0.0/16`) から割り当てる。固定したい IP は Service の `loadBalancerIP` で指定する。kube-proxy は Cilium で置き換えるため入れない。
+`kubeadm init` は Pod CIDR を `10.11.0.0/16`、Service CIDR (ClusterIP) を `10.96.0.0/12` で作成する。kube-proxy は Cilium で置き換えるため入れない。
+
+### LoadBalancer の IP
+LoadBalancer の IP は、Cilium の IP プール (`10.12.0.0/16`) から割り当てる。用途ごとにプールを分けている。
+
+| プール | 範囲 | 使う Service |
+|---|---|---|
+| `dns` | `10.12.0.0` | bind9 だけ (FortiGate の DNS 転送先) |
+| `default` | `10.12.0.1` 〜 `10.12.63.255` | IP を指定しない Service (自動で割り当てる) |
+| `static` | `10.12.64.0` 〜 `10.12.255.254` | IP を固定する Service |
+
+IP を固定する Service は、`loadBalancerIP` で IP を指定し、`lbipam.technotut.net/static: "true"` のラベルを付ける。ラベルがないと、`static` の範囲の IP は割り当てられない (`<pending>` のままになる)。
+```yaml
+metadata:
+  labels:
+    lbipam.technotut.net/static: "true"
+spec:
+  type: LoadBalancer
+  loadBalancerIP: 10.12.77.252
+```
+プールを分けているのは、IP を指定しない Service が、他の Service の固定 IP を先に取ってしまうのを防ぐため。
 
 ## 4. ルーター (FortiGate) の BGP 設定
 Cilium は、全ての LoadBalancer の IP (`10.12.0.0/16`) と Pod CIDR (`10.11.0.0/16`) を BGP で広報する。\
