@@ -41,7 +41,7 @@ node_dns_servers: ["133.15.64.100", "133.15.64.102"]
 node_dns_search: srv.utone.technotut.net
 
 # ===== ノードのパッケージ（全ノードで同じ構成にする。余計なものは入れない）=====
-common_packages_keep: [openssh-server, openssh-sftp-server, sudo, python3, ifupdown, curl, ca-certificates]
+common_packages_keep: [openssh-server, openssh-sftp-server, sudo, python3, ifupdown, curl, ca-certificates, openssl]
 common_packages_absent:
   - docker-ce            # クラスタは containerd.io を直接使う
   - docker-ce-cli
@@ -138,6 +138,16 @@ arc_runner_resources:                 # runner (ジョブのステップ) のコ
 arc_dind_resources:                   # dind (docker build) のコンテナ
   requests: { cpu: "1", memory: 1Gi }
   limits: { memory: 4Gi }
+
+# クラスタ内のレジストリに置くイメージ。site.yml の最後に、レジストリにないものがあれば
+# そのリポジトリのワークフローを起動してビルドし直す (/nfs が消えたときなど)。
+# GitHub App に Actions: Read and write の権限と、リポジトリへのアクセスが必要。
+registry_images:
+  - image: technotut/ndi-discovery-server
+    tag: main
+    repo: TechnoTUT/ndi-discovery-server
+    workflow: release-container.yml
+    ref: main
 
 # ===== LoadBalancer の IP プール =====
 # LoadBalancer の IP は 10.12.0.0/16（BGP で広報する）。用途ごとにプールを分ける。

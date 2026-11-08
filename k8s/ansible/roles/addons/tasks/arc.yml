@@ -41,3 +41,7 @@
         helm_version: "{{ arc_version }}"
         helm_ns: arc-runners
         helm_values: arc-runner-values.yaml
+
+    - name: レジストリにないイメージをビルドし直す
+      ansible.builtin.include_tasks: rebuild-images.yml
+      when: registry_enabled and registry_images | length > 0

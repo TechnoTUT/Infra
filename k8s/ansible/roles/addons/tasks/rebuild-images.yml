@@ -1,0 +1,78 @@
+---
+# クラスタ内のレジストリに registry_images のイメージがあるか調べ、ないものは
+# GitHub Actions のワークフローを起動してビルドし直す (/nfs が消えたときなど)。
+# ビルドは self-hosted runner で非同期に進む。ここでは完了を待たない。
+- name: レジストリにイメージがあるか調べる
+  ansible.builtin.command:
+    argv:
+      - curl
+      - -sf
+      - -o
+      - /dev/null
+      - -H
+      - >-
+        Accept: application/vnd.oci.image.index.v1+json,
+        application/vnd.oci.image.manifest.v1+json,
+        application/vnd.docker.distribution.manifest.list.v2+json,
+        application/vnd.docker.distribution.manifest.v2+json
+      - "http://{{ registry_address }}/v2/{{ item.image }}/manifests/{{ item.tag }}"
+  loop: "{{ registry_images }}"
+  loop_control:
+    label: "{{ item.image }}:{{ item.tag }}"
+  register: addons_registry_check
+  changed_when: false
+  failed_when: false
+
+- name: レジストリにないイメージ
+  ansible.builtin.set_fact:
+    addons_missing_images: >-
+      {{ addons_registry_check.results | rejectattr('rc', 'equalto', 0) | map(attribute='item') | list }}
+
+- name: ないイメージのワークフローを起動する
+  when: addons_missing_images | length > 0
+  ansible.builtin.shell:
+    executable: /bin/bash
+    cmd: |
+      set -euo pipefail
+      key=$(mktemp); trap 'rm -f "$key"' EXIT
+      printf '%s\n' "$APP_KEY" > "$key"
+      b64() { openssl base64 -A | tr '+/' '-_' | tr -d '='; }
+      now=$(date +%s)
+      h=$(printf '{"alg":"RS256","typ":"JWT"}' | b64)
+      p=$(printf '{"iat":%d,"exp":%d,"iss":"%s"}' $((now - 60)) $((now + 540)) "$APP_ID" | b64)
+      s=$(printf '%s.%s' "$h" "$p" | openssl dgst -sha256 -sign "$key" | b64)
+      token=$(curl -sf -X POST -H "Authorization: Bearer $h.$p.$s" \
+        "https://api.github.com/app/installations/$APP_INSTALLATION_ID/access_tokens" \
+        | python3 -c 'import json, sys; print(json.load(sys.stdin)["token"])')
+      while read -r repo workflow ref; do
+        [ -n "$repo" ] || continue
+        curl -sf -X POST -H "Authorization: Bearer $token" -H "Accept: application/vnd.github+json" \
+          "https://api.github.com/repos/$repo/actions/workflows/$workflow/dispatches" \
+          -d "{\"ref\":\"$ref\"}"
+        echo "dispatched $repo $workflow $ref"
+      done <<< "$TARGETS"
+  environment:
+    APP_ID: "{{ vault_arc_github_app_id }}"
+    APP_INSTALLATION_ID: "{{ vault_arc_github_app_installation_id }}"
+    APP_KEY: "{{ vault_arc_github_app_private_key }}"
+    TARGETS: |
+      {% for i in addons_missing_images %}
+      {{ i.repo }} {{ i.workflow }} {{ i.ref }}
+      {% endfor %}
+  # 鍵を環境変数で渡すので、ログには出さない。失敗しても site.yml は止めず、次のタスクで知らせる。
+  no_log: true
+  register: addons_dispatch
+  changed_when: addons_dispatch.rc == 0
+  failed_when: false
+
+- name: ワークフローを起動したイメージ
+  ansible.builtin.debug:
+    msg: "{{ addons_missing_images | map(attribute='image') | list }} をビルドし直す。完了まで数分かかる。"
+  when: addons_missing_images | length > 0 and addons_dispatch.rc == 0
+
+- name: ワークフローを起動できなかったことを知らせる
+  ansible.builtin.debug:
+    msg: >
+      {{ addons_missing_images | map(attribute='image') | list }} のワークフローを起動できなかった。
+      GitHub App に Actions: Read and write の権限があり、対象のリポジトリにアクセスできるか確認する。
+  when: addons_missing_images | length > 0 and addons_dispatch.rc != 0
