@@ -22,6 +22,11 @@
     apply_content: "{{ lookup('ansible.builtin.template', 'bind9.yaml.j2') }}"
     apply_no_log: true
 
+- name: CoreDNS から svc のゾーンを bind9 に問い合わせる
+  ansible.builtin.include_tasks: apply.yml
+  vars:
+    apply_content: "{{ lookup('ansible.builtin.template', 'coredns-configmap.yaml.j2') }}"
+
 - name: ExternalDNS の values を配置する
   ansible.builtin.template:
     src: external-dns-values.yaml.j2

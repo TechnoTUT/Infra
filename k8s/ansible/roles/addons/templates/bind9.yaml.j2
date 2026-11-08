@@ -74,6 +74,10 @@ spec:
     metadata:
       labels:
         app: bind9
+      annotations:
+        # ゾーンは起動時に ConfigMap からコピーするので、固定のレコードが変わったら再起動する。
+        # (serial の日付は含めない。毎日再起動しないように)
+        checksum/zone: "{{ (bind9_lb_ip ~ (bind9_static_records | to_json)) | hash('sha256') }}"
     spec:
       securityContext:
         fsGroup: 0

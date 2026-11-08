@@ -109,16 +109,18 @@ argocd_apps:
 argocd_network_policy: true   # コンテナでのテスト時だけ false にする
 
 # ===== クラスタ内のコンテナレジストリ =====
-# 自前でビルドしたイメージ (ndi など) を置く。外部には公開せず、固定の ClusterIP で提供する。
-# ノードの containerd は Cilium の socket LB で ClusterIP に届く。名前ではなく IP で指定する
-# (ノードは TUT の DNS を参照するため、クラスタ内の名前は引けない)。
-# イメージの参照は {{ registry_address }}/<名前>:<タグ> (例: 10.96.0.100:5000/technotut/ndi-discovery-server:main)。
+# 自前でビルドしたイメージ (ndi など) を置く。外部には公開せず、固定の ClusterIP で提供する (HTTP)。
+# 名前は bind9 (svc.technotut.net) に固定のレコードとして載せる。クラスタ内の Pod は CoreDNS から
+# bind9 に問い合わせて引く。ノードは TUT の DNS を参照するので、/etc/hosts に書く (common ロール)。
+# ノードの containerd は Cilium の socket LB で ClusterIP に届く。
+# イメージの参照は {{ registry_host }}/<名前>:<タグ> (例: registry.svc.technotut.net/technotut/ndi-discovery-server:main)。
 registry_enabled: true
 registry_image: "docker.io/library/registry:3"
 registry_namespace: registry
+registry_host: "registry.{{ dns_zone }}"
 registry_cluster_ip: "10.96.0.100"   # Service CIDR の先頭 256 個は自動割り当てに使われにくい範囲
-registry_port: 5000
-registry_address: "{{ registry_cluster_ip }}:{{ registry_port }}"
+registry_port: 80
+registry_address: "{{ registry_host }}"   # ポートが 80 なので省く
 registry_storage_size: 20Gi
 registry_nfs_path: "{{ nfs_path }}/registry"   # becky の NFS 上の固定の場所。再構築してもイメージが残る
 
@@ -168,6 +170,7 @@ bind9_lb_ip: "10.12.0.0"              # bind9 の LoadBalancer IP。FortiGate �
 bind9_image: "docker.io/internetsystemsconsortium/bind9:9.21"   # 現行と同じ（9.21 系）
 bind9_static_records:                  # ゾーンに固定で入れるレコード（他は ExternalDNS が登録する）
   - { name: pa, ip: "192.168.12.22" }
+  - { name: registry, ip: "{{ registry_cluster_ip }}" }   # クラスタ内のレジストリ (ClusterIP。クラスタの外からは届かない)
 externaldns_chart_version: "1.21.1"
 externaldns_tsig_keyname: externaldns-key
 # TSIG の秘密鍵は vault.yml の vault_externaldns_tsig_secret に置く。

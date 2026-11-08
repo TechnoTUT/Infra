@@ -46,6 +46,17 @@
     unsafe_writes: true   # バインドマウントされた resolv.conf（コンテナ）でも書けるように
   become: true
 
+# ノードは TUT の DNS を参照するので、クラスタ内のレジストリの名前 (bind9 にある) は引けない。
+# containerd がイメージを取得できるよう、/etc/hosts に書く。
+- name: クラスタ内のレジストリの名前を /etc/hosts に書く
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    regexp: '\s{{ registry_host | regex_escape }}$'
+    line: "{{ registry_cluster_ip }} {{ registry_host }}"
+    unsafe_writes: true
+  become: true
+  when: registry_enabled
+
 - name: swap を無効化する
   ansible.builtin.command: swapoff -a
   become: true

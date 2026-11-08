@@ -28,7 +28,7 @@ Nodes: 3 (becky, packard, marie)
 | ノードの DNS | TUT の DNS サーバ (133.15.64.100, 133.15.64.102) |
 | ストレージ | NFS (becky の /nfs) と nfs-subdir-external-provisioner |
 | GitOps | Argo CD |
-| コンテナレジストリ | クラスタ内 (`10.96.0.100:5000`) |
+| コンテナレジストリ | クラスタ内 (`registry.svc.technotut.net`) |
 | CI | GitHub Actions の self-hosted runner (ARC。ジョブのときだけ Pod を作る) |
 
 ノードのメモリが少ないため、Hubble や Argo CD の dex・notifications など、使わないコンポーネントは入れない。
@@ -226,12 +226,16 @@ VM の cloud-init の初期パスワードは、構築後に変更する。
 
 | 項目 | 内容 |
 |---|---|
-| アドレス | `10.96.0.100:5000` (固定の ClusterIP。HTTP。クラスタの外には公開しない) |
+| アドレス | `registry.svc.technotut.net` (固定の ClusterIP `10.96.0.100` の 80 番。HTTP。クラスタの外からは届かない) |
 | データ | becky の NFS の `/nfs/registry` (固定の PV。`reset.yml` で作り直しても残る) |
-| イメージの参照 | `10.96.0.100:5000/<名前>:<タグ>` (例: `10.96.0.100:5000/technotut/ndi-discovery-server:main`) |
+| イメージの参照 | `registry.svc.technotut.net/<名前>:<タグ>` (例: `registry.svc.technotut.net/technotut/ndi-discovery-server:main`) |
 
-ノードは TUT の DNS を参照するため、クラスタ内の名前 (`*.svc.cluster.local`) は引けない。そのため、イメージは IP で指定する。ノードの containerd は、Cilium (kube-proxy の置き換え) を通じて ClusterIP に届く。\
-containerd が HTTP のレジストリから取得できるよう、`containerd` ロールが `/etc/containerd/certs.d/10.96.0.100:5000/hosts.toml` を置く。
+名前は、次のように引けるようにしている。
+- bind9 (`svc.technotut.net`) に、固定のレコード `registry` → `10.96.0.100` を載せる (`bind9_static_records`)。学内から名前は引けるが、ClusterIP なのでクラスタの外からは届かない。
+- Pod: CoreDNS が `svc.technotut.net` を bind9 に問い合わせる (Ansible が CoreDNS の設定を置く)。kubeadm の更新で CoreDNS の設定が既定に戻ったときは、`site.yml` を流し直す。
+- ノード: TUT の DNS を参照するため bind9 の名前は引けない。`common` ロールが `/etc/hosts` に書く。
+
+ノードの containerd は、Cilium (kube-proxy の置き換え) を通じて ClusterIP に届く。HTTP のレジストリから取得できるよう、`containerd` ロールが `/etc/containerd/certs.d/registry.svc.technotut.net/hosts.toml` を置く。
 
 #### イメージの入れ直し
 `/nfs` のデータが消えたときなど、レジストリに必要なイメージがないときは、`site.yml` が GitHub Actions のワークフローを起動してビルドし直す。
@@ -258,7 +262,7 @@ jobs:
       - uses: docker/build-push-action@v5
         with:
           push: true
-          tags: 10.96.0.100:5000/technotut/<名前>:main
+          tags: registry.svc.technotut.net/technotut/<名前>:main
 ```
 
 #### GitHub App の準備
