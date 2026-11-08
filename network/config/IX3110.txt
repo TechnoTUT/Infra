@@ -1,0 +1,134 @@
+! NEC Portable Internetwork Core Operating System Software
+! IX Series IX3100 (magellan-sec) Software, Version 10.5.35, RELEASE SOFTWARE
+! Compiled Dec 15-Fri-2023 15:30:47 JST #2
+! Last updated Jul 10-Fri-2026 22:08:21 JST
+!
+hostname N-1-RT
+timezone +09 00
+!
+username admin password hash xxxxxxxx administrator
+username monitor password hash xxxxxxxx monitor
+!
+ntp ip enable
+ntp server 210.173.160.27
+ntp server 210.173.160.57
+ntp server 210.173.160.87
+ntp master
+!
+!
+ip ufs-cache enable
+ip route default 192.168.8.1 GigaEthernet0.0
+ip dhcp enable
+!
+!
+!
+!
+snmp-agent ip enable
+snmp-agent ip community univerge
+!
+!
+!
+!
+!
+!
+ip name-server 1.1.1.1
+dns cache enable
+!
+proxy-dns ip enable
+proxy-dns server 1.1.1.1
+!
+!
+ssh-server ip enable
+!
+http-server authentication-method digest
+http-server username admin secret-password xxxxxxxx
+http-server monitor-username monitor secret-password xxxxxxxx
+http-server ip enable
+!
+!
+ikev2 authentication psk id ipv4 xxx.xxx.xxx.xxx key char xxxxxxxx
+ikev2 authentication psk id fqdn xxx.kisarag1.net key char xxxxxxxx
+!
+nm ip enable
+nm account ttut password secret xxx
+nm suppress-feature ddns
+!
+!
+!
+!
+!
+router bgp 64646
+  router-id 192.168.200.1
+  neighbor 192.168.200.2 remote-as 64646
+  neighbor 192.168.200.2 route-reflector-client
+  neighbor 192.168.250.1 remote-as 65000
+  neighbor 192.168.250.9 remote-as 65500
+  address-family ipv4 unicast
+    network 192.168.8.0/24
+!
+device GigaEthernet0
+!
+device GigaEthernet1
+!
+device GigaEthernet2
+  shutdown
+!
+device GigaEthernet3
+  shutdown
+!
+interface GigaEthernet0.0
+  description eduroam
+  ip address 192.168.8.99/24
+  ip tcp adjust-mss auto
+  ip napt enable
+  no shutdown
+!
+interface GigaEthernet1.0
+  ip address 192.168.200.1/30
+  no shutdown
+!
+interface GigaEthernet2.0
+  no ip address
+  shutdown
+!
+interface GigaEthernet3.0
+  no ip address
+  shutdown
+!
+interface Loopback0.0
+  no ip address
+!
+interface Null0.0
+  no ip address
+!
+interface Tunnel0.0
+  tunnel mode ipsec-ikev2
+  ip address 192.168.250.2/30
+  ip tcp adjust-mss 1300
+  ikev2 connect-type auto
+  ikev2 ipsec pre-fragment
+  ikev2 local-authentication id keyid TTUT
+  ikev2 nat-traversal keepalive 20
+  ikev2 negotiation-direction initiator
+  ikev2 peer xxx.xxx.xxx.xxx authentication psk id ipv4 xxx.xxx.xxx.xxx
+  no shutdown
+!
+interface Tunnel1.0
+  tunnel mode ipsec-ikev2
+  ip address 192.168.250.10/30
+  ip tcp adjust-mss 1300
+  ikev2 connect-type auto
+  ikev2 ipsec pre-fragment
+  ikev2 local-authentication id keyid TTUT
+  ikev2 nat-traversal keepalive 20
+  ikev2 negotiation-direction initiator
+  ikev2 peer-fqdn-ipv4 xxx.kisarag1.net authentication psk id fqdn xxx.kisarag1.net
+  no shutdown
+!
+web-console system vpn
+  o alias interface Tunnel0.0 ascii ddlia-net
+  o alias interface Tunnel1.0 ascii kisarag1-net
+!
+web-console system information
+  o password-changed admin monitor
+!
