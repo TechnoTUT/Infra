@@ -10,6 +10,11 @@ k8sRequireIPv4PodCIDR: true
 # DNS が使えない段階でも API に届くよう IP を指定する。
 k8sServiceHost: {{ api_endpoint }}
 k8sServicePort: {{ api_port }}
+# Multus と共存させる。既定 (exclusive: true) では、Cilium が他の CNI の設定
+# (Multus の 00-multus.conf) を *.cilium_bak に退避してしまい、VM や Pod に
+# br10・br20 のインターフェースが付かない。
+cni:
+  exclusive: {{ (not multus_enabled) | lower }}
 bgpControlPlane:
   enabled: true
 # Pod から外部（TUT の DNS、GitHub など）へ出る通信は、ノードの IP に NAT する。

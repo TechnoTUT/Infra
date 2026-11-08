@@ -186,6 +186,9 @@ PRO DJ LINK や Ableton Link のネットワークと L2 で接続する場合�
 
 ブリッジ (br10, br20) は `network` ロールが作る。
 
+Cilium は既定で、他の CNI の設定ファイルを `*.cilium_bak` に退避する。Multus の設定 (`/etc/cni/net.d/00-multus.conflist`) も退避されて、VM や Pod に br10・br20 のインターフェースが付かなくなる。そのため、`multus_enabled: true` のときは Cilium の `cni.exclusive` を `false` にしている。\
+構築済みのクラスタでこの設定を変えたときは、Multus を再起動して設定ファイルを作り直す (`kubectl -n kube-system rollout restart ds/kube-multus-ds`)。
+
 ### DNS (bind9 と ExternalDNS)
 `svc.technotut.net` ゾーンを bind9 で提供し、ExternalDNS (RFC2136) が Service・Ingress のレコードを自動登録する。Ansible の `dns` ロールが導入する。\
 https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/rfc2136.md
