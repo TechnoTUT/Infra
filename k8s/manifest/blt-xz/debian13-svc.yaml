@@ -1,6 +1,8 @@
 apiVersion: v1
 kind: Service
 metadata:
+  labels:
+    lbipam.technotut.net/static: "true"
   name: blt-xz-service
   namespace: blt-xz
   annotations:

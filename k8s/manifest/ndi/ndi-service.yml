@@ -3,6 +3,7 @@ kind: Service
 metadata:
   name: ndi-service
   labels:
+    lbipam.technotut.net/static: "true"
     app: ndi-discovery-server
   namespace: ndi
   annotations:

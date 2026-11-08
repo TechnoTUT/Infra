@@ -3,6 +3,7 @@ kind: Service
 metadata:
   name: cam2-nginx-service
   labels:
+    lbipam.technotut.net/static: "true"
     app: cam2-sonycam-nginx
   namespace: cam2
   annotations:
