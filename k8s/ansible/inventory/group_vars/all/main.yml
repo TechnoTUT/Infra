@@ -209,6 +209,7 @@ nfs_enabled: true            # becky の NFS サーバと NFS provisioner
 argocd_enabled: true         # Argo CD (nas のクラスタは main の Argo CD が管理する)
 dns_enabled: true            # bind9 と ExternalDNS
 cilium_ingress_enabled: true
+fortigate_sdn_enabled: true  # FortiGate の Kubernetes SDN コネクタ用の ServiceAccount (両方のクラスタ)
 
 # ===== RHEL 系のノード（ongeki: AlmaLinux 10）=====
 # containerd の CRI で SELinux を使うか。true にすると Pod が container_t で動くが、kubeadm の

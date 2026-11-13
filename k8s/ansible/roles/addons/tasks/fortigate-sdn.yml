@@ -1,0 +1,46 @@
+---
+# FortiGate の Kubernetes SDN コネクタ用の ServiceAccount（読み取りだけ）と、期限のないトークン。
+# 権限は Fortinet の手順と同じ（pods、namespaces、nodes、services の get / watch / list）。
+# https://docs.fortinet.com/document/fortigate/latest/administration-guide/508319/private-cloud-k8s-sdn-connector
+# トークンは Ansible の出力に出さない。FortiGate に入れるときは control plane で次を実行する:
+#   kubectl -n kube-system get secret fortigate-sdn-token -o jsonpath='{.data.token}' | base64 -d
+- name: FortiGate の SDN コネクタ用の ServiceAccount とトークン
+  ansible.builtin.include_tasks: apply.yml
+  vars:
+    apply_content: |
+      apiVersion: v1
+      kind: ServiceAccount
+      metadata:
+        name: fortigate-sdn
+        namespace: kube-system
+      ---
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRole
+      metadata:
+        name: fortigate-sdn
+      rules:
+        - apiGroups: [""]
+          resources: [pods, namespaces, nodes, services]
+          verbs: [get, watch, list]
+      ---
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRoleBinding
+      metadata:
+        name: fortigate-sdn
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: ClusterRole
+        name: fortigate-sdn
+      subjects:
+        - kind: ServiceAccount
+          name: fortigate-sdn
+          namespace: kube-system
+      ---
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: fortigate-sdn-token
+        namespace: kube-system
+        annotations:
+          kubernetes.io/service-account.name: fortigate-sdn
+      type: kubernetes.io/service-account-token

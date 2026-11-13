@@ -175,6 +175,37 @@ config router bgp
 end
 ```
 
+### FortiGate の Kubernetes SDN コネクタ
+FortiGate は Kubernetes の API から Service の IP を取得し、動的アドレス (`k8s-svc`、`k8s-ingress`、`k8s-nas-svc`) としてポリシーに使う。コネクタはクラスタごとに作る。
+
+| コネクタ | クラスタ | API |
+|---|---|---|
+| `kubernetes` | `main` | `192.168.99.200:6443` |
+| `kubernetes-nas` | `nas` | `192.168.98.2:6443` |
+
+Ansible (`addons` の `fortigate-sdn.yml`) が、各クラスタに読み取りだけの ServiceAccount `kube-system/fortigate-sdn` と、期限のないトークンの Secret `fortigate-sdn-token` を作る。権限は [Fortinet の手順](https://docs.fortinet.com/document/fortigate/latest/administration-guide/508319/private-cloud-k8s-sdn-connector) と同じ (pods、namespaces、nodes、services の get / watch / list)。\
+トークンは Ansible の出力に出さない。各クラスタの control plane (becky、ongeki) で取り出して FortiGate に入れる。クラスタを作り直すとトークンも変わるので、入れ直す。
+```bash
+kubectl -n kube-system get secret fortigate-sdn-token -o jsonpath='{.data.token}' | base64 -d
+```
+```
+config system sdn-connector
+    edit "kubernetes"
+        set type kubernetes
+        set server "192.168.99.200"
+        set server-port 6443
+        set secret-token <main のトークン>
+    next
+    edit "kubernetes-nas"
+        set type kubernetes
+        set server "192.168.98.2"
+        set server-port 6443
+        set secret-token <nas のトークン>
+    next
+end
+```
+状態は FortiGate の `diagnose sys sdn status` で確認できる。
+
 ## 5. 動作確認
 ```bash
 kubectl get nodes -o wide
@@ -375,8 +406,12 @@ config firewall address
     edit "k8s-nas-pod"
         set subnet 10.13.0.0 255.255.0.0
     next
-    edit "k8s-nas-lb"
-        set subnet 10.14.0.0 255.255.255.0
+    edit "k8s-nas-svc"                # nas のクラスタの Service (LoadBalancer の IP を含む)
+        set type dynamic
+        set sdn "kubernetes-nas"
+        set associated-interface "port9"
+        set filter "K8S_Namespace=* & K8S_ServiceName=*"
+        set sdn-addr-type all
     next
 end
 config router bgp
@@ -393,7 +428,7 @@ config firewall policy
         set srcintf "dmz"
         set dstintf "port9"
         set srcaddr "dmz" "k8s-cl"
-        set dstaddr "port9 address" "k8s-nas-pod" "k8s-nas-lb"
+        set dstaddr "port9 address" "k8s-nas-pod" "k8s-nas-svc"
         set action accept
         set schedule "always"
         set service "ALL"
@@ -409,10 +444,10 @@ config firewall policy
         set service "ALL"
     next
     edit 10    # al-dj-nas
-        append dstaddr "k8s-nas-lb"
+        append dstaddr "k8s-nas-svc"
     next
     edit 11    # al-mgmt-nas
-        append dstaddr "k8s-nas-lb"
+        append dstaddr "k8s-nas-svc"
     next
 end
 # 手順 9 で行う
@@ -424,7 +459,7 @@ config system dns-database
     next
 end
 ```
-FortiGate の Kubernetes SDN コネクタが登録するのは `main` のクラスタ (192.168.99.200) のアドレスだけである。`nas` のクラスタの Pod CIDR と LoadBalancer の範囲は、固定のアドレス (`k8s-nas-pod`、`k8s-nas-lb`) で登録する。\
+FortiGate は、クラスタごとの Kubernetes SDN コネクタで Service の IP を動的アドレスにする (`main` は `kubernetes` → `k8s-svc`、`nas` は `kubernetes-nas` → `k8s-nas-svc`。設定は下の「FortiGate の Kubernetes SDN コネクタ」)。Pod CIDR は固定のアドレス (`k8s-cl`、`k8s-nas-pod`) にする。\
 Cluster Mesh では、Pod から相手のクラスタのノードへの通信も NAT されない (相手のノードも Cilium のノードの一覧に入るため)。そのため、ポリシーには両方のクラスタの Pod CIDR を入れる。\
 `main` と `nas` の間で使う主な通信は、Argo CD → ongeki の API (TCP 6443)、clustermesh-apiserver (TCP 32379、両方向)、Pod 間の通信 (任意のポート) である。
 

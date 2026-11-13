@@ -152,6 +152,11 @@
   ansible.builtin.include_tasks: arc.yml
   when: arc_enabled
 
+# ---- FortiGate の Kubernetes SDN コネクタ（Service などの IP を FortiGate のアドレスにする）----
+- name: FortiGate の SDN コネクタ
+  ansible.builtin.include_tasks: fortigate-sdn.yml
+  when: fortigate_sdn_enabled
+
 # ---- ArgoCD ----
 - name: ArgoCD
   when: argocd_enabled
