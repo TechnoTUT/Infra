@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: samba
+  namespace: nas
+  labels:
+    app: samba
+spec:
+  replicas: 1
+  # /nas は ongeki にしかなく、2 つの smbd が同時に扱わないようにする。
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: samba
+  template:
+    metadata:
+      labels:
+        app: samba
+    spec:
+      # ongeki は NAS 専用 (taint)。PV の nodeAffinity でも ongeki に決まる。
+      nodeSelector:
+        kubernetes.io/hostname: ongeki
+      tolerations:
+        - key: node.technotut.net/nas
+          operator: Equal
+          value: "true"
+          effect: NoSchedule
+      containers:
+        - name: samba
+          # https://github.com/TechnoTUT/samba 。更新はコミットごとのタグ (sha-<コミット>) で行う。
+          image: ghcr.io/technotut/samba:sha-c6d1907
+          ports:
+            - name: smb
+              containerPort: 445
+          volumeMounts:
+            - name: nas
+              mountPath: /nas
+            - name: config
+              mountPath: /etc/samba/smb.conf
+              subPath: smb.conf
+              readOnly: true
+            - name: accounts
+              mountPath: /run/secrets/samba
+              readOnly: true
+          readinessProbe:
+            tcpSocket:
+              port: smb
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: smb
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              memory: 1Gi
+      volumes:
+        - name: nas
+          persistentVolumeClaim:
+            claimName: nas
+        - name: config
+          configMap:
+            name: samba-config
+        # Ansible (addons) が vault.yml の vault_samba_smbpasswd から作る
+        - name: accounts
+          secret:
+            secretName: samba-accounts

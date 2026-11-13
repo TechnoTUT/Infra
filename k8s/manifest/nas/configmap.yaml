@@ -1,0 +1,34 @@
+# 旧 NAS（ongeki のホストの Samba）の設定を引き継ぐ。プリンタと NetBIOS は使わない。
+# 変えたら Pod を作り直す（kubectl -n nas rollout restart deployment/samba）。
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: samba-config
+  namespace: nas
+data:
+  smb.conf: |
+    [global]
+       server role = standalone server
+       security = user
+       passdb backend = tdbsam
+       workgroup = SAMBA
+       unix charset = UTF-8
+       dos charset = CP932
+       smb ports = 445
+       disable netbios = yes
+       load printers = no
+       printing = bsd
+       printcap name = /dev/null
+       disable spoolss = yes
+       map to guest = never
+
+    [nas]
+       path = /nas
+       browseable = yes
+       read only = no
+       guest ok = no
+       valid users = technotut
+       force user = technotut
+       force create mode = 0770
+       force directory mode = 0770
+       inherit acls = yes

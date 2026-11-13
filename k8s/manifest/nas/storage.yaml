@@ -1,0 +1,38 @@
+# ongeki の /nas（md RAID0、ext4）をそのまま使う local PV。
+# 動的に作るとデータが新しいディレクトリに入るので、既存のディレクトリを静的に割り当てる。
+# Retain なので、PVC を消しても /nas の中身は消えない。
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: nas
+spec:
+  capacity:
+    storage: 3600Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: nas-local
+  volumeMode: Filesystem
+  local:
+    path: /nas
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values: [ongeki]
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nas
+  namespace: nas
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: nas-local
+  volumeName: nas
+  resources:
+    requests:
+      storage: 3600Gi
