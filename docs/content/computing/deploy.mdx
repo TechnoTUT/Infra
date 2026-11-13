@@ -9,23 +9,24 @@ sidebar_position: 2
 
 ## 環境
 Operating System: Debian GNU/Linux 13 (Trixie)。ongeki だけ AlmaLinux 10\
-Nodes: 4 (becky, packard, marie, ongeki)
+Clusters: 2 (`main`: becky, packard, marie / `nas`: ongeki)。Cilium Cluster Mesh でつなぐ
 
 | Node | OS | CPU | Memory | Disk | IP Address | Role |
 |------|----|-----|--------|------|------------|------|
 | becky | Debian 13 | 4CPU | 8GB | - | 192.168.99.200/25 | Control-Plane |
 | packard | Debian 13 | 4CPU | 12GB | - | 192.168.99.201/25 | Worker |
 | marie | Debian 13 | 4CPU | 12GB | - | 192.168.99.202/25 | Worker |
-| ongeki | AlmaLinux 10 | 4CPU | 8GB | 3.6TB (`/nas`, RAID0) | 192.168.98.2/30 | Worker (NAS 専用) |
+| ongeki | AlmaLinux 10 | 4CPU | 8GB | 3.6TB (`/nas`, RAID0) | 192.168.98.2/30 | `nas` のクラスタ (Control-Plane 兼 Worker) |
 
 | 項目 | 内容 |
 |------|------|
 | Kubernetes | 1.37 |
 | コンテナランタイム | containerd (Docker の apt リポジトリの containerd.io) |
 | CNI | Cilium 1.20 (kube-proxy 置き換え、native routing、BGP、Ingress) |
-| Pod CIDR | 10.11.0.0/16 (クラスタ内は NAT なし。外部へ出る通信はノードの IP に NAT する) |
+| Pod CIDR | 10.11.0.0/16 (`nas` は 10.13.0.0/16)。`10.8.0.0/13` 宛ては NAT しない (両方のクラスタの Pod 間)。外部へ出る通信はノードの IP に NAT する |
 | Service CIDR (ClusterIP) | 10.96.0.0/12 (kubeadm の既定値) |
-| LoadBalancer IP | 10.12.0.0/16 (BGP で FortiGate に広報)。`10.12.0.0` は bind9 専用 (FortiGate の DNS 転送先) |
+| LoadBalancer IP | 10.12.0.0/16 (`nas` は 10.14.0.0/24。BGP で FortiGate に広報)。`10.12.0.0` は bind9 専用 (FortiGate の DNS 転送先) |
+| Cluster Mesh | Cilium Cluster Mesh。`main` (ID 1) と `nas` (ID 2)。clustermesh-apiserver はノードの IP の 32379 番 (NodePort) |
 | ノードの DNS | TUT の DNS サーバ (133.15.64.100, 133.15.64.102) |
 | ストレージ | NFS (becky の /nfs) と nfs-subdir-external-provisioner。NAS は ongeki の `/nas` (local PV) |
 | GitOps | Argo CD |
@@ -140,18 +141,13 @@ spec:
 プールを分けているのは、IP を指定しない Service が、他の Service の固定 IP を先に取ってしまうのを防ぐため。
 
 ## 4. ルーター (FortiGate) の BGP 設定
-Cilium は、LoadBalancer の IP (`10.12.0.0/16`) と Pod CIDR (`10.11.0.0/16`) を BGP で広報する。\
+Cilium は、LoadBalancer の IP と Pod CIDR を BGP で広報する。\
 AS 番号は全体で `64646` (iBGP)、相手は FortiGate である。
 
-ノードごとに相手を選ぶ (`cilium_bgp_peers` と inventory の `bgp_peer`。省略時は先頭の相手)。Ansible はノードに `bgp.technotut.net/peer=<相手>` のラベルを付け、相手ごとに `CiliumBGPClusterConfig` などを作る。
-
-| 相手 | アドレス | ノード | 広報する LoadBalancer の IP |
+| クラスタ | ノード | 相手 | 広報する範囲 |
 |---|---|---|---|
-| `fortigate` | 192.168.99.129 (`dmz`) | becky, packard, marie | 全て |
-| `fortigate-nas` | 192.168.98.1 (`port9`) | ongeki | `bgp.technotut.net/peer: fortigate-nas` のラベルがある Service だけ |
-
-ongeki は他のノードと L2 が別 (`port9`) なので、Pod CIDR の経路は FortiGate を通る。ongeki が他の Service の IP も広報すると、FortiGate が `port9` 経由の経路を選び、`dmz` 宛てのポリシーに合わなくなる。そのため ongeki が広報する Service をラベルで限っている。\
-`externalTrafficPolicy: Local` の Service は、Pod のあるノードだけが広報する。
+| `main` | becky, packard, marie | 192.168.99.129 (`dmz`) | `10.12.0.0/16`、`10.11.0.0/16` |
+| `nas` | ongeki | 192.168.98.1 (`port9`) | `10.14.0.0/24`、`10.13.0.0/16` |
 
 iBGP では、受け取った経路を他の iBGP ピアに再広報しないため、FortiGate 側でノードを route reflector client にする。\
 設定例 (実際の設定に合わせて調整する):
@@ -304,18 +300,33 @@ vault_arc_github_app_private_key: |
 
 TechnoTUT の Settings → Actions → Runner groups で、`Default` グループを public リポジトリにも使わせる設定にしない。privileged な Pod でジョブが動くため。
 
-### NAS (ongeki)
-ongeki は NAS 専用のワーカーである。ホストで動いていた Samba を、クラスタ上のコンテナに移した。
+### NAS (ongeki) と Cluster Mesh
+ongeki は、ongeki だけで動く Kubernetes のクラスタ `nas` である。ホストで動いていた Samba を、このクラスタのコンテナに移した。\
+`main` と `nas` は Cilium Cluster Mesh でつなぎ、`nas` のアプリは `main` の Argo CD が配る。
 
 | 項目 | 内容 |
 |---|---|
+| Ansible | `ansible-playbook -i inventory/nas.yml playbooks/site.yml`。変数は `inventory/group_vars/all` (共通) を `inventory/group_vars/nas_cluster.yml` で上書きする |
 | OS | AlmaLinux 10 (SELinux は Enforcing のまま)。Ansible のロールは Debian と RHEL 系の両方に対応している |
-| ネットワーク | FortiGate の `port9` (`192.168.98.0/30`)。VLAN 10/20 のトランクにはつながっていない (`network_manage_vlans: false`) |
-| taint | `node.technotut.net/nas=true:NoSchedule`。toleration のある Pod (Samba) だけが動く |
+| ネットワーク | FortiGate の `port9` (`192.168.98.0/30`)。`main` のノードと L2 が別なので、Pod 間の通信は FortiGate が BGP の経路で中継する |
+| 動かすもの | Cilium (BGP、LB IPAM、Cluster Mesh) と Samba だけ。Multus、KubeVirt、NFS、Argo CD、bind9 などは入れない |
 | データ | `/nas` (sda + sdb の md RAID0、ext4)。local PV でそのまま Samba にマウントする |
 | Samba | [`k8s/manifest/nas/`](https://github.com/TechnoTUT/Infra/tree/main/k8s/manifest/nas)。イメージは [TechnoTUT/samba](https://github.com/TechnoTUT/samba) (`ghcr.io/technotut/samba`) |
-| アドレス | `drive.svc.technotut.net` → `10.12.98.2` (LoadBalancer。ExternalDNS が登録する)。SMB (TCP 445) だけ |
+| アドレス | `drive.svc.technotut.net` → `10.14.0.128` (LoadBalancer。`main` の bind9 に固定で載せる)。SMB (TCP 445) だけ |
 | アカウント | `vault.yml` の `vault_samba_smbpasswd` (smbpasswd 形式) から Ansible が Secret `samba-accounts` を作る |
+
+Cluster Mesh の構成:
+- クラスタの名前と ID は `cilium_cluster_name` と `cilium_cluster_id` (`main` は 1、`nas` は 2)。**変えたら、そのクラスタの全ての Pod を作り直す** (セキュリティ ID に cluster ID が入るため)。
+- Pod CIDR は重ならないようにする (`main` は 10.11.0.0/16、`nas` は 10.13.0.0/16)。両方を含む `10.8.0.0/13` を `ipv4NativeRoutingCIDR` にし、Pod 間の通信を NAT しない。`10.0.0.0/8` にしないのは、学内の 10.x (ongeki の無線 LAN など) への通信まで NAT されなくなるため。
+- clustermesh-apiserver は、各クラスタのノードの IP の 32379 番 (NodePort) で公開する。相手の指定は `cilium_clustermesh_clusters`。
+- 両方のクラスタの証明書を同じ CA で作る。CA は `vault.yml` の `vault_cilium_ca_crt` と `vault_cilium_ca_key`。
+- 別のクラスタの Service を使うときは、両方のクラスタに同じ名前空間・名前の Service を置き、`service.cilium.io/global: "true"` の注釈を付ける ([Global Services](https://docs.cilium.io/en/stable/network/clustermesh/services/))。
+
+状態の確認 (各クラスタの control plane で):
+```bash
+kubectl -n kube-system exec ds/cilium -c cilium-agent -- cilium-dbg troubleshoot clustermesh
+kubectl -n kube-system exec ds/cilium -c cilium-agent -- cilium-dbg status | grep ClusterMesh
+```
 
 RHEL 系のノードで Ansible が Debian と違う設定をするところ:
 - パッケージは dnf で入れる。containerd.io と kubelet などは、リポジトリの `exclude` で通常の `dnf update` から外す (Debian の `apt-mark hold` に当たる)。
@@ -324,25 +335,36 @@ RHEL 系のノードで Ansible が Debian と違う設定をするところ:
 - `br_netfilter` のために `kernel-modules-extra` を入れる。
 - containerd の CRI で SELinux を有効にする (`containerd_enable_selinux`)。`nas` ロールが `/nas` のラベルを `container_file_t` にする。
 
-Samba の設定は ConfigMap (`k8s/manifest/nas/configmap.yaml`) にある。変えたら `kubectl -n nas rollout restart deployment/samba` で Pod を作り直す。\
-パスワードを変えるときは、新しい行を作って `vault_samba_smbpasswd` を差し替え、`site.yml` を流してから Pod を作り直す (行の作り方は [TechnoTUT/samba の README](https://github.com/TechnoTUT/samba))。
+Samba の設定は ConfigMap (`k8s/manifest/nas/configmap.yaml`) にある。変えたら `nas` のクラスタで `kubectl -n nas rollout restart deployment/samba` を実行する。\
+パスワードを変えるときは、新しい行を作って `vault_samba_smbpasswd` を差し替え、`nas` の `site.yml` を流してから Pod を作り直す (行の作り方は [TechnoTUT/samba の README](https://github.com/TechnoTUT/samba))。
 
-#### ホストの Samba からの移行手順
-`site.yml` を流すと、`nas` ロールが ongeki のホストの Samba を止める。そこから Samba の Pod が動くまで NAS は使えないので、使わない時間に行う。
+#### 構築と移行の手順
+`main` の Cilium の設定 (クラスタの名前と ID、`ipv4NativeRoutingCIDR`) が変わるので、`main` の全ての Pod を作り直す。また `nas` の `site.yml` を流すと、ongeki のホストの Samba が止まる。どちらもイベントのない時間に行う。
 
 1. **バックアップ**: `/nas` は RAID0 で冗長性がない。できれば先に別のディスクに写す。
-2. **アカウント**: ongeki で `sudo pdbedit -L -w` を実行し、出力を `ansible-vault edit inventory/group_vars/all/vault.yml` で `vault_samba_smbpasswd` に入れる (例は `vault.yml.example`)。
-3. **FortiGate**: SV と NAS の間の通信、BGP、Samba の LoadBalancer の IP への通信を許可する (設定例は下)。DNS の `drive` はまだ消さない。
+2. **Vault**: `ansible-vault edit inventory/group_vars/all/vault.yml` で次を入れる (例は `vault.yml.example`)。
+   - `vault_samba_smbpasswd`: ongeki で `sudo pdbedit -L -w` を実行した出力。
+   - `vault_cilium_ca_crt`、`vault_cilium_ca_key`: Cluster Mesh の CA。`openssl req -x509 -newkey rsa:2048 -nodes -days 3650 -subj "/CN=Cilium CA" -keyout ca.key -out ca.crt` で作る。
+3. **FortiGate**: BGP の相手、`main` と `nas` の間の通信、Samba への SMB を許可する (設定例は下)。DNS の `drive` はまだ消さない。
 4. **`main` にマージ**: `k8s/manifest/nas/` を Argo CD が参照できるようにする。
-5. **Ansible**: `ansible-playbook playbooks/site.yml`。ongeki がクラスタに参加し、ラベルと taint、BGP、Samba の Secret、Argo CD の Application (`nas`) が作られる。BGP の設定の名前を相手ごとに変えたので、最初の 1 回は全ノードの BGP のセッションが張り直される。
-6. **確認**:
+5. **`main` の Ansible**: `ansible-playbook playbooks/site.yml`。Cilium が新しい設定で再起動し、bind9 に `drive` が載り、Argo CD の Application `nas` ができる (`nas` のクラスタを登録するまではエラーになる)。
+6. **`main` の Pod を作り直す**: Cilium の再起動が終わってから、Deployment・DaemonSet・StatefulSet を順に再起動する。KubeVirt の VM も再起動する。
    ```bash
-   kubectl get node ongeki -o wide
-   kubectl -n nas get pods,svc           # EXTERNAL-IP が 10.12.98.2
-   kubectl -n nas logs deploy/samba      # entrypoint: account technotut (uid 1000)
+   for ns in $(kubectl get ns -o jsonpath='{.items[*].metadata.name}'); do
+     kubectl -n "$ns" rollout restart deployment,daemonset,statefulset 2>/dev/null
+   done
    ```
-   FortiGate で `get router info bgp network 10.12.98.2/32` を実行し、次ホップが `192.168.98.2` になっていることを確認する。MGMT から `smbclient //10.12.98.2/nas -U technotut -m SMB3 -c ls` で中身が見えることを確認する。
-7. **DNS**: FortiGate の `drive` のレコードを消す。以後は bind9 (ExternalDNS) が `drive.svc.technotut.net` → `10.12.98.2` を返す。`\\drive.svc.technotut.net\nas` で接続しているクライアントはそのまま使える。`192.168.98.2` を直接指定しているクライアントは接続先を変える。
+7. **`nas` の Ansible**: `ansible-playbook -i inventory/nas.yml playbooks/site.yml`。ongeki で `kubeadm init` を行い、Cilium、Samba の Secret を入れ、`main` の Argo CD に `nas` のクラスタを登録する。Argo CD が Samba を配る。
+8. **確認**:
+   ```bash
+   # ongeki で
+   kubectl get node -o wide
+   kubectl -n nas get pods,svc           # EXTERNAL-IP が 10.14.0.128
+   kubectl -n nas logs deploy/samba      # entrypoint: account technotut (uid 1000)
+   kubectl -n kube-system exec ds/cilium -c cilium-agent -- cilium-dbg troubleshoot clustermesh
+   ```
+   FortiGate で `get router info bgp network 10.14.0.128/32` を実行し、次ホップが `192.168.98.2` になっていることを確認する。MGMT から `smbclient //10.14.0.128/nas -U technotut -m SMB3 -c ls` で中身が見えることを確認する。
+9. **DNS**: FortiGate の `drive` のレコードを消す。以後は bind9 が `drive.svc.technotut.net` → `10.14.0.128` を返す。`\\drive.svc.technotut.net\nas` で接続しているクライアントはそのまま使える。`192.168.98.2` を直接指定しているクライアントは接続先を変える。
 
 FortiGate の設定例 (実際の設定に合わせて調整する):
 ```
@@ -350,8 +372,11 @@ config firewall address
     edit "k8s-cl"
         unset associated-interface    # port9 側のポリシーでも使えるようにする
     next
+    edit "k8s-nas-pod"
+        set subnet 10.13.0.0 255.255.0.0
+    next
     edit "nas-smb"
-        set subnet 10.12.98.2 255.255.255.255
+        set subnet 10.14.0.128 255.255.255.255
     next
 end
 config router bgp
@@ -368,7 +393,7 @@ config firewall policy
         set srcintf "dmz"
         set dstintf "port9"
         set srcaddr "dmz" "k8s-cl"
-        set dstaddr "port9 address" "k8s-cl"
+        set dstaddr "port9 address" "k8s-nas-pod"
         set action accept
         set schedule "always"
         set service "ALL"
@@ -377,7 +402,7 @@ config firewall policy
         set name "al-nas-sv"
         set srcintf "port9"
         set dstintf "dmz"
-        set srcaddr "port9 address" "k8s-cl"
+        set srcaddr "port9 address" "k8s-nas-pod"
         set dstaddr "dmz" "k8s-cl"
         set action accept
         set schedule "always"
@@ -390,7 +415,7 @@ config firewall policy
         append dstaddr "nas-smb"
     next
 end
-# 手順 7 で行う
+# 手順 9 で行う
 config system dns-database
     edit "svc.technotut.net"
         config dns-entry
@@ -399,6 +424,7 @@ config system dns-database
     next
 end
 ```
+`main` と `nas` の間で使う主な通信は、Argo CD → ongeki の API (TCP 6443)、clustermesh-apiserver (TCP 32379、両方向)、Pod 間の通信 (任意のポート) である。
 
 ホストの Samba に戻すときは、Argo CD の `nas` を止めてから、ongeki で `sudo semanage fcontext -d '/nas(/.*)?' && sudo restorecon -R /nas` でラベルを戻し、`sudo systemctl enable --now smb` で起動する。FortiGate の `drive` のレコードも戻す。
 

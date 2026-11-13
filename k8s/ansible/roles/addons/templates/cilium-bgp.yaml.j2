@@ -1,13 +1,7 @@
-{#
-  BGP の相手（cilium_bgp_peers）ごとに PeerConfig・ClusterConfig・Advertisement を作る。
-  ClusterConfig はノードのラベル bgp.technotut.net/peer=<name> で対象のノードを選ぶ（addons の nodes.yml が付ける）。
-#}
-{% for p in cilium_bgp_peers %}
----
 apiVersion: cilium.io/v2
 kind: CiliumBGPPeerConfig
 metadata:
-  name: bgp-peer-config-{{ p.name }}
+  name: bgp-peer-config
 spec:
   gracefulRestart:
     enabled: true
@@ -20,55 +14,48 @@ spec:
       safi: unicast
       advertisements:
         matchLabels:
-          advertise: bgp-{{ p.name }}
+          advertise: bgp
 ---
 apiVersion: cilium.io/v2
 kind: CiliumBGPClusterConfig
 metadata:
-  name: bgp-cluster-config-{{ p.name }}
+  name: bgp-cluster-config
 spec:
   nodeSelector:
     matchLabels:
-      bgp.technotut.net/peer: {{ p.name }}
+      kubernetes.io/os: linux
   bgpInstances:
     - name: instance-{{ cilium_bgp_local_asn }}
       localASN: {{ cilium_bgp_local_asn }}
       peers:
+{% for p in cilium_bgp_peers %}
         - name: {{ p.name }}
           peerAddress: "{{ p.address }}"
           peerASN: {{ p.asn }}
           peerConfigRef:
-            name: bgp-peer-config-{{ p.name }}
+            name: bgp-peer-config
+{% endfor %}
 ---
 apiVersion: cilium.io/v2
 kind: CiliumBGPAdvertisement
 metadata:
-  name: bgp-advertisement-{{ p.name }}
+  name: bgp-advertisement
   labels:
-    advertise: bgp-{{ p.name }}
+    advertise: bgp
 spec:
   advertisements:
+    # 全ての LoadBalancer の IP を広報する
     - advertisementType: Service
       service:
         addresses:
           - LoadBalancerIP
-{% if p.services | default('all') == 'all' %}
-      # 全ての LoadBalancer の IP を広報する
-      # （externalTrafficPolicy: Local の Service は、Pod のあるノードだけが広報する）
       selector:
         matchExpressions:
           - key: not-exist-label-name
             operator: NotIn
             values: [dummy-value]
-{% else %}
-      # bgp.technotut.net/peer={{ p.name }} のラベルがある Service だけを広報する
-      selector:
-        matchLabels:
-          bgp.technotut.net/peer: {{ p.name }}
-{% endif %}
     - advertisementType: PodCIDR
       attributes:
         communities:
           standard:
             - "{{ cilium_bgp_local_asn }}:99"
-{% endfor %}

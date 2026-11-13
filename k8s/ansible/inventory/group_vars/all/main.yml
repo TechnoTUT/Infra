@@ -66,27 +66,31 @@ multus_nads:
   - { name: vlan20-bridge, namespace: kube-public, network: vlan20, bridge: br20, subnet: "10.10.16.0/20" }
 
 # ===== Cilium BGP（必須）=====
-# 全体で AS 64646 を使う（iBGP）。相手は FortiGate（route reflector）。
-# ノードは inventory の bgp_peer で相手を選ぶ（省略時は先頭）。ノードには
-# bgp.technotut.net/peer=<name> のラベルを付け、相手ごとに CiliumBGPClusterConfig を作る。
-# services: all       全ての LoadBalancer の IP と PodCIDR を広報する
-# services: labeled   PodCIDR と、Service に bgp.technotut.net/peer=<name> のラベルがある LoadBalancer の IP だけ。
-#                     ongeki が他の Service の IP を広報すると、FortiGate が port9 経由の経路を選び、
-#                     dmz 宛てのポリシーに合わなくなるため。
+# 全体で AS 64646 を使う（iBGP）。ピアは FortiGate の 192.168.99.129。
 cilium_bgp_enabled: true
 cilium_bgp_local_asn: 64646
 cilium_bgp_peers:
   - name: fortigate
-    address: "192.168.99.129"        # dmz (SV)
+    address: "192.168.99.129"
     asn: 64646
-    services: all
-  - name: fortigate-nas
-    address: "192.168.98.1"          # port9 (NAS)
-    asn: 64646
-    services: labeled
 
-# ===== ノードの taint（inventory の node_taints で指定する）=====
-node_taints: []
+# ===== Cilium Cluster Mesh =====
+# このクラスタ (main) と、ongeki だけのクラスタ (nas。inventory/nas.yml) をつなぐ。
+# 名前と ID はクラスタごとに変える (nas は inventory/group_vars/nas_cluster.yml で上書きする)。
+# 名前か ID を変えたら、全ての Pod を作り直す (セキュリティ ID に ID が入るため)。
+cilium_cluster_name: main
+cilium_cluster_id: 1
+# 両方のクラスタの Pod CIDR (main 10.11.0.0/16、nas 10.13.0.0/16) を含む範囲。この範囲への通信は NAT しない。
+# 10.0.0.0/8 にすると、学内の 10.x (ongeki の無線 LAN の 10.226.0.0/17 など) まで NAT しなくなる。
+cilium_native_routing_cidr: "10.8.0.0/13"
+cilium_clustermesh_enabled: true
+# clustermesh-apiserver はノードの IP の NodePort で公開する (LoadBalancer の IP は相手の
+# クラスタの FortiGate のポリシーに個別に足す必要があるため)。
+cilium_clustermesh_port: 32379
+cilium_clustermesh_clusters:          # 両方のクラスタで同じ。自分のクラスタは Cilium が無視する
+  - { name: main, ips: ["192.168.99.200", "192.168.99.201", "192.168.99.202"] }
+  - { name: nas, ips: ["192.168.98.2"] }
+# 両方のクラスタの証明書を同じ CA で作る。CA は vault.yml の vault_cilium_ca_crt と vault_cilium_ca_key。
 
 # ===== swap（コンテナでのテスト時だけ変える。ホストの swap を止めないため）=====
 common_disable_swap: true
@@ -119,7 +123,8 @@ argocd_apps:
   # BLT をコンテナ化する別ブランチがマージされたら、この 2 行と kubevirt_enabled を見直す。
   - { name: blt, path: blt, namespace: blt }
   - { name: cdi-config, path: infrastructure/cdi }
-  - { name: nas, path: nas, namespace: nas }   # Samba (ongeki の /nas)
+  # Samba (ongeki の /nas)。nas のクラスタに配る (cluster は Argo CD に登録したクラスタの名前)。
+  - { name: nas, path: nas, namespace: nas, cluster: nas }
 
 argocd_network_policy: true   # コンテナでのテスト時だけ false にする
 
@@ -186,6 +191,7 @@ bind9_image: "docker.io/internetsystemsconsortium/bind9:9.21"   # 現行と同�
 bind9_static_records:                  # ゾーンに固定で入れるレコード（他は ExternalDNS が登録する）
   - { name: pa, ip: "192.168.12.22" }
   - { name: registry, ip: "{{ registry_cluster_ip }}" }   # クラスタ内のレジストリ (ClusterIP。クラスタの外からは届かない)
+  - { name: drive, ip: "10.14.0.128" }   # NAS の Samba (nas のクラスタの LoadBalancer。k8s/manifest/nas/service.yaml)
 externaldns_chart_version: "1.21.1"
 externaldns_tsig_keyname: externaldns-key
 # TSIG の秘密鍵は vault.yml の vault_externaldns_tsig_secret に置く。
@@ -198,8 +204,17 @@ nas_namespace: nas
 # Samba のアカウントは vault.yml の vault_samba_smbpasswd（ホストの `sudo pdbedit -L -w` の出力）から
 # Secret (samba-accounts) を作る。
 
+# ===== 機能の有無（nas のクラスタでは使わないものを止める。inventory/group_vars/nas_cluster.yml）=====
+nfs_enabled: true            # becky の NFS サーバと NFS provisioner
+argocd_enabled: true         # Argo CD (nas のクラスタは main の Argo CD が管理する)
+dns_enabled: true            # bind9 と ExternalDNS
+cilium_ingress_enabled: true
+
 # ===== RHEL 系のノード（ongeki: AlmaLinux 10）=====
 # containerd の CRI で SELinux を有効にする（Pod は container_t で動く）。
 containerd_enable_selinux: true
 # 有効にすると Cilium と競合するので止める（Debian のノードもファイアウォールはない）。
 redhat_disable_firewalld: true
+
+# ===== nas のクラスタを main の Argo CD に登録する（inventory/group_vars/nas_cluster.yml で true）=====
+argocd_register_cluster: false

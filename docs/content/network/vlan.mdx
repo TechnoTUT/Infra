@@ -58,9 +58,16 @@ sidebar_position: 3
   - `Tunnel1.0` (kisarag1-net): `192.168.250.8/30` (IX3110 `.10`、対向 `.9`)
 
 ## Kubernetes
+クラスタ `main` (becky, packard, marie) と `nas` (ongeki) がある。Cilium Cluster Mesh でつなぐため、範囲は重ならないようにする。両方の Pod CIDR を含む `10.8.0.0/13` 宛ての Pod の通信は NAT しない。
+
 - **Pod CIDR**: `10.11.0.0/16`
 - **Service CIDR** (ClusterIP): `10.96.0.0/12` (kubeadm の既定値)
 - **LoadBalancer IP**: `10.12.0.0/16` (BGPでFortiGateに広報)
   - `10.12.0.0`: bind9 (DNS)
   - `10.12.0.1` - `10.12.63.255`: 自動割り当て
   - `10.12.64.0` - `10.12.255.254`: 固定 IP (Service に `lbipam.technotut.net/static: "true"` ラベルが必要)
+- **`nas` のクラスタ**
+  - Pod CIDR: `10.13.0.0/16`
+  - Service CIDR: `10.96.0.0/12` (クラスタの中だけで使うので `main` と同じ)
+  - LoadBalancer IP: `10.14.0.0/24` (BGP で FortiGate に広報。`10.14.0.1` - `10.14.0.127` は自動割り当て、`10.14.0.128` - `10.14.0.254` は固定 IP)
+    - `10.14.0.128`: Samba (`drive.svc.technotut.net`)

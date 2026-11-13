@@ -32,3 +32,7 @@ cilium_bgp_peers:
 
 # ダミーの鍵（テスト専用）
 vault_externaldns_tsig_secret: "dGVzdC10c2lnLXNlY3JldC1mb3ItcG9kbWFuLW9ubHk="
+
+# Cluster Mesh は検証しない (相手のクラスタがない)
+cilium_clustermesh_enabled: false
+cilium_native_routing_cidr: "10.11.0.0/16"

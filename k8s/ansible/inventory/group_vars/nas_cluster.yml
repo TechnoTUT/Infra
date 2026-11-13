@@ -1,0 +1,37 @@
+---
+# ongeki だけのクラスタ (nas。inventory/nas.yml) の設定。group_vars/all の値を上書きする。
+# main のクラスタ (hosts.yml) には nas_cluster グループがないので、ここは読まれない。
+
+# ===== Kubernetes =====
+api_endpoint: "192.168.98.2"         # ongeki
+pod_cidr: "10.13.0.0/16"             # main (10.11.0.0/16) と重ならないこと (Cluster Mesh の要件)
+# 1 台で Pod も動かすので、control plane の taint を付けない。
+kubeadm_init_taints: []
+
+# ===== Cilium =====
+cilium_cluster_name: nas
+cilium_cluster_id: 2
+cilium_bgp_peers:
+  - name: fortigate-nas
+    address: "192.168.98.1"          # FortiGate の port9
+    asn: 64646
+# LoadBalancer の IP は 10.14.0.0/24 (main の 10.12.0.0/16 と分ける)。
+cilium_lb_pool_start: "10.14.0.1"
+cilium_lb_pool_stop: "10.14.0.127"
+cilium_lb_static_start: "10.14.0.128"
+cilium_lb_static_stop: "10.14.0.254"
+
+# ===== 使わないもの =====
+# Multus 用の VLAN 10/20 のトランクにはつながっていない。
+network_manage_vlans: false
+multus_enabled: false
+kubevirt_enabled: false
+nfs_enabled: false
+registry_enabled: false
+arc_enabled: false
+dns_enabled: false                   # drive.svc.technotut.net は main の bind9 に固定で載せる
+cilium_ingress_enabled: false
+# main の Argo CD が管理する (argocd_server の becky にクラスタを登録する)。
+argocd_enabled: false
+argocd_apps: []
+argocd_register_cluster: true

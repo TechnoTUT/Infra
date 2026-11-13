@@ -1,0 +1,29 @@
+# ongeki だけのクラスタ (nas)。main のクラスタ (hosts.yml) とは Cilium Cluster Mesh でつなぐ。
+#   ansible-playbook -i inventory/nas.yml playbooks/site.yml
+# 変数は group_vars/all (main と共通) を nas_cluster グループの group_vars/nas_cluster.yml で上書きする。
+all:
+  vars:
+    ansible_user: technotut
+  children:
+    nas_cluster:
+      children:
+        k8s:
+          children:
+            control_plane:
+              hosts:
+                # NAS。AlmaLinux 10。FortiGate の port9 (192.168.98.0/30)。
+                ongeki:
+                  ansible_host: 192.168.98.2
+                  node_ip: 192.168.98.2
+                  nic: enp2s0
+            workers:
+              hosts: {}
+        # NAS のディスク (/nas) を持つノード
+        nas:
+          hosts:
+            ongeki:
+    # main のクラスタの Argo CD に nas のクラスタを登録するときだけ使う (このクラスタには含まない)
+    argocd_server:
+      hosts:
+        becky:
+          ansible_host: 192.168.99.200

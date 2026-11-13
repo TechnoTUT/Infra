@@ -1,6 +1,6 @@
-# externalTrafficPolicy: Local なので、IP を広報するのは Pod のある ongeki だけ。
-# ongeki は FortiGate の port9 側にあるので、FortiGate は port9 経由で ongeki に送る。
-# bgp.technotut.net/peer: ongeki の BGP の相手 (fortigate-nas) は、このラベルの Service だけを広報する。
+# nas のクラスタの LoadBalancer (10.14.0.0/24)。ongeki が BGP で FortiGate (port9) に広報する。
+# drive.svc.technotut.net は main のクラスタの bind9 に固定で載せている (bind9_static_records)。
+# externalTrafficPolicy: Local でクライアントの IP を残す。
 apiVersion: v1
 kind: Service
 metadata:
@@ -9,14 +9,11 @@ metadata:
   labels:
     app: samba
     lbipam.technotut.net/static: "true"
-    bgp.technotut.net/peer: fortigate-nas
-  annotations:
-    external-dns.alpha.kubernetes.io/hostname: drive.svc.technotut.net
 spec:
   selector:
     app: samba
   type: LoadBalancer
-  loadBalancerIP: 10.12.98.2
+  loadBalancerIP: 10.14.0.128
   externalTrafficPolicy: Local
   ports:
     - name: smb

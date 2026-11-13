@@ -1,0 +1,71 @@
+---
+# このクラスタ (nas) を main の Argo CD に登録する。control_plane (ongeki) で実行し、
+# 登録は argocd_server (becky) に委譲する。Argo CD は becky から https://<api_endpoint>:6443 に接続する。
+- name: Argo CD 用の ServiceAccount とトークン
+  ansible.builtin.include_tasks: apply.yml
+  vars:
+    apply_content: |
+      apiVersion: v1
+      kind: ServiceAccount
+      metadata:
+        name: argocd-manager
+        namespace: kube-system
+      ---
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRoleBinding
+      metadata:
+        name: argocd-manager
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: ClusterRole
+        name: cluster-admin
+      subjects:
+        - kind: ServiceAccount
+          name: argocd-manager
+          namespace: kube-system
+      ---
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: argocd-manager-token
+        namespace: kube-system
+        annotations:
+          kubernetes.io/service-account.name: argocd-manager
+      type: kubernetes.io/service-account-token
+
+- name: トークンが発行されるのを待つ
+  ansible.builtin.command: >-
+    kubectl -n kube-system get secret argocd-manager-token -o jsonpath='{.data.token}'
+  register: addons_argocd_token
+  until: addons_argocd_token.stdout | length > 0
+  retries: 30
+  delay: 2
+  changed_when: false
+  no_log: true
+
+- name: クラスタの CA を読む
+  ansible.builtin.slurp:
+    src: /etc/kubernetes/pki/ca.crt
+  register: addons_cluster_ca
+  become: true
+
+- name: main の Argo CD にクラスタの Secret を作る
+  ansible.builtin.command: kubectl apply -f -
+  args:
+    stdin: |
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: cluster-{{ cilium_cluster_name }}
+        namespace: argocd
+        labels:
+          argocd.argoproj.io/secret-type: cluster
+      type: Opaque
+      stringData:
+        name: {{ cilium_cluster_name }}
+        server: https://{{ api_endpoint }}:{{ api_port }}
+        config: {{ {'bearerToken': addons_argocd_token.stdout | b64decode, 'tlsClientConfig': {'caData': addons_cluster_ca.content}} | to_json | to_json }}
+  delegate_to: "{{ groups['argocd_server'][0] }}"
+  register: addons_argocd_cluster
+  changed_when: "'created' in addons_argocd_cluster.stdout or 'configured' in addons_argocd_cluster.stdout"
+  no_log: true

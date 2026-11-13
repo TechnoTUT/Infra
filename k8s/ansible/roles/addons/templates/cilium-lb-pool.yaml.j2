@@ -1,3 +1,4 @@
+{% if dns_enabled %}
 # bind9 専用（FortiGate の DNS 転送先）。
 apiVersion: cilium.io/v2
 kind: CiliumLoadBalancerIPPool
@@ -11,6 +12,7 @@ spec:
       io.kubernetes.service.namespace: {{ dns_namespace }}
       io.kubernetes.service.name: bind9
 ---
+{% endif %}
 # IP を指定しない Service の自動割り当て用。
 apiVersion: cilium.io/v2
 kind: CiliumLoadBalancerIPPool

@@ -16,7 +16,9 @@
 
 - name: NFS サーバ（becky）
   hosts: control_plane
-  roles: [nfs]
+  roles:
+    - role: nfs
+      when: nfs_enabled
 
 - name: コントロールプレーンの初期化
   hosts: control_plane
@@ -37,3 +39,4 @@
       ansible.builtin.include_role:
         name: addons
         tasks_from: dns
+      when: dns_enabled

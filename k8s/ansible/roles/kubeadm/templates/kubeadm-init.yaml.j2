@@ -7,6 +7,10 @@ nodeRegistration:
   kubeletExtraArgs:
     - name: node-ip
       value: "{{ node_ip }}"
+{% if kubeadm_init_taints is defined %}
+  # 既定は control plane の NoSchedule。1 台のクラスタ (nas) では付けない。
+  taints: {{ kubeadm_init_taints | to_json }}
+{% endif %}
 # kube-proxy は Cilium で置き換える。
 skipPhases:
   - addon/kube-proxy

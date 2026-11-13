@@ -10,7 +10,11 @@ spec:
     targetRevision: HEAD
     path: k8s/manifest/{{ item.path }}
   destination:
+{% if item.cluster is defined %}
+    name: {{ item.cluster }}    # Argo CD に登録した別のクラスタ (例: nas)
+{% else %}
     server: https://kubernetes.default.svc
+{% endif %}
 {% if item.namespace is defined %}
     namespace: {{ item.namespace }}
 {% endif %}

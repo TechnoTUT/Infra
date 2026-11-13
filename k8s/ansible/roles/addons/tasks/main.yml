@@ -23,6 +23,14 @@
     mode: "0600"
   loop: [cilium-values.yaml, nfs-values.yaml, argocd-values.yaml, arc-controller-values.yaml, arc-runner-values.yaml]
 
+- name: Cluster Mesh の CA が Vault にあることを確認する
+  ansible.builtin.assert:
+    that: vault_cilium_ca_crt is defined and vault_cilium_ca_key is defined
+    fail_msg: >
+      Cluster Mesh (cilium_clustermesh_enabled) には vault.yml の vault_cilium_ca_crt と
+      vault_cilium_ca_key が必要（両方のクラスタで同じ CA。vault.yml.example を参照）。
+  when: cilium_clustermesh_enabled
+
 # ---- Cilium（CNI がないと他が起動しないので最初）----
 - name: Cilium
   ansible.builtin.include_tasks: helm.yml
@@ -51,25 +59,10 @@
   vars:
     apply_content: "{{ lookup('ansible.builtin.template', 'cilium-lb-pool.yaml.j2') }}"
 
-- name: ノードのラベルと taint
-  ansible.builtin.include_tasks: nodes.yml
-
 - name: Cilium BGP の設定
   ansible.builtin.include_tasks: apply.yml
   vars:
     apply_content: "{{ lookup('ansible.builtin.template', 'cilium-bgp.yaml.j2') }}"
-  when: cilium_bgp_enabled
-
-# 相手ごとに分ける前の名前（全ノードが 1 つの相手）。残すと同じノードを 2 つの設定が選んでしまう。
-# 消すときに BGP のセッションが一度張り直される。
-- name: 以前の名前の BGP の設定を消す
-  ansible.builtin.command: >-
-    kubectl delete --ignore-not-found
-    ciliumbgpclusterconfig/bgp-cluster-config
-    ciliumbgppeerconfig/bgp-peer-config
-    ciliumbgpadvertisement/bgp-advertisement
-  register: addons_bgp_legacy
-  changed_when: "'deleted' in addons_bgp_legacy.stdout"
   when: cilium_bgp_enabled
 
 # ---- Multus（thin）----
@@ -99,6 +92,7 @@
     helm_ns: kube-system
     helm_values: nfs-values.yaml
     helm_wait: false
+  when: nfs_enabled
 
 # ---- クラスタ内のコンテナレジストリ（NFS の PVC を使う）----
 - name: コンテナレジストリ
@@ -160,20 +154,28 @@
 
 # ---- ArgoCD ----
 - name: ArgoCD
-  ansible.builtin.include_tasks: helm.yml
-  vars:
-    helm_name: argocd
-    # GitHub のリリース配信 (argoproj.github.io の index が指す先) が 504 を返すことがあるため OCI から取る。
-    helm_chart: oci://ghcr.io/argoproj/argo-helm/argo-cd
-    helm_version: "{{ argocd_chart_version }}"
-    helm_ns: argocd
-    helm_values: argocd-values.yaml
+  when: argocd_enabled
+  block:
+    - name: ArgoCD を入れる
+      ansible.builtin.include_tasks: helm.yml
+      vars:
+        helm_name: argocd
+        # GitHub のリリース配信 (argoproj.github.io の index が指す先) が 504 を返すことがあるため OCI から取る。
+        helm_chart: oci://ghcr.io/argoproj/argo-helm/argo-cd
+        helm_version: "{{ argocd_chart_version }}"
+        helm_ns: argocd
+        helm_values: argocd-values.yaml
 
-- name: ArgoCD の Application を作る
-  ansible.builtin.include_tasks: apply.yml
-  vars:
-    apply_content: "{{ lookup('ansible.builtin.template', 'argocd-app.yaml.j2') }}"
-  loop: "{{ argocd_apps }}"
+    - name: ArgoCD の Application を作る
+      ansible.builtin.include_tasks: apply.yml
+      vars:
+        apply_content: "{{ lookup('ansible.builtin.template', 'argocd-app.yaml.j2') }}"
+      loop: "{{ argocd_apps }}"
+
+# nas のクラスタ: main の Argo CD (argocd_server) から管理できるようにする。
+- name: main の Argo CD にこのクラスタを登録する
+  ansible.builtin.include_tasks: argocd-cluster.yml
+  when: argocd_register_cluster
 
 # KubeVirt の virt-template-controller は CDI の DataVolume CRD を必要とする。
 # CRD は Argo CD の cdi-config が CDI の CR を作った後に現れるので、待つのは Application を作った後にする。

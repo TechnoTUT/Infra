@@ -1,9 +1,14 @@
+# クラスタの名前と ID（Cluster Mesh で使う。変えたら全ての Pod を作り直す）
+cluster:
+  name: {{ cilium_cluster_name }}
+  id: {{ cilium_cluster_id }}
 ipv4:
   enabled: true
 routingMode: native
 ipam:
   mode: kubernetes
-ipv4NativeRoutingCIDR: {{ pod_cidr }}
+# Cluster Mesh のため、両方のクラスタの Pod CIDR を含む範囲にする。
+ipv4NativeRoutingCIDR: {{ cilium_native_routing_cidr | default(pod_cidr) }}
 autoDirectNodeRoutes: true
 kubeProxyReplacement: true
 k8sRequireIPv4PodCIDR: true
@@ -21,7 +26,7 @@ bgpControlPlane:
 # Pod CIDR 宛て（ipv4NativeRoutingCIDR）の通信は NAT されない。
 enableIPv4Masquerade: true
 ingressController:
-  enabled: true
+  enabled: {{ cilium_ingress_enabled | lower }}
   loadbalancerMode: shared
 # メモリが少ないため常駐を減らす。Hubble は使わない。
 hubble:
@@ -31,3 +36,27 @@ rollOutCiliumPods: true
 operator:
   rollOutPods: true
   replicas: 1
+{% if cilium_clustermesh_enabled %}
+# ===== Cluster Mesh =====
+# 証明書は Helm が作る。両方のクラスタで同じ CA を使う（vault.yml）。
+tls:
+  ca:
+    cert: {{ vault_cilium_ca_crt | b64encode }}
+    key: {{ vault_cilium_ca_key | b64encode }}
+clustermesh:
+  useAPIServer: true
+  apiserver:
+    service:
+      type: NodePort
+      nodePort: {{ cilium_clustermesh_port }}
+    resources:
+      requests: { cpu: 50m, memory: 64Mi }
+  config:
+    enabled: true
+    clusters:
+{% for c in cilium_clustermesh_clusters %}
+      {{ c.name }}:
+        ips: {{ c.ips | to_json }}
+        port: {{ cilium_clustermesh_port }}
+{% endfor %}
+{% endif %}

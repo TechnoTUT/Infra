@@ -18,14 +18,9 @@ spec:
       labels:
         app: samba
     spec:
-      # ongeki は NAS 専用 (taint)。PV の nodeAffinity でも ongeki に決まる。
+      # nas のクラスタ (ongeki だけ) で動く。PV の nodeAffinity でも ongeki に決まる。
       nodeSelector:
         kubernetes.io/hostname: ongeki
-      tolerations:
-        - key: node.technotut.net/nas
-          operator: Equal
-          value: "true"
-          effect: NoSchedule
       containers:
         - name: samba
           # https://github.com/TechnoTUT/samba 。更新はコミットごとのタグ (sha-<コミット>) で行う。
