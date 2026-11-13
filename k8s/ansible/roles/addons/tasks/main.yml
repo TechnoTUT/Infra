@@ -51,10 +51,25 @@
   vars:
     apply_content: "{{ lookup('ansible.builtin.template', 'cilium-lb-pool.yaml.j2') }}"
 
+- name: ノードのラベルと taint
+  ansible.builtin.include_tasks: nodes.yml
+
 - name: Cilium BGP の設定
   ansible.builtin.include_tasks: apply.yml
   vars:
     apply_content: "{{ lookup('ansible.builtin.template', 'cilium-bgp.yaml.j2') }}"
+  when: cilium_bgp_enabled
+
+# 相手ごとに分ける前の名前（全ノードが 1 つの相手）。残すと同じノードを 2 つの設定が選んでしまう。
+# 消すときに BGP のセッションが一度張り直される。
+- name: 以前の名前の BGP の設定を消す
+  ansible.builtin.command: >-
+    kubectl delete --ignore-not-found
+    ciliumbgpclusterconfig/bgp-cluster-config
+    ciliumbgppeerconfig/bgp-peer-config
+    ciliumbgpadvertisement/bgp-advertisement
+  register: addons_bgp_legacy
+  changed_when: "'deleted' in addons_bgp_legacy.stdout"
   when: cilium_bgp_enabled
 
 # ---- Multus（thin）----
@@ -91,6 +106,21 @@
   vars:
     apply_content: "{{ lookup('ansible.builtin.template', 'registry.yaml.j2') }}"
   when: registry_enabled
+
+# ---- NAS の Samba のアカウント（Deployment などは ArgoCD の nas が管理する）----
+- name: Samba のアカウントの Secret
+  ansible.builtin.include_tasks: apply.yml
+  vars:
+    apply_content: "{{ lookup('ansible.builtin.template', 'samba-accounts-secret.yaml.j2') }}"
+    apply_no_log: true
+  when: groups['nas'] | default([]) | length > 0 and vault_samba_smbpasswd is defined
+
+- name: Samba のアカウントがないことを知らせる
+  ansible.builtin.debug:
+    msg: >
+      vault.yml に vault_samba_smbpasswd がないため、Samba の Secret を作らない
+      （Samba の Pod は Secret ができるまで起動しない）。
+  when: groups['nas'] | default([]) | length > 0 and vault_samba_smbpasswd is not defined
 
 # ---- KubeVirt と CDI（BLT の VM 用）----
 # CDI の CR は ArgoCD の cdi-config が管理するので、ここでは operator だけを入れる。

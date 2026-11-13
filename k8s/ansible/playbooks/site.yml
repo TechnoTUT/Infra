@@ -10,6 +10,10 @@
   hosts: k8s
   roles: [common, containerd]
 
+- name: NAS のディスク（ongeki）
+  hosts: nas
+  roles: [nas]
+
 - name: NFS サーバ（becky）
   hosts: control_plane
   roles: [nfs]

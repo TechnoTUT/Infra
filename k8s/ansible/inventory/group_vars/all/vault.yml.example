@@ -11,3 +11,7 @@ vault_arc_github_app_private_key: |
   -----BEGIN RSA PRIVATE KEY-----
   CHANGE_ME
   -----END RSA PRIVATE KEY-----
+# 例: NAS の Samba のアカウント (smbpasswd 形式。1 行に 1 アカウント)
+#     旧 NAS で `sudo pdbedit -L -w` を実行した出力をそのまま入れる (パスワードは平文で持たない)
+vault_samba_smbpasswd: |
+  technotut:1000:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:CHANGE_ME_NT_HASH_32_HEX_CHARS___:[U          ]:LCT-00000000:

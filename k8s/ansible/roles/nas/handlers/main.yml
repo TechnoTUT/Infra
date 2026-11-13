@@ -1,0 +1,6 @@
+---
+# ファイルが多いと時間がかかる。ラベルの規則を変えたときだけ付け直す。
+- name: restorecon nas
+  ansible.builtin.command: restorecon -R {{ nas_path }}
+  become: true
+  changed_when: true

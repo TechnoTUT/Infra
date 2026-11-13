@@ -1,0 +1,31 @@
+---
+# NAS のディスク（{{ nas_path }}）を Samba のコンテナ（k8s/manifest/nas/）で使えるようにする。
+# データには触れない（中身の移動・削除・フォーマットはしない）。
+- name: NAS のディスクがマウントされているか確認する
+  ansible.builtin.assert:
+    that: nas_path in (ansible_facts.mounts | map(attribute='mount') | list)
+    fail_msg: >-
+      {{ nas_path }} がマウントされていない。md の RAID と /etc/fstab を確認する
+      （マウントされていないまま進めると、Samba がシステムのディスクに書いてしまう）。
+
+# ホストの Samba は使わない。コンテナと同じファイルを 2 つの smbd が扱わないよう止める。
+# パッケージと設定（/etc/samba、/var/lib/samba）は戻せるように残す。
+- name: ホストの Samba を止める
+  ansible.builtin.systemd_service:
+    name: "{{ item }}"
+    enabled: false
+    state: stopped
+  loop: [smb, nmb]
+  become: true
+  failed_when: false   # パッケージがなければ何もしない
+
+# SELinux: コンテナ（container_t）が読み書きできるラベルにする。
+# 以前のラベル samba_share_t のままだと、コンテナから Permission denied になる。
+- name: SELinux のラベルの規則（container_file_t）
+  community.general.sefcontext:
+    target: "{{ nas_path }}(/.*)?"
+    setype: container_file_t
+    state: present
+  become: true
+  notify: restorecon nas
+  when: ansible_facts.selinux.status | default('disabled') == 'enabled'
