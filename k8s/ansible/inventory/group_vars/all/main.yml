@@ -66,13 +66,27 @@ multus_nads:
   - { name: vlan20-bridge, namespace: kube-public, network: vlan20, bridge: br20, subnet: "10.10.16.0/20" }
 
 # ===== Cilium BGP（必須）=====
-# 全体で AS 64646 を使う（iBGP）。ピアは FortiGate の 192.168.99.129。
+# 全体で AS 64646 を使う（iBGP）。相手は FortiGate（route reflector）。
+# ノードは inventory の bgp_peer で相手を選ぶ（省略時は先頭）。ノードには
+# bgp.technotut.net/peer=<name> のラベルを付け、相手ごとに CiliumBGPClusterConfig を作る。
+# services: all       全ての LoadBalancer の IP と PodCIDR を広報する
+# services: labeled   PodCIDR と、Service に bgp.technotut.net/peer=<name> のラベルがある LoadBalancer の IP だけ。
+#                     ongeki が他の Service の IP を広報すると、FortiGate が port9 経由の経路を選び、
+#                     dmz 宛てのポリシーに合わなくなるため。
 cilium_bgp_enabled: true
 cilium_bgp_local_asn: 64646
 cilium_bgp_peers:
   - name: fortigate
-    address: "192.168.99.129"
+    address: "192.168.99.129"        # dmz (SV)
     asn: 64646
+    services: all
+  - name: fortigate-nas
+    address: "192.168.98.1"          # port9 (NAS)
+    asn: 64646
+    services: labeled
+
+# ===== ノードの taint（inventory の node_taints で指定する）=====
+node_taints: []
 
 # ===== swap（コンテナでのテスト時だけ変える。ホストの swap を止めないため）=====
 common_disable_swap: true
@@ -105,6 +119,7 @@ argocd_apps:
   # BLT をコンテナ化する別ブランチがマージされたら、この 2 行と kubevirt_enabled を見直す。
   - { name: blt, path: blt, namespace: blt }
   - { name: cdi-config, path: infrastructure/cdi }
+  - { name: nas, path: nas, namespace: nas }   # Samba (ongeki の /nas)
 
 argocd_network_policy: true   # コンテナでのテスト時だけ false にする
 
@@ -174,3 +189,17 @@ bind9_static_records:                  # ゾーンに固定で入れるレコー
 externaldns_chart_version: "1.21.1"
 externaldns_tsig_keyname: externaldns-key
 # TSIG の秘密鍵は vault.yml の vault_externaldns_tsig_secret に置く。
+
+# ===== NAS（nas グループのノード。ongeki）=====
+# /nas（md RAID0、ext4）をそのまま Samba のコンテナにマウントする（k8s/manifest/nas/ の local PV）。
+# SELinux のラベルを container_file_t にし、ホストの Samba (smb, nmb) は止める。
+nas_path: /nas
+nas_namespace: nas
+# Samba のアカウントは vault.yml の vault_samba_smbpasswd（ホストの `sudo pdbedit -L -w` の出力）から
+# Secret (samba-accounts) を作る。
+
+# ===== RHEL 系のノード（ongeki: AlmaLinux 10）=====
+# containerd の CRI で SELinux を有効にする（Pod は container_t で動く）。
+containerd_enable_selinux: true
+# 有効にすると Cilium と競合するので止める（Debian のノードもファイアウォールはない）。
+redhat_disable_firewalld: true

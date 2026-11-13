@@ -1,0 +1,19 @@
+---
+# RHEL 系。更新は手動にするため、リポジトリの exclude で通常の dnf update から外す
+# （Debian の apt-mark hold に当たる）。入れるときだけ exclude を無効にする。
+- name: Docker の dnf リポジトリを登録する
+  ansible.builtin.yum_repository:
+    name: docker-ce-stable
+    description: Docker CE Stable
+    baseurl: "https://download.docker.com/linux/rhel/$releasever/$basearch/stable"
+    gpgkey: https://download.docker.com/linux/rhel/gpg
+    gpgcheck: true
+    exclude: [containerd.io]
+  become: true
+
+- name: containerd.io を入れる
+  ansible.builtin.dnf:
+    name: [containerd.io, container-selinux]
+    state: present
+    disable_excludes: docker-ce-stable
+  become: true

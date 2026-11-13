@@ -1,42 +1,12 @@
 ---
-# meta パッケージ（task-ssh-server など）を消すと sshd まで autoremove されるため、先に手動扱いにする。
-- name: 必要なパッケージを手動インストール扱いにする
-  ansible.builtin.shell: |
-    for p in {{ common_packages_keep | join(' ') }}; do
-      if dpkg -s "$p" >/dev/null 2>&1 && [ -n "$(apt-mark showauto "$p")" ]; then
-        apt-mark manual "$p" >/dev/null && echo "CHANGED $p"
-      fi
-    done
-    exit 0
-  become: true
-  register: common_keep
-  changed_when: "'CHANGED' in common_keep.stdout"
+- name: 対応している OS か確認する
+  ansible.builtin.assert:
+    that: ansible_facts.os_family in ['Debian', 'RedHat']
+    fail_msg: "{{ ansible_facts.distribution }} には対応していない（Debian と RHEL 系だけ）"
 
-- name: 不要なパッケージを削除する（3 台を同じ構成にし、最小に保つ）
-  ansible.builtin.apt:
-    name: "{{ common_packages_absent }}"
-    state: absent
-    purge: true
-    autoremove: true
-  become: true
-
-- name: 必要なパッケージを入れる
-  ansible.builtin.apt:
-    name: [ca-certificates, curl, gpg, apt-transport-https, nfs-common]
-    state: present
-    update_cache: true
-    cache_valid_time: 3600
-  become: true
-
-# DHCP（dhcpcd）に resolv.conf を上書きさせず、DNS は TUT の DNS サーバに固定する。
-- name: dhcpcd に resolv.conf を触らせない
-  ansible.builtin.lineinfile:
-    path: /etc/dhcpcd.conf
-    regexp: '^nohook\s+resolv\.conf'
-    line: nohook resolv.conf
-    create: true
-    mode: "0644"
-  become: true
+# パッケージと、DNS を固定する準備（resolv.conf を DHCP や NetworkManager に書き換えさせない）
+- name: OS ごとの準備
+  ansible.builtin.include_tasks: "{{ ansible_facts.os_family | lower }}.yml"
 
 - name: ノードの DNS を設定する
   ansible.builtin.template:

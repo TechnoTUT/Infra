@@ -1,0 +1,72 @@
+---
+# RHEL 系のノード（ongeki: AlmaLinux 10）。ネットワークは NetworkManager が管理する。
+- name: 必要なパッケージを入れる
+  ansible.builtin.dnf:
+    name:
+      - curl
+      - ca-certificates
+      - nfs-utils                     # NFS の PV（Debian の nfs-common）
+      - iproute-tc                    # kubeadm の preflight と Cilium
+      - policycoreutils-python-utils  # semanage（nas ロール）
+      # br_netfilter は kernel-modules-extra にある。動いているカーネルと同じ版を入れる
+      # （以降はカーネルの更新と一緒に更新される）。
+      - "kernel-modules-extra-{{ ansible_facts.kernel }}"
+    state: present
+  become: true
+
+# Debian のノードと同じく、DNS は TUT の DNS サーバに固定する（resolv.conf は common ロールが書く）。
+- name: NetworkManager に resolv.conf を触らせない
+  ansible.builtin.copy:
+    dest: /etc/NetworkManager/conf.d/90-k8s-dns.conf
+    mode: "0644"
+    content: |
+      # Ansible (common ロール) が管理する。/etc/resolv.conf は Ansible が書く。
+      [main]
+      dns=none
+  become: true
+  notify: reload NetworkManager
+
+# Cilium が作るインターフェースを NetworkManager が扱わないようにする。
+- name: Cilium のインターフェースを NetworkManager の管理から外す
+  ansible.builtin.copy:
+    dest: /etc/NetworkManager/conf.d/90-k8s-cilium.conf
+    mode: "0644"
+    content: |
+      # Ansible (common ロール) が管理する。
+      [keyfile]
+      unmanaged-devices=interface-name:cilium_*;interface-name:lxc*
+  become: true
+  notify: reload NetworkManager
+
+- name: NetworkManager の設定を反映する
+  ansible.builtin.meta: flush_handlers
+
+- name: サービスの一覧を取得する
+  ansible.builtin.service_facts:
+
+- name: firewalld を止める
+  ansible.builtin.systemd_service:
+    name: firewalld
+    enabled: false
+    state: stopped
+  become: true
+  when: redhat_disable_firewalld and 'firewalld.service' in ansible_facts.services
+
+# ファイアウォールを止めると、nic 以外の経路（例: 学内の無線 LAN）からも kubelet や NodePort に届く。
+- name: nic 以外のデフォルト経路を確認する
+  ansible.builtin.shell: |
+    set -o pipefail
+    ip -4 route show default | grep -v ' dev {{ nic }} ' || true
+  args:
+    executable: /bin/bash
+  register: common_extra_default
+  changed_when: false
+  check_mode: false
+
+- name: nic 以外のデフォルト経路があることを警告する
+  ansible.builtin.debug:
+    msg: >-
+      {{ nic }} 以外にデフォルト経路がある（{{ common_extra_default.stdout_lines | join(', ') }}）。
+      firewalld を止めているので、その経路のネットワークからも kubelet や NodePort に届く。
+      不要なら、その接続を止める（nmcli connection modify <名前> connection.autoconnect no など）。
+  when: common_extra_default.stdout | length > 0

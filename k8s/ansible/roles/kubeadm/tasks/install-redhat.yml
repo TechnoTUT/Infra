@@ -1,0 +1,29 @@
+---
+# RHEL 系。Kubernetes の公式の手順と同じく、リポジトリの exclude で通常の dnf update から外し
+# （Debian の apt-mark hold に当たる）、入れるときだけ exclude を無効にする。
+- name: Kubernetes の dnf リポジトリ
+  ansible.builtin.yum_repository:
+    name: kubernetes
+    description: Kubernetes
+    baseurl: "https://pkgs.k8s.io/core:/stable:/v{{ k8s_minor }}/rpm/"
+    gpgkey: "https://pkgs.k8s.io/core:/stable:/v{{ k8s_minor }}/rpm/repodata/repomd.xml.key"
+    gpgcheck: true
+    exclude: [kubelet, kubeadm, kubectl, cri-tools, kubernetes-cni]
+  become: true
+
+- name: インストール済みのパッケージを確認する
+  ansible.builtin.package_facts:
+
+- name: 指定の系列に揃える必要があるか判定する
+  ansible.builtin.set_fact:
+    kubeadm_align: >-
+      {{ not kubeadm_joined.stat.exists
+         and not ((ansible_facts.packages.kubeadm | default([{'version': ''}]))[0].version
+                  .startswith(k8s_minor ~ '.')) }}
+
+- name: kubelet kubeadm kubectl を入れる
+  ansible.builtin.dnf:
+    name: [kubelet, kubeadm, kubectl]
+    state: "{{ 'latest' if kubeadm_align | bool else 'present' }}"
+    disable_excludes: kubernetes
+  become: true
