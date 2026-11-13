@@ -375,8 +375,8 @@ config firewall address
     edit "k8s-nas-pod"
         set subnet 10.13.0.0 255.255.0.0
     next
-    edit "nas-smb"
-        set subnet 10.14.0.128 255.255.255.255
+    edit "k8s-nas-lb"
+        set subnet 10.14.0.0 255.255.255.0
     next
 end
 config router bgp
@@ -393,7 +393,7 @@ config firewall policy
         set srcintf "dmz"
         set dstintf "port9"
         set srcaddr "dmz" "k8s-cl"
-        set dstaddr "port9 address" "k8s-nas-pod"
+        set dstaddr "port9 address" "k8s-nas-pod" "k8s-nas-lb"
         set action accept
         set schedule "always"
         set service "ALL"
@@ -409,10 +409,10 @@ config firewall policy
         set service "ALL"
     next
     edit 10    # al-dj-nas
-        append dstaddr "nas-smb"
+        append dstaddr "k8s-nas-lb"
     next
     edit 11    # al-mgmt-nas
-        append dstaddr "nas-smb"
+        append dstaddr "k8s-nas-lb"
     next
 end
 # 手順 9 で行う
@@ -424,6 +424,8 @@ config system dns-database
     next
 end
 ```
+FortiGate の Kubernetes SDN コネクタが登録するのは `main` のクラスタ (192.168.99.200) のアドレスだけである。`nas` のクラスタの Pod CIDR と LoadBalancer の範囲は、固定のアドレス (`k8s-nas-pod`、`k8s-nas-lb`) で登録する。\
+Cluster Mesh では、Pod から相手のクラスタのノードへの通信も NAT されない (相手のノードも Cilium のノードの一覧に入るため)。そのため、ポリシーには両方のクラスタの Pod CIDR を入れる。\
 `main` と `nas` の間で使う主な通信は、Argo CD → ongeki の API (TCP 6443)、clustermesh-apiserver (TCP 32379、両方向)、Pod 間の通信 (任意のポート) である。
 
 ホストの Samba に戻すときは、Argo CD の `nas` を止めてから、ongeki で `sudo semanage fcontext -d '/nas(/.*)?' && sudo restorecon -R /nas` でラベルを戻し、`sudo systemctl enable --now smb` で起動する。FortiGate の `drive` のレコードも戻す。
