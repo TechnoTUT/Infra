@@ -22,14 +22,14 @@ DJ 機器の PRO DJ LINK、映像伝送の NDI・RTMP、テンポ同期の Ablet
 詳細: [ネットワーク](https://network.technotut.net/network)
 
 ### 計算基盤
-3 台のノード（becky, packard, marie）で Kubernetes クラスタを運用しています。クラスタの構築は Ansible、アプリケーションのデプロイは Argo CD による GitOps で行います。
+4 台のノード（becky, packard, marie, ongeki）で Kubernetes クラスタを運用しています。ongeki は NAS 専用のノードで、Samba をコンテナで動かしています。クラスタの構築は Ansible、アプリケーションのデプロイは Argo CD による GitOps で行います。
 
 | 項目 | 内容 |
 | --- | --- |
-| OS | Debian 13 (Trixie) |
+| OS | Debian 13 (Trixie)。ongeki だけ AlmaLinux 10 |
 | Kubernetes | kubeadm, containerd |
 | CNI | Cilium（kube-proxy 置き換え、BGP で LoadBalancer IP を広報）、Multus |
-| ストレージ | NFS（nfs-subdir-external-provisioner） |
+| ストレージ | NFS（nfs-subdir-external-provisioner）。NAS は ongeki の `/nas`（local PV） |
 | GitOps | Argo CD |
 | VM | KubeVirt, CDI |
 
@@ -58,6 +58,7 @@ DJ 機器の PRO DJ LINK、映像伝送の NDI・RTMP、テンポ同期の Ablet
 | `speedtest/` | 速度測定 |
 | `time/` | 時刻表示 |
 | `blt/` | Beat Link Trigger（KubeVirt の VM と noVNC・xrdp） |
+| `nas/` | Samba（ongeki の `/nas`。イメージは [TechnoTUT/samba](https://github.com/TechnoTUT/samba)） |
 | `infrastructure/cdi/` | CDI の設定 |
 
 Argo CD に登録するアプリケーションは [`k8s/ansible/inventory/group_vars/all/main.yml`](./k8s/ansible/inventory/group_vars/all/main.yml) の `argocd_apps` で管理しています。
