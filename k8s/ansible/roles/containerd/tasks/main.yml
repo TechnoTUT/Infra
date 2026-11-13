@@ -16,15 +16,15 @@
   become: true
   notify: restart containerd
 
-# RHEL 系は SELinux が Enforcing。Pod を container_t で動かし、ラベルを付け分ける。
-- name: CRI の SELinux を有効にする（RHEL 系）
+# RHEL 系は SELinux が Enforcing。CRI で SELinux を使うかは containerd_enable_selinux で決める。
+- name: CRI の SELinux の設定（RHEL 系）
   ansible.builtin.replace:
     path: /etc/containerd/config.toml
-    regexp: '^(\s*)enable_selinux = false$'
-    replace: '\1enable_selinux = true'
+    regexp: '^(\s*)enable_selinux = (true|false)$'
+    replace: '\1enable_selinux = {{ containerd_enable_selinux | lower }}'
   become: true
   notify: restart containerd
-  when: ansible_facts.os_family == 'RedHat' and containerd_enable_selinux
+  when: ansible_facts.os_family == 'RedHat'
 
 - name: containerd を有効化して起動する
   ansible.builtin.systemd_service:

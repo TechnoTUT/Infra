@@ -5,7 +5,8 @@
     name:
       - curl
       - ca-certificates
-      - nfs-utils                     # NFS の PV（Debian の nfs-common）
+      - tar                           # Helm の展開（unarchive）
+      - nfs-utils                    # NFS の PV（Debian の nfs-common）
       - iproute-tc                    # kubeadm の preflight と Cilium
       - policycoreutils-python-utils  # semanage（nas ロール）
       # br_netfilter は kernel-modules-extra にある。動いているカーネルと同じ版を入れる

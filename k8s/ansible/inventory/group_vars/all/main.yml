@@ -211,8 +211,10 @@ dns_enabled: true            # bind9 と ExternalDNS
 cilium_ingress_enabled: true
 
 # ===== RHEL 系のノード（ongeki: AlmaLinux 10）=====
-# containerd の CRI で SELinux を有効にする（Pod は container_t で動く）。
-containerd_enable_selinux: true
+# containerd の CRI で SELinux を使うか。true にすると Pod が container_t で動くが、kubeadm の
+# static Pod (etcd、kube-apiserver) が /var/lib/etcd や /etc/kubernetes/pki を読めずに起動しない。
+# ホストの SELinux は Enforcing のまま、コンテナにはラベルを付け分けない。
+containerd_enable_selinux: false
 # 有効にすると Cilium と競合するので止める（Debian のノードもファイアウォールはない）。
 redhat_disable_firewalld: true
 

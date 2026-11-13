@@ -333,7 +333,7 @@ RHEL 系のノードで Ansible が Debian と違う設定をするところ:
 - NetworkManager に `/etc/resolv.conf` を書き換えさせない (`dns=none`)。Cilium のインターフェースは NetworkManager の管理から外す。
 - firewalld は止める (Cilium と競合するため)。`nic` 以外にデフォルト経路 (学内の無線 LAN など) があると、その先からも kubelet や NodePort に届くので、Ansible が警告を出す。不要な接続は止める。
 - `br_netfilter` のために `kernel-modules-extra` を入れる。
-- containerd の CRI で SELinux を有効にする (`containerd_enable_selinux`)。`nas` ロールが `/nas` のラベルを `container_file_t` にする。
+- ホストの SELinux は Enforcing のまま。containerd の CRI では SELinux を使わない (`containerd_enable_selinux: false`)。使うと、kubeadm の static Pod (etcd、kube-apiserver) が `/var/lib/etcd` や `/etc/kubernetes/pki` を読めずに起動しない。`nas` ロールは `/nas` のラベルを `container_file_t` にする (CRI の SELinux を有効にしても Samba が読み書きできるように)。
 
 Samba の設定は ConfigMap (`k8s/manifest/nas/configmap.yaml`) にある。変えたら `nas` のクラスタで `kubectl -n nas rollout restart deployment/samba` を実行する。\
 パスワードを変えるときは、新しい行を作って `vault_samba_smbpasswd` を差し替え、`nas` の `site.yml` を流してから Pod を作り直す (行の作り方は [TechnoTUT/samba の README](https://github.com/TechnoTUT/samba))。
