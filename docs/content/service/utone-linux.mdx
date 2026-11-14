@@ -1,0 +1,289 @@
+---
+title: utone-linux
+sidebar_position: 8
+---
+
+[utone-linux](https://github.com/TechnoTUT/utone-linux) は、The Utopia Tone の会場ネットワークの末端 (エッジ) に置く端末向けの Linux です。HDMI と NDI を相互に変換する IP ゲートウェイのほか、入口のフライヤー表示や、NDI をブースディスプレイ用に変換する IP-IP の映像変換も担います。Debian Live をもとにしており、DVD や USB メモリから起動するだけで使えます。OS のインストールは不要です。
+
+次の 2 つのツールを同梱しています。
+
+| ツール | 機能 | 主に使う VLAN |
+| :--- | :--- | :--- |
+| [moip-toolkit](https://github.com/TechnoTUT/moip-toolkit) | NDI の受信 (RX)・送信 (TX)、デジタルサイネージ、Web UI | AV (VLAN 20) |
+| [booth-display](https://github.com/TechnoTUT/booth-display) | DJ ブースのタイル状ディスプレイ (LG LD290EJS-FPN1 × 3 枚) へ映像を配信するコントローラ | AV (VLAN 20) → LDISP (VLAN 43) |
+
+## utone-linux の役割
+
+utone-linux は、会場で次の 3 つの役割を担います。
+
+| 役割 | 内容 | 使う機能 | 接続する VLAN |
+| :--- | :--- | :--- | :--- |
+| IP ゲートウェイ | HDMI と NDI の相互変換 | [送信 (TX)](#送信-tx)、[受信 (RX)](#受信-rx) | AV (VLAN 20) |
+| 入口のフライヤー表示 | Web GUI からフライヤー画像を差し替えて表示 | [サイネージ](#サイネージ) | ENT (VLAN 42) |
+| IP-IP の映像変換 | NDI をブースディスプレイ用のストリームに変換して送出 | [ブースディスプレイ](#ブースディスプレイ) | AV (VLAN 20) → LDISP (VLAN 43) |
+
+```mermaid
+flowchart LR
+    subgraph GW["IP ゲートウェイ"]
+        H1["HDMI 機器"] -- HDMI --> U1["utone-linux"]
+        U2["utone-linux"] -- HDMI --> H2["モニタ・プロジェクタ"]
+    end
+    subgraph AV["AV (VLAN 20)"]
+        N(("NDI"))
+        U4["utone-linux<br/>booth-display"]
+    end
+    subgraph ENT["ENT (VLAN 42)"]
+        U3["utone-linux<br/>サイネージ"] -- HDMI --> F["入口ディスプレイ<br/>(フライヤー)"]
+    end
+    subgraph LDISP["LDISP (VLAN 43)"]
+        B["ブースディスプレイ × 3"]
+    end
+    U1 -- NDI --> N -- NDI --> U2
+    N -- NDI --> U4 -- "UDP H.264" --> B
+    PC["スタッフの PC・スマートフォン"] -- "Web GUI (HTTP 8000)" --> U3
+```
+
+### IP ゲートウェイ (HDMI ⇔ NDI)
+
+HDMI などのベースバンド映像と、IP ネットワーク上の映像 (NDI) とを相互に変換します。会場の映像機器の多くは HDMI でしか入出力できませんが、utone-linux を間に置くことで、それらを AV (VLAN 20) のネットワークにつなげます。
+
+| 変換 | 機能 | 使い方の例 |
+| :--- | :--- | :--- |
+| HDMI → NDI | キャプチャーボードの映像を NDI で送信 | DJ・VJ の PC やカメラの HDMI 出力をネットワークに載せる |
+| NDI → HDMI | NDI ソースを受信してディスプレイにフルスクリーン表示 | ネットワーク上の映像を、HDMI 入力しかないプロジェクタやモニタに映す |
+
+```mermaid
+flowchart LR
+    SRC["HDMI 出力の機器<br/>(PC, カメラ)"] -- HDMI --> CAP["キャプチャーボード"] --> GW1["utone-linux<br/>HDMI → NDI"]
+    GW1 -- NDI --> NET(("AV<br/>VLAN 20"))
+    NET -- NDI --> GW2["utone-linux<br/>NDI → HDMI"] -- HDMI --> DST["プロジェクタ<br/>モニタ"]
+    NET -- NDI --> SW["Resolume, OBS<br/>などの NDI 対応ソフト"]
+```
+
+HDMI ケーブルは長くても 15〜20m 程度しか引けませんが、NDI に変換すれば LAN ケーブルとスイッチで会場のどこへでも映像を運べます。1 つの映像を複数の受信側で同時に受け取ることもできます。
+
+### 入口のフライヤー表示
+
+入口のディスプレイに utone-linux をつなぎ、イベントのフライヤーを表示します。画像はブラウザの Web GUI からアップロードして差し替えるため、表示用の端末を直接操作する必要はありません。当日のタイムテーブル変更などにも、手元の PC やスマートフォンからすぐ対応できます。
+
+- 表示用の端末は、エントランス・受付用の ENT (VLAN 42) に接続します。
+- DJ (VLAN 10) から ENT への通信は FortiGate で全て許可されているため、DJ ブースの PC などからも Web GUI を操作できます。
+
+### IP-IP の映像変換 (NDI → ブースディスプレイ)
+
+ブースディスプレイは NDI を直接受信できません。utone-linux (booth-display) が AV (VLAN 20) で NDI を受信し、3 枚のディスプレイ用に映像を切り出して、ディスプレイが受信できる H.264 の UDP ストリームに変換します。変換したストリームは LDISP (VLAN 43) のディスプレイへ送出します。IP で受けた映像を IP で送り出すため、HDMI を経由しません。
+
+VJ の映像を NDI で出すだけで、DJ ブースのディスプレイにも映せます。
+
+## ネットワークとの関係
+
+utone-linux の各機能は、網内の次のネットワーク・サービスを使います。
+
+```mermaid
+flowchart LR
+    subgraph AV["AV (VLAN 20) 10.10.16.0/20"]
+        TX["utone-linux<br/>NDI 送信 (ntx)"]
+        RX["utone-linux<br/>NDI 受信 (nrx)"]
+        VJ["VJ PC<br/>(Resolume, OBS)"]
+        BTH["utone-linux<br/>booth-display (bth)"]
+    end
+    subgraph LDISP["LDISP (VLAN 43) 192.168.12.48/28"]
+        D1["ブースディスプレイ<br/>Left / Center / Right"]
+    end
+    subgraph SV["Kubernetes (SV, VLAN 100)"]
+        DS["NDI Discovery Server<br/>ndi.svc.technotut.net"]
+        DNS["bind9<br/>*.svc.technotut.net"]
+    end
+    FG["FortiGate<br/>ゲートウェイ / DHCP / DNS"]
+
+    TX -- "NDI (mDNS + マルチキャスト)" --> RX
+    VJ -- NDI --> BTH
+    BTH -- "UDP H.264<br/>8554〜" --> FG --> D1
+    TX -. "NDI 登録 (TCP 5959)" .-> DS
+    AV -. DHCP / DNS .-> FG -. "svc.technotut.net を転送" .-> DNS
+```
+
+| 機能 | 接続する VLAN | 使う網内サービス・設定 | 通信 |
+| :--- | :--- | :--- | :--- |
+| IP アドレスの取得 | AV (VLAN 20) | FortiGate の DHCP (`10.10.20.1` 〜 `10.10.31.254`) | DHCP |
+| 名前解決 | AV (VLAN 20) | FortiGate の DNS。`svc.technotut.net` は Kubernetes 上の bind9 (`10.12.0.0`) に転送される | DNS |
+| NDI 送受信 (同一 VLAN 内) | AV (VLAN 20) | mDNS による機器検出。N-1 が IGMP Snooping Querier | mDNS (UDP 5353)、NDI (TCP/UDP 5959〜)、マルチキャスト `239.255.0.0/16` |
+| NDI 送受信 (VLAN をまたぐ) | AV (VLAN 20) | [NDI Discovery Server](/service/ndi#ndi-on-l3-network) (設定済み) | TCP 5959 |
+| フライヤー表示 (サイネージ Web GUI) | ENT (VLAN 42) | FortiGate の DHCP (`192.168.12.34` 〜 `192.168.12.46`)。DJ → ENT は全て許可 | HTTP (TCP 8000) |
+| ブースディスプレイへの配信 | AV (VLAN 20) → LDISP (VLAN 43) | FortiGate のポリシー `al-av-ledd` (AV → LDISP を全て許可) | UDP 8554〜 (ディスプレイごとに 1 ポート) |
+| booth-display Web GUI | AV (VLAN 20) | — | HTTP (TCP 8080)、WebSocket |
+| リモート操作 | AV (VLAN 20) | — | SSH (TCP 22) |
+
+VLAN とサブネットは [VLAN・IPアドレス設計](/network/vlan)、VLAN 間の通信制御は [ネットワーク仕様](/network/spec#通信制御) を参照してください。
+
+<Admonition type="info">
+
+- NDI を扱う utone-linux の端末は **AV (VLAN 20)** のポートに接続します。NDI は mDNS で機器を検出するため、送信側と受信側は同じ VLAN に置きます。入口のフライヤー表示だけに使う端末は **ENT (VLAN 42)** に接続します。
+- AV からインターネットへは HTTP/HTTPS だけが通ります。Kubernetes の Service・Ingress へは HTTP, HTTPS, RTMP, RDP, VNC が通ります。
+- DJ (VLAN 10) と PA (VLAN 40) から AV への通信は全て許可されているため、DJ ブースや PA 卓の PC からも Web UI を操作できます。
+
+</Admonition>
+
+## 準備
+
+1. [Releases](https://github.com/TechnoTUT/utone-linux/releases) から ISO イメージをダウンロードします。
+2. DVD に書き込むか、[Rufus](https://rufus.ie/) などで USB メモリに書き込みます。
+   - 再起動後も設定を残したい場合は、Rufus で永続ストレージ (persistence) のサイズを指定します。多くの場合 1GB で足ります。
+   - NDI 送信やサイネージを使う場合は、永続ストレージを設定しておくことを推奨します。
+3. PC に挿して起動すると Live 環境が立ち上がります。
+4. LAN ケーブルを、役割に合った VLAN のポートに接続します (NDI・ブースディスプレイは AV (VLAN 20)、フライヤー表示は ENT (VLAN 42))。ログイン時に、DHCP で取得した IP アドレスが表示されます。
+
+ホスト名の初期値は `debian` です。NDI の送信名はホスト名から決まるため、複数台を使う場合はホスト名を変更します。
+
+```bash
+sudo hostnamectl set-hostname <新しいホスト名>
+```
+
+## NDI
+
+utone-linux は NDI の送受信機能を標準で搭載しています。NDI そのものについては [NDI](/service/ndi) を参照してください。
+
+### 受信 (RX)
+
+```bash
+nrx
+```
+
+ソース名を省略すると、ネットワーク上の NDI ソースを検出して対話的に選択できます。
+
+起動時に自動で受信するには、`~/.config/systemd/user/ndi-rx.service` の `__SOURCE_NAME__` を受信したいソース名に書き換えてから、サービスを有効にします。
+
+```bash
+vim ~/.config/systemd/user/ndi-rx.service
+systemctl --user enable --now ndi-rx.service
+```
+
+`ndi-rx.service` は `kmsdrm` ドライバを使い、デスクトップのコンポジタを通さずディスプレイに直接描画します (1〜2 フレーム遅延が減ります)。この場合、次の条件があります。
+
+- そのディスプレイでデスクトップセッションが動いていないこと。`sudo systemctl set-default multi-user.target` で GUI なしで起動できます。
+- ユーザが `video` と `input` グループに属していること: `sudo usermod -aG video,input $USER`
+- 出力は常にフルスクリーンです。
+
+デスクトップのコンポジタを使う場合は、`ExecStart` 行から `--video-driver kmsdrm` を削除します。
+
+### 送信 (TX)
+
+キャプチャーボードの映像を NDI で送信します。
+
+```bash
+ntx
+```
+
+`<ホスト名> (TX)` という名前で送信されます。送信名・解像度・フレームレートなどを変更するには、`~/.config/systemd/user/ndi-tx.service` を編集してサービスを有効にします (初期値は 1280×720, 60fps, 音声なし)。引数の一覧は `ntx --help` で確認できます。
+
+```bash
+vim ~/.config/systemd/user/ndi-tx.service
+systemctl --user enable --now ndi-tx.service
+```
+
+### ネットワーク設定
+
+NDI の設定は `~/.ndi/ndi-config.v1.json` にあり、網内向けに次の値が設定済みです。
+
+| 項目 | 値 | 意味 |
+| :--- | :--- | :--- |
+| `networks.discovery` | `10.11.230.254` | NDI Discovery Server のアドレス。VLAN をまたいだ NDI に使う |
+| `multicast.send` | 有効、`239.255.0.0/16` | マルチキャスト送信。AV では IGMP Snooping が有効 |
+| `rudp.recv` / `unicast.recv` | 有効 | UDP (Reliable UDP)・ユニキャストでの受信 |
+| `tcp.recv` | 無効 | TCP での受信は使わない |
+| `groups` | `public` | 送受信グループ |
+
+mDNS のために `avahi-daemon` も同梱しています。
+
+## サイネージ
+
+入口のフライヤー表示に使う機能です。moip-toolkit の Web GUI から画像をアップロードすると、接続したディスプレイにフルスクリーンで表示します。
+
+```bash
+systemctl --user enable --now ndi-web.service
+```
+
+ブラウザで `http://<IPアドレス>:8000/` を開きます。同じ Web UI から、NDI ソースの検出、受信 (RX) の切り替え、送信 (TX) の開始・停止もできます。API ドキュメントは `http://<IPアドレス>:8000/docs` です。再起動後も有効にしておくには永続ストレージを使います。
+
+コマンドラインから直接表示することもできます。
+
+```bash
+/opt/moip-toolkit/.venv/bin/python /opt/moip-toolkit/main.py signage -i /path/to/image.png --fullscreen
+```
+
+`-i` を省略すると、Web UI から最後にアップロードした画像を表示します。GUI のないコンソール (TTY) では `--framebuffer` を付けると、Linux のフレームバッファに直接描画します (root 権限が必要な場合があります)。
+
+## ブースディスプレイ
+
+IP-IP の映像変換に使う機能です。booth-display は、3 枚のディスプレイ (各 1920×540) を 1 枚の仮想キャンバス (5760×540, 30fps) として扱い、ディスプレイごとに切り出した映像を H.264 で UDP 配信します。入力にはテストパターン、動画ファイル、NDI ソースを使えます。
+
+```bash
+bth
+```
+
+自動で起動するには、サービスを有効にします。
+
+```bash
+systemctl --user enable --now booth.service
+```
+
+ブラウザで `http://<IPアドレス>:8080/` を開くと Web GUI を使えます。プレビュー、ディスプレイの接続状態 (FPS、ビットレート、ドロップ率)、入力の切り替えを確認・操作できます。
+
+### ネットワーク構成
+
+```mermaid
+flowchart LR
+    NDI["NDI ソース<br/>(VJ PC など)"] -- "NDI (AV 内)" --> C["booth-display<br/>コントローラ<br/>AV (VLAN 20)"]
+    C -- "UDP :8554" --> L["Display Left"]
+    C -- "UDP :8555" --> M["Display Center"]
+    C -- "UDP :8556" --> R["Display Right"]
+    subgraph LDISP["LDISP (VLAN 43)"]
+        L
+        M
+        R
+    end
+```
+
+- コントローラは NDI を受信するため AV (VLAN 20) に置き、ディスプレイは LDISP (VLAN 43) に置きます。AV → LDISP の通信は FortiGate のポリシー `al-av-ledd` で全て許可されています。
+- ディスプレイの IP アドレス・ポート・切り出し位置は `/opt/booth-display/config.yaml` で設定します。初期値は全て `127.0.0.1` (ポート `8554` 〜 `8556`) なので、実際のディスプレイのアドレスに書き換えます。Web GUI の設定画面からも変更できます。
+- `config.yaml` にディスプレイのアドレスを書くため、ディスプレイの IP アドレスは固定します。
+- Intel GPU の VA-API (`h264_vaapi`) があればハードウェアでエンコードし、なければ `libx264` に切り替わります。
+- NDI 入力には NDI SDK のランタイム (`libndi.so.6`) を使います。ISO のビルド時に `/usr/local/lib` にインストールされます。
+
+詳細は [booth-display の README](https://github.com/TechnoTUT/booth-display) を参照してください。
+
+## コマンドとサービスの一覧
+
+| コマンド | systemd ユーザサービス | 内容 | ポート |
+| :--- | :--- | :--- | :--- |
+| `nrx` | `ndi-rx.service` | NDI 受信 | — |
+| `ntx` | `ndi-tx.service` | NDI 送信 | NDI (TCP/UDP 5959〜) |
+| `nweb` | `ndi-web.service` | moip-toolkit の Web UI・API (サイネージ) | TCP 8000 |
+| `bth` | `booth.service` | booth-display コントローラ | TCP 8080 (Web GUI)、UDP 8554〜 (送信) |
+
+サービスのファイルは `~/.config/systemd/user/` にあります。
+
+## ISO のビルド
+
+[live-build](https://wiki.debian.org/DebianLive) でビルドします。Dev Container を使うのが簡単です (Docker か Podman が必要)。
+
+1. VS Code でリポジトリを開き、`Dev Containers: Reopen in Container` を実行します。
+2. コンテナ内で `make build` を実行します。
+
+Debian (WSL2 でも可) で直接ビルドする場合は、`live-build` と `make` をインストールし、サブモジュールごとクローンします。
+
+```bash
+sudo apt install live-build make
+git clone https://github.com/TechnoTUT/utone-linux.git --recursive
+cd utone-linux
+make build
+```
+
+`work/utone-linux-amd64.hybrid.iso` が生成されます。`make clean` でビルド成果物を削除します。
+
+## トラブルシューティング
+
+- **NDI ソースが見つからない**: 送信側と受信側が同じ VLAN (AV) にあるか確認します。マルチキャストを使うため、IGMP Snooping Querier が VLAN 内に 1 台あることも必要です。詳しくは [NDI](/service/ndi) を参照してください。
+- **IP アドレスが取得できない**: 接続したポートが AV (VLAN 20) または ENT (VLAN 42) か確認します。LBAR (VLAN 30) と SV (VLAN 100) では DHCP を提供していません。
+- **ブースディスプレイに映らない**: Web GUI でディスプレイの接続状態を確認し、`config.yaml` のアドレスとポートがディスプレイ側の設定と合っているか確認します。
+- **`*.svc.technotut.net` が引けない**: DHCP で配られた DNS サーバ (FortiGate) を使っているか確認します。
