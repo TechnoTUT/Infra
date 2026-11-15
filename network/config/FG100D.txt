@@ -3514,6 +3514,10 @@ config firewall service custom
         set category "VoIP, Messaging & Other Applications"
         set tcp-portrange 1935
     next
+    edit "NDI-Discovery"
+        set category "VoIP, Messaging & Other Applications"
+        set tcp-portrange 5959
+    next
 end
 config firewall service group
     edit "Email Access"
@@ -6537,7 +6541,7 @@ config firewall policy
         set dstaddr "k8s-ingress" "k8s-svc"
         set action accept
         set schedule "always"
-        set service "HTTP" "HTTPS" "RTMP" "RDP" "VNC"
+        set service "HTTP" "HTTPS" "RTMP" "RDP" "VNC" "NDI-Discovery"
     next
     edit 9
         set name "al-nas"
