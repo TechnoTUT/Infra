@@ -107,8 +107,8 @@ flowchart LR
 | :--- | :--- | :--- | :--- |
 | IP アドレスの取得 | AV (VLAN 20) | FortiGate の DHCP (`10.10.20.1` 〜 `10.10.31.254`) | DHCP |
 | 名前解決 | AV (VLAN 20) | FortiGate の DNS。`svc.technotut.net` は Kubernetes 上の bind9 (`10.12.0.0`) に転送される | DNS |
-| NDI 送受信 (同一 VLAN 内) | AV (VLAN 20) | mDNS による機器検出。N-1 が IGMP Snooping Querier | mDNS (UDP 5353)、NDI (TCP/UDP 5959〜)、マルチキャスト `239.255.0.0/16` |
-| NDI 送受信 (VLAN をまたぐ) | AV (VLAN 20) | [NDI Discovery Server](/service/ndi#ndi-on-l3-network) (設定済み) | TCP 5959 |
+| NDI 送受信 | AV (VLAN 20) | mDNS による機器検出。マルチキャスト送信のため N-1 が IGMP Snooping Querier | mDNS (UDP 5353)、NDI (TCP/UDP 5959〜)、マルチキャスト `239.255.0.0/16` |
+| NDI ソースの登録・検索 | AV (VLAN 20) | [NDI Discovery Server](/service/ndi#ndi-discovery-server) (設定済み)。現在は VLAN をまたいだ NDI はできない | TCP 5959 |
 | フライヤー表示 (サイネージ Web GUI) | ENT (VLAN 42) | FortiGate の DHCP (`192.168.12.34` 〜 `192.168.12.46`)。DJ → ENT は全て許可 | HTTP (TCP 8000) |
 | ブースディスプレイへの配信 | AV (VLAN 20) → LDISP (VLAN 43) | FortiGate のポリシー `al-av-ledd` (AV → LDISP を全て許可) | UDP 8554〜 (ディスプレイごとに 1 ポート) |
 | booth-display Web GUI | AV (VLAN 20) | — | HTTP (TCP 8080)、WebSocket |
@@ -187,7 +187,7 @@ NDI の設定は `~/.ndi/ndi-config.v1.json` にあり、網内向けに次の�
 
 | 項目 | 値 | 意味 |
 | :--- | :--- | :--- |
-| `networks.discovery` | `10.11.230.254` | NDI Discovery Server のアドレス。VLAN をまたいだ NDI に使う |
+| `networks.discovery` | `10.12.230.254` | NDI Discovery Server のアドレス。mDNS の代わりにソースを登録・検索する |
 | `multicast.send` | 有効、`239.255.0.0/16` | マルチキャスト送信。AV では IGMP Snooping が有効 |
 | `rudp.recv` / `unicast.recv` | 有効 | UDP (Reliable UDP)・ユニキャストでの受信 |
 | `tcp.recv` | 無効 | TCP での受信は使わない |
@@ -283,7 +283,7 @@ make build
 
 ## トラブルシューティング
 
-- **NDI ソースが見つからない**: 送信側と受信側が同じ VLAN (AV) にあるか確認します。マルチキャストを使うため、IGMP Snooping Querier が VLAN 内に 1 台あることも必要です。詳しくは [NDI](/service/ndi) を参照してください。
+- **NDI ソースが見つからない**: 送信側と受信側が同じ VLAN (AV) にあるか確認します。マルチキャストで送信した映像が届かない場合は、IGMP Snooping の Querier (AV では N-1) が動いているか確認します。詳しくは [NDI](/service/ndi) を参照してください。
 - **IP アドレスが取得できない**: 接続したポートが AV (VLAN 20) または ENT (VLAN 42) か確認します。LBAR (VLAN 30) と SV (VLAN 100) では DHCP を提供していません。
 - **ブースディスプレイに映らない**: Web GUI でディスプレイの接続状態を確認し、`config.yaml` のアドレスとポートがディスプレイ側の設定と合っているか確認します。
 - **`*.svc.technotut.net` が引けない**: DHCP で配られた DNS サーバ (FortiGate) を使っているか確認します。
