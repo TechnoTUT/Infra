@@ -42,6 +42,21 @@ sidebar_position: 2
 - IX3110 は対外接続のセグメント (`192.168.8.0/24`) を BGP で広報します。
 - IPsec は IKEv2 の事前共有鍵認証で、IX3110 がイニシエータになります (NAT トラバーサル有効)。トンネル内の TCP MSS は 1300 に調整しています。
 
+### Route Reflector (RR) 構成
+
+iBGP ではループ防止のため、ある iBGP ピアから受信した経路を別の iBGP ピアへは再広報しません。本来は全ノード間で iBGP のフルメッシュ接続が必要になりますが、管理を簡素化するため、AS `64646` 内では階層型の **Route Reflector (RR)** を構成しています。
+
+```mermaid
+flowchart LR
+  ext["外部拠点 (eBGP)"] <--> ix["IX3110 (RR)"]
+  ix <-- "iBGP (RR Client)" --> fg["FortiGate (RR)"]
+  fg <-- "iBGP (RR Client)" --> main["Kubernetes main (becky / packard / marie)"]
+  fg <-- "iBGP (RR Client)" --> nas["Kubernetes nas (ongeki)"]
+```
+
+- **IX3110 (RR) → FortiGate (RR Client)**: 外部拠点 (`ddlia-net`, `kisarag1-net`) との eBGP 経路や対外接続経路を FortiGate へ中継し、FortiGate から受け取った会場内・Kubernetes 経路を外部拠点へ広報します。
+- **FortiGate (RR) → Kubernetes ノード (RR Client)**: `main` クラスタの各ノード (`becky`, `packard`, `marie`) および `nas` クラスタ (`ongeki`) を RR クライアントとして収容します。ノード同士で直接 iBGP ピアを張ることなく、Cilium が広報する LoadBalancer IP や Pod CIDR の経路を相互に交換し、さらに上流の IX3110 へも経路を伝播します。
+
 ### IX3110 のその他の機能
 
 | 機能 | 内容 |
