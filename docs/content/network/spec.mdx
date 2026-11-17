@@ -23,6 +23,7 @@ sidebar_position: 2
 | NGFW (TTUT-FG) | Fortinet FortiGate 100D | 全 VLAN のゲートウェイ、DHCP・DNS サーバ、VLAN 間とインターネットへの通信制御。IX3110 と Kubernetes のノードの BGP ピア | [FG100D.txt](https://github.com/TechnoTUT/Infra/blob/main/network/config/FG100D.txt) |
 | コアスイッチ (N-1, ラック) | Allied Telesis AT-SH510-28GTX | L2 の中心。VLAN 10・20 の IGMP Snooping Querier | [AT-SH510-28GTX.txt](https://github.com/TechnoTUT/Infra/blob/main/network/config/AT-SH510-28GTX.txt) |
 | PA 用スイッチ (N-4, PA 卓) | Allied Telesis AT-x210-24GT | PA 機器と AV 機器の収容 | [AT-x210-24GT.txt](https://github.com/TechnoTUT/Infra/blob/main/network/config/AT-x210-24GT.txt) |
+| エリアスイッチ (N-5, N-6) | Allied Telesis GS924M V2 | PA 機器と AV 機器の収容 (IGMP Snooping 有効) | [N-5-GS924MV2.cfg](https://github.com/TechnoTUT/Infra/blob/main/network/config/N-5-GS924MV2.cfg), [N-6-GS924MV2.cfg](https://github.com/TechnoTUT/Infra/blob/main/network/config/N-6-GS924MV2.cfg) |
 | DJ・VJ 用スイッチ (N-3) | APRESIA ApresiaLightGM110GT-PoE | PRO DJ LINK (VLAN 10) と VJ (VLAN 20) の機器の収容、AP への PoE 給電 | [APLGM110GTPoE.txt](https://github.com/TechnoTUT/Infra/blob/main/network/config/APLGM110GTPoE.txt) |
 
 ## ルーティング
@@ -117,6 +118,7 @@ VLAN 99・100 は `po1` ではなく、それぞれ専用のポート (`mgmt`, `
   | N-4 | `po1` | `port1.0.17` - `1.0.24` | LACP | 上流へのトランク |
   | N-4 | `po2` | `port1.0.9` - `1.0.10` | LACP | AV (VLAN 20) の機器 |
   | N-4 | `po3` | `port1.0.11` - `1.0.12` | LACP | AV (VLAN 20) の機器 |
+  | N-5, N-6 | `sa1` | `23` - `24` | 静的 | 上流へのトランク |
 
 - **IGMP Snooping**: マルチキャストを使う DJ (VLAN 10) と AV (VLAN 20) では、N-1 が Querier になります (`10.10.0.2`, `10.10.16.2`)。
 - **PoE**: 一部のスイッチは PoE で機器に給電できます。N-3 はポート 1 - 8 で給電します (装置全体 125 W、ポートあたり最大 31.2 W)。
@@ -132,9 +134,33 @@ VLAN 99・100 は `po1` ではなく、それぞれ専用のポート (`mgmt`, `
 
 N-3 のポート 9・10 はコンボポートで、ポート 9 は SFP 側、ポート 10 は RJ-45 側を使います。
 
+### N-4 (AT-x210-24GT) のポート割り当て
+
+| ポート | VLAN | 用途 |
+| :--- | :--- | :--- |
+| 1 - 2 | 40 (untagged) | PA |
+| 3 - 8 | 20 (untagged) | AV |
+| 9 - 10 | 20 (untagged, `po2`) | AV (LACP) |
+| 11 - 12 | 20 (untagged, `po3`) | AV (LACP) |
+| 13 - 14 | 99 (untagged) | 管理 |
+| 15 - 16 | 全 VLAN (tagged) | トランク |
+| 17 - 24 | 全 VLAN (tagged, `po1`) | 上流へのトランク (LACP) |
+
+### N-5 / N-6 (GS924M V2) のポート割り当て
+
+| ポート | VLAN | 用途 |
+| :--- | :--- | :--- |
+| 1 - 2 | 40 (untagged) | PA |
+| 3 - 14 | 20 (untagged) | AV |
+| 15 - 16 | 全 VLAN (tagged) | トランク |
+| 21 - 22 | 99 (untagged) | 管理 |
+| 23 - 24 | 全 VLAN (tagged, `sa1`) | 上流へのトランク (静的 LAG) |
+
+N-5・N-6 は全ポートでブロードキャストリミット (`bclimit=on`) と IGMP Snooping を有効にしています。N-6 はトランクポート (`15-16`, `23-24`) で MSTP (`ttut-intra`) も有効です。
+
 ## 管理
 
-スイッチは MGMT (VLAN 99, `192.168.99.0/25`) で管理し、SSH (v2) で接続します。
+スイッチは MGMT (VLAN 99, `192.168.99.0/25`) で管理し、SSH (v2) で接続します (GS924M V2 は HTTP 管理も有効)。
 
 | スイッチ | 管理 IP |
 | :--- | :--- |
@@ -143,6 +169,8 @@ N-3 のポート 9・10 はコンボポートで、ポート 9 は SFP 側、ポ
 | N-1 | `192.168.99.2` |
 | N-3 | `192.168.99.3` |
 | N-4 | `192.168.99.4` |
+| N-5 (`sw5`) | `192.168.99.5` |
+| N-6 (`sw6`) | `192.168.99.6` |
 
 ## 構成図
 ![topology](https://github.com/TechnoTUT/Infra/blob/main/network/topology.drawio.svg?raw=true)
