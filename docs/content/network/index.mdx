@@ -9,3 +9,39 @@ TechnoTUT Networkは、部室及びThe Utopia Tone(学内DJイベント)で利�
 音声・映像等のメディアの伝送や会場内に設置された機器のコントロールなど、あらゆる情報を送ることができます。一部のネットワーク機器はPoE(Power over Ethernet)に対応し、機器への電源供給が可能です。
 
 TechnoTUT Networkでは、DJ機器との通信に用いるPRO DJ LINKや、映像伝送プロトコルであるNDI・RTMP、複数デバイスで拍・テンポを同期するAbleton Link、照明制御用のプロトコルであるArt-Net、PAの要であるデジタルミキサーの制御通信などを流すためのネットワークを、ネットワーク仮想化技術であるVLANを用いて統合したシステムを構築しています。また、スパニングツリープロトコルやリンクアグリゲーションといったL2冗長化技術を取り入れることで、機器故障やケーブルの断線時にもサービスへの影響を最小限に抑える取り組みも行っています。
+
+## 全体構成
+
+対外接続は **IX3110** が終端し、L3 ルーティング・DHCP/DNS・ファイアウォールは **FortiGate 100D** に集約しています。コアスイッチ **N-1** から各エリアの L2 スイッチへ全 VLAN をトランクで運びます。
+
+```mermaid
+flowchart LR
+  wan["対外接続回線 (192.168.8.1)"] --> ix["IX3110 (N-1-RT)"]
+  ix -- "iBGP / peer" --> fg["FortiGate 100D (NGFW)"]
+  ix -- "IPsec + eBGP" --> vpn["外部拠点 (ddlia-net / kisarag1-net)"]
+  fg -- "po1 (VLAN 10-45)" --> n1["N-1 コア (AT-SH510-28GTX)"]
+  fg -- "dmz (VLAN 100) / iBGP" --> k8s["Kubernetes (main)"]
+  fg -- "port9 (nas)" --> nas["NAS (ongeki)"]
+  fg -- "mgmt (VLAN 99)" --> mgmt["管理系"]
+  n1 --> n4["N-4 (PA卓)"]
+  n4 --> n3["N-3 (DJ・VJ / PoE)"]
+  n1 --> n5["N-5 / N-6 (PA・AV)"]
+```
+
+## 用途別の接続先
+
+| 用途・プロトコル | VLAN | サブネット | 主な接続ポート |
+| :--- | :--- | :--- | :--- |
+| DJ 機器 (PRO DJ LINK) | VLAN 10 (`dj`) | `10.10.0.0/20` | N-3 ポート 1 - 4 |
+| VJ・映像伝送 (NDI / Ableton Link) | VLAN 20 (`av`) | `10.10.16.0/20` | N-3 ポート 5 - 6、N-4 ポート 3 - 12、N-5 / N-6 ポート 3 - 14 |
+| 照明制御 (Art-Net) | VLAN 30 (`lbar`) | `192.168.11.0/24` | Wi-Fi (トランク接続の AP 経由) |
+| PA 機器 (ミキサー・iPad) | VLAN 40 (`pa`) | `192.168.12.0/27` | N-4 ポート 1 - 2、N-5 / N-6 ポート 1 - 2 |
+| カメラ配信 (RTMP) | VLAN 44 (`cam1`), 45 (`cam2`) | `192.168.12.64/28`, `.80/28` | Wi-Fi AP (`TechnoTUT_Cam1` / `Cam2`) |
+| サーバ・Kubernetes | VLAN 100 (`sv`) | `192.168.99.128/25` | N-1 ポート 3、N-3 ポート 7、FortiGate `dmz` |
+| 機器管理 | VLAN 99 (`mgmt`) | `192.168.99.0/25` | N-1 ポート 4、N-3 ポート 10、N-4 ポート 13 - 14、N-5 / N-6 ポート 21 - 22 |
+
+## ドキュメント一覧
+
+- [ネットワーク仕様](/network/spec): ルーティング (BGP / IPsec)、FortiGate の通信制御、L2 設定、各スイッチのポート割り当て、構成図、機材一覧
+- [VLAN・IPアドレス設計](/network/vlan): 全 VLAN のサブネット・ゲートウェイ・DHCP 範囲、特殊用途セグメント、Kubernetes の CIDR 設計
+- [サービス](/service/basic): PRO DJ LINK、NDI、Art-Net、RTMP 配信、plmux、照明シミュレータなど網内で提供するサービスの利用方法
