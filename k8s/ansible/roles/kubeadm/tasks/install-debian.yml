@@ -30,11 +30,19 @@
       {{ not kubeadm_joined.stat.exists
          and not (kubeadm_installed.stdout.startswith(k8s_minor ~ '.')) }}
 
+# dpkg_selections は未インストールのパッケージに失敗する（新しいノード）ので、入っているものだけにする
+- name: インストール済みのパッケージを確認する
+  ansible.builtin.command: dpkg-query -W -f='${Package}\n' kubelet kubeadm kubectl
+  register: kubeadm_installed_pkgs
+  failed_when: false
+  changed_when: false
+  when: kubeadm_align | bool
+
 - name: hold を外す（揃える場合のみ）
   ansible.builtin.dpkg_selections:
     name: "{{ item }}"
     selection: install
-  loop: [kubelet, kubeadm, kubectl]
+  loop: "{{ kubeadm_installed_pkgs.stdout_lines | default([]) }}"
   become: true
   when: kubeadm_align | bool
 

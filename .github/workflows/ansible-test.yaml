@@ -34,7 +34,7 @@ jobs:
       ANSIBLE_FORCE_COLOR: "1"
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       # イメージ (Cilium, Argo CD など) で容量が足りなくなるため、使わないツールを消す
       - name: Free disk space
@@ -55,7 +55,7 @@ jobs:
           podman --version
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
