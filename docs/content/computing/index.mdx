@@ -5,24 +5,20 @@ slug: /computing
 sidebar_position: 1
 ---
 
-[TechnoTUT Network](/) では、コンテナ型の仮想化手法を採用し、計算資源を提供しています。
-仮想化技術を活用することで、ソフトウェアとハードウェアの間に抽象化レイヤーを設け効率的に利用できるようにしています。
-
+[TechnoTUT Network](/) では、コンテナ型の仮想化手法を採用し、計算資源を提供しています。  
 コンテナ型仮想化は、Linux カーネルの機能を利用してプロセスを隔離する方式です。Linux カーネルを共有することで、仮想マシンよりも軽量で高速に動作します。
 TechnoTUT Network では、Kubernetes をコンテナオーケストレーションツールとして採用しています。Infrastructure as Code (IaC) による運用が可能であり、運用の効率化を実現します。
 
 構築方法については、[Kubernetes (k8s) 構築方法](/computing/deploy)を参照してください。
 
 ## Kubernetes とは
-Kubernetesは、複数サーバで複数のコンテナを管理するためのツールです。
-
-TechnoTUTでは、以下のリポジトリでKubernetesの管理を行っています。
-
+Kubernetesは、複数サーバで複数のコンテナを管理するためのツールです。  
+TechnoTUTでは、以下のリポジトリでKubernetesの管理を行っています。  
 <RepoCard repo="TechnoTUT/Infra" />
 
 ## クラスタ構成
 
-Kubernetes のクラスタは 2 つあります。3 台の物理サーバ (`becky`, `packard`, `marie`) で構成する `main` と、NAS の `ongeki` だけで動く `nas` です。2 つのクラスタは **Cilium Cluster Mesh** でつないでいます。`becky`, `packard`, `marie` には Debian 13 (Trixie) が、`ongeki` には AlmaLinux 10 がインストールされ、`kubeadm` でクラスタが構築されています。
+Kubernetes のクラスタは 2 つあります。3 台の物理サーバ (`becky`, `packard`, `marie`) で構成する `main` と、`ongeki` で動く `nas` です。2 つのクラスタは **Cilium Cluster Mesh** でつないでいます。`becky`, `packard`, `marie` には Debian 13 が、`ongeki` には AlmaLinux 10 がインストールされ、`kubeadm` でクラスタが構築されています。
 
 ```mermaid
 flowchart LR
@@ -50,8 +46,8 @@ Control-Plane ノードは、API サーバ・スケジューラ・コントロ�
 | 領域 | 採用技術 | バージョン / 設定 | 用途・特徴 |
 | :--- | :--- | :--- | :--- |
 | オーケストレーション | Kubernetes (`kubeadm`) | `1.37` | クラスタ構築・ライフサイクル管理 |
-| コンテナランタイム | `containerd` | Docker リポジトリ (`containerd.io`) | CRI ランタイム (パッケージ更新は手動) |
-| CNI / BGP / Ingress | Cilium | `1.20.4` | `kube-proxy` 置き換え、Native Routing、iBGP (AS `64646`, FortiGate が Route Reflector) による LoadBalancer IP / Pod CIDR 広報、Ingress、Cluster Mesh |
+| コンテナランタイム | `containerd` | Docker リポジトリ (`containerd.io`) | CRI ランタイム |
+| CNI / BGP / Ingress | Cilium | `1.20.4` | `kube-proxy` 置き換え、Native Routing、iBGP による LoadBalancer IP / Pod CIDR 広報、Ingress、Cluster Mesh |
 | L2 マルチホーム | Multus | `v4.3.1` | `br10` / `br20` 経由で Pod を VLAN 10 (PRO DJ LINK)・VLAN 20 (Ableton Link) へ直結 |
 | ストレージ | NFS / Local PV | `nfs-subdir-external-provisioner` (`4.0.18`) | `becky` の `/nfs` を動的プロビジョニング、`ongeki` は `/nas` を Local PV として利用 |
 | 内部 DNS | `bind9` + ExternalDNS | - | `svc.technotut.net` ゾーンを管理し、FortiGate からの DNS 転送を受信 (`10.12.0.0`) |

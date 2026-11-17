@@ -30,9 +30,9 @@ sidebar_position: 3
 クラスタ `main` (`becky`, `packard`, `marie`) と `nas` (`ongeki`) があります。Cilium Cluster Mesh でつなぐため、範囲は重ならないようにします。両方の Pod CIDR を含む `10.12.0.0/14` 宛ての Pod の通信は NAT しません。VLAN 10・20 (`10.10.0.0/16`) と外部拠点が使う `10.8.0.0/16` はこの範囲に入れません。
 
 - **Pod CIDR**: `10.15.0.0/16`
-- **Service CIDR** (ClusterIP): `10.96.0.0/12` (kubeadm の既定値)
+- **Service CIDR** (ClusterIP): `10.96.0.0/12`
 - **LoadBalancer IP**: `10.12.0.0/16` (BGPでFortiGateに広報)
-  - `10.12.0.0`: bind9 (DNS)
+  - `10.12.0.0`: bind9
   - `10.12.0.1` - `10.12.63.255`: 自動割り当て
   - `10.12.64.0` - `10.12.255.254`: 固定 IP (Service に `lbipam.technotut.net/static: "true"` ラベルが必要)
 - **`nas` のクラスタ**

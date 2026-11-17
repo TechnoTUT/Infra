@@ -18,11 +18,11 @@ Pod CIDR (`10.15.0.0/16`)、Service CIDR (`10.96.0.0/12`)、LoadBalancer の IP 
 
 ## 前提
 
-- **rootful の `podman` (`sudo`)**: `kubeadm` と Cilium が特権・cgroup・BPF を必要とするため。
+- **rootful の `podman`**: `kubeadm` と Cilium が特権・cgroup・BPF を必要とするため。
 - ホストのカーネルで `overlay` が利用できること（カーネルモジュールの読み込みや `net.*` の sysctl がホストに影響します）。
 - メモリ空き容量が 4 GB 程度あること（ノードコンテナは 1 台あたり最大 2.5 GB）。
 - `ansible-core` と `containers.podman` コレクションが導入されていること（`k8s/ansible/test/requirements.yml`）。
-- **kubeconfig はコンテナ内のものだけを使うこと**（ホストの `kubectl` / `helm` は使いません）。
+- **kubeconfig はコンテナ内のものだけを使うこと**。
 
 ## 実行手順
 
@@ -50,9 +50,9 @@ sudo podman exec frr vtysh -c 'show ip bgp'
 - **検証できること**: `kubeadm init` / `join`、Pod / Service の CIDR、Cilium (`kube-proxy` 置き換え、Ingress、LB IP プール)、BGP (FRR での経路確認)、Argo CD、`bind9` と ExternalDNS (Service の annotation から A レコードが登録される)
 - **検証できないこと**: 実機の VLAN とブリッジ、`network` ロール、Multus の L2 通信、NFS provisioner の実動作 (NFS サーバがない)、`marie` (`packard` と同じ設定)
 
-## テスト用の上書き (`vars.yml`)
+## テスト用の上書き
 
-コンテナ固有の事情に対処するため、`k8s/ansible/test/vars.yml` で次の変数を上書きしています（本番の値は変更しません）。
+コンテナ固有の事情に対処するため、`k8s/ansible/test/vars.yml` で次の変数を上書きしています。
 
 | 変数 | 理由 |
 | :--- | :--- |
@@ -65,4 +65,4 @@ sudo podman exec frr vtysh -c 'show ip bgp'
 
 ## CI での自動実行
 
-`k8s/ansible/` を変更する PR と `main` への push では、GitHub Actions ([.github/workflows/ansible-test.yaml](https://github.com/TechnoTUT/Infra/blob/main/.github/workflows/ansible-test.yaml)) が ubuntu ランナー上で同じ手順（`up.sh` → `stage1`〜`3` → ノード・Cilium・Argo CD・BGP の確認 → `stage1` 再実行による冪等性確認）を自動実行します。Actions の画面から手動実行 (`workflow_dispatch`) も可能です。
+`k8s/ansible/` を変更する PR と `main` への push では、GitHub Actions ([.github/workflows/ansible-test.yaml](https://github.com/TechnoTUT/Infra/blob/main/.github/workflows/ansible-test.yaml)) が ubuntu ランナー上で同じ手順を自動実行します。Actions の画面から手動実行 (`workflow_dispatch`) も可能です。
