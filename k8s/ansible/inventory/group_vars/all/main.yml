@@ -109,22 +109,12 @@ kubelet_system_reserved_memory: "512Mi"
 kubelet_kube_reserved_memory: "512Mi"
 kubelet_eviction_memory: "256Mi"
 
-# ===== ArgoCD が管理するアプリ（k8s/manifest/<path>）=====
+# ===== ArgoCD が管理するアプリ（App of Apps）=====
+# Ansible は親の Application (root) だけを作る。各アプリの Application は
+# argocd_root_path に置き、main にマージすると Argo CD が登録する。
 argocd_repo_url: "https://github.com/TechnoTUT/Infra.git"
-argocd_apps:
-  - { name: cam1, path: cam1, namespace: cam1 }
-  - { name: cam2, path: cam2, namespace: cam2 }
-  - { name: dmx, path: dmx, namespace: qlcplus }
-  - { name: live, path: live, namespace: live }
-  - { name: ndi, path: ndi, namespace: ndi }
-  - { name: speedtest, path: speedtest, namespace: speedtest }
-  - { name: time, path: time, namespace: time }
-  # BLT は VM で動かす（KubeVirt と CDI が必要。kubevirt_enabled: true）。
-  # BLT をコンテナ化する別ブランチがマージされたら、この 2 行と kubevirt_enabled を見直す。
-  - { name: blt, path: blt, namespace: blt }
-  - { name: cdi-config, path: infrastructure/cdi }
-  # Samba (ongeki の /nas)。nas のクラスタに配る (cluster は Argo CD に登録したクラスタの名前)。
-  - { name: nas, path: nas, namespace: nas, cluster: nas }
+argocd_root_path: k8s/manifest/apps
+# argocd_root_include: "{cam1.yaml,dmx.yaml}"   # 一部のアプリだけにするとき (テスト用)
 
 argocd_network_policy: true   # コンテナでのテスト時だけ false にする
 

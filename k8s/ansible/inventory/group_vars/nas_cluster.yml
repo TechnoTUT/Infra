@@ -33,5 +33,4 @@ dns_enabled: false                   # drive.svc.technotut.net は main の bind
 cilium_ingress_enabled: false
 # main の Argo CD が管理する (argocd_server の becky にクラスタを登録する)。
 argocd_enabled: false
-argocd_apps: []
 argocd_register_cluster: true

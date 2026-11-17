@@ -171,11 +171,11 @@
         helm_ns: argocd
         helm_values: argocd-values.yaml
 
-    - name: ArgoCD の Application を作る
+    # 各アプリの Application は Git (argocd_root_path) にあり、root から Argo CD が作る。
+    - name: ArgoCD の親の Application (App of Apps)
       ansible.builtin.include_tasks: apply.yml
       vars:
-        apply_content: "{{ lookup('ansible.builtin.template', 'argocd-app.yaml.j2') }}"
-      loop: "{{ argocd_apps }}"
+        apply_content: "{{ lookup('ansible.builtin.template', 'argocd-root-app.yaml.j2') }}"
 
 # nas のクラスタ: main の Argo CD (argocd_server) から管理できるようにする。
 - name: main の Argo CD にこのクラスタを登録する
@@ -183,7 +183,7 @@
   when: argocd_register_cluster
 
 # KubeVirt の virt-template-controller は CDI の DataVolume CRD を必要とする。
-# CRD は Argo CD の cdi-config が CDI の CR を作った後に現れるので、待つのは Application を作った後にする。
+# CRD は Argo CD の cdi-config が CDI の CR を作った後に現れるので、待つのは root の Application を作った後にする。
 - name: KubeVirt が使えるようになるのを待つ
   when: kubevirt_enabled
   ansible.builtin.command: kubectl wait kubevirt/kubevirt -n kubevirt --for=condition=Available --timeout=3600s

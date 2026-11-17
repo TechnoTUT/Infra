@@ -54,7 +54,7 @@ KubeVirt / CDI と BLT の VM、実機の VLAN とブリッジ、Multus の L2 �
 | `kubeadm_ignore_preflight_errors` | 上記に伴う preflight の無視 |
 | `argocd_network_policy` | 入れ子のコンテナでは NetworkPolicy 下の probe が通らないため |
 | `node_dns_servers` | テストを動かす PC から TUT の DNS サーバに届かないため、公開 DNS を使う |
-| `kubevirt_enabled`, `argocd_apps` | 入れ子のコンテナでは VM を動かさない (メモリ節約)。`blt` / `cdi-config` も外す |
+| `kubevirt_enabled`, `argocd_root_include` | 入れ子のコンテナでは VM を動かさない (メモリ節約)。root から作る Application も `cam1` と `dmx` だけにする |
 
 `up.sh` は、Cilium が `/sys/fs/bpf` を使えるように bpffs を shared でマウントする。
 

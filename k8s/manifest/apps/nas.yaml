@@ -1,0 +1,21 @@
+# Samba (ongeki の /nas)。nas のクラスタに配る (Ansible が main の Argo CD に登録したクラスタ)。
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: nas
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/TechnoTUT/Infra.git
+    targetRevision: HEAD
+    path: k8s/manifest/nas
+  destination:
+    name: nas
+    namespace: nas
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

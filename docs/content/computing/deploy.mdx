@@ -116,7 +116,7 @@ ansible-playbook playbooks/site.yml
 | containerd | containerd.io のインストール (hold) |
 | nfs | becky を NFS サーバにする (`/nfs`) |
 | kubeadm | kubelet・kubeadm・kubectl のインストール、`kubeadm init`、`kubeadm join` |
-| addons | Helm、Cilium、Multus と NAD、NFS provisioner、KubeVirt と CDI、Argo CD と各 Application、bind9 と ExternalDNS |
+| addons | Helm、Cilium、Multus と NAD、NFS provisioner、KubeVirt と CDI、Argo CD と親の Application (`root`)、bind9 と ExternalDNS |
 
 `kubeadm init` は Pod CIDR を `10.11.0.0/16`、Service CIDR (ClusterIP) を `10.96.0.0/12` で作成する。kube-proxy は Cilium で置き換えるため入れない。
 
@@ -378,7 +378,7 @@ Samba の設定は ConfigMap (`k8s/manifest/nas/configmap.yaml`) にある。変
    - `vault_cilium_ca_crt`、`vault_cilium_ca_key`: Cluster Mesh の CA。`openssl req -x509 -newkey rsa:2048 -nodes -days 3650 -subj "/CN=Cilium CA" -keyout ca.key -out ca.crt` で作る。
 3. **FortiGate**: BGP の相手、`main` と `nas` の間の通信、Samba への SMB を許可する (設定例は下)。DNS の `drive` はまだ消さない。
 4. **`main` にマージ**: `k8s/manifest/nas/` を Argo CD が参照できるようにする。
-5. **`main` の Ansible**: `ansible-playbook playbooks/site.yml`。Cilium が新しい設定で再起動し、bind9 に `drive` が載り、Argo CD の Application `nas` ができる (`nas` のクラスタを登録するまではエラーになる)。
+5. **`main` の Ansible**: `ansible-playbook playbooks/site.yml`。Cilium が新しい設定で再起動し、bind9 に `drive` が載る。Argo CD の Application `nas` は、手順 4 のマージで `root` が作る (`nas` のクラスタを登録するまではエラーになる)。
 6. **`main` の Pod を作り直す**: Cilium の再起動が終わってから、Deployment・DaemonSet・StatefulSet を順に再起動する。KubeVirt の VM も再起動する。
    ```bash
    for ns in $(kubectl get ns -o jsonpath='{.items[*].metadata.name}'); do
@@ -477,7 +477,7 @@ Ansible で反映するものと、Argo CD で反映するものがある。
 | 変更するもの | 反映の方法 |
 |---|---|
 | Cilium、LoadBalancer の IP プール、BGP、Multus、KubeVirt、Argo CD、bind9・ExternalDNS など (`k8s/ansible/`) | `site.yml` を流す |
-| Argo CD の Application の追加・削除 (`argocd_apps`) | `site.yml` を流す |
+| Argo CD の Application の追加・削除 (`k8s/manifest/apps/`) | `main` にマージすると、Argo CD の `root` が登録する。`site.yml` は不要 |
 | 各アプリの manifest (`k8s/manifest/`) | `main` にマージすると、Argo CD が同期する。`site.yml` は不要 |
 
 Argo CD は GitHub の `main` を参照する。manifest の変更と Ansible の変更が関係するときは、manifest を先に `main` に入れ、Argo CD の同期を確認してから `site.yml` を流す。\
