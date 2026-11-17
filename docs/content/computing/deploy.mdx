@@ -44,7 +44,7 @@ Clusters: 2 (`main`: becky, packard, marie / `nas`: ongeki)。Cilium Cluster Mes
 3. Ansible の実行
 4. ルーター (FortiGate) の BGP 設定
 5. 動作確認
-6. 任意: Multus、ExternalDNS、KubeVirt、NAS (ongeki)
+6. 任意: Multus、ExternalDNS、NAS (ongeki)
 
 ## 1. 事前準備
 ### ネットワーク (管理用 VLAN は手動)
@@ -116,7 +116,7 @@ ansible-playbook playbooks/site.yml
 | containerd | containerd.io のインストール (hold) |
 | nfs | becky を NFS サーバにする (`/nfs`) |
 | kubeadm | kubelet・kubeadm・kubectl のインストール、`kubeadm init`、`kubeadm join` |
-| addons | Helm、Cilium、Multus と NAD、NFS provisioner、KubeVirt と CDI、Argo CD と親の Application (`root`)、bind9 と ExternalDNS |
+| addons | Helm、Cilium、Multus と NAD、NFS provisioner、Argo CD と親の Application (`root`)、bind9 と ExternalDNS |
 
 `kubeadm init` は Pod CIDR を `10.15.0.0/16`、Service CIDR (ClusterIP) を `10.96.0.0/12` で作成する。kube-proxy は Cilium で置き換えるため入れない。
 
@@ -230,7 +230,7 @@ PRO DJ LINK や Ableton Link のネットワークと L2 で接続する場合�
 
 ブリッジ (br10, br20) は `network` ロールが作る。
 
-Cilium は既定で、他の CNI の設定ファイルを `*.cilium_bak` に退避する。Multus の設定 (`/etc/cni/net.d/00-multus.conflist`) も退避されて、VM や Pod に br10・br20 のインターフェースが付かなくなる。そのため、`multus_enabled: true` のときは Cilium の `cni.exclusive` を `false` にしている。\
+Cilium は既定で、他の CNI の設定ファイルを `*.cilium_bak` に退避する。Multus の設定 (`/etc/cni/net.d/00-multus.conflist`) も退避されて、Pod に br10・br20 のインターフェースが付かなくなる。そのため、`multus_enabled: true` のときは Cilium の `cni.exclusive` を `false` にしている。\
 構築済みのクラスタでこの設定を変えたときは、Multus を再起動して設定ファイルを作り直す (`kubectl -n kube-system rollout restart ds/kube-multus-ds`)。
 
 ### DNS (bind9 と ExternalDNS)
@@ -242,19 +242,6 @@ TSIG の鍵を作り、Ansible Vault の `inventory/group_vars/all/vault.yml` �
 tsig-keygen -a hmac-sha256 externaldns-key
 ansible-vault create inventory/group_vars/all/vault.yml
 ```
-
-### KubeVirt
-VM を動かすときのために、KubeVirt と CDI を Ansible で導入している (`kubevirt_enabled: true`)。\
-以前は BLT (Beat Link Trigger) を VM (`blt`) で動かしていたが、[plmux](#plmux) に置き換えて削除した。いま VM はない。
-
-| コンポーネント | 内容 |
-|---|---|
-| KubeVirt | operator と CR。メモリ節約のため、制御コンポーネントは 1 レプリカ (`infra.replicas: 1`) |
-| CDI | operator のみ。CDI の CR は Argo CD の `cdi-config` が管理する |
-| virtctl | becky の `/usr/local/bin/virtctl` |
-
-- VM を Multus の `kube-public/vlan10-bridge`・`vlan20-bridge` につなぐときは、各ノードにブリッジ (br10, br20) が必要。
-- 全ノードで `/dev/kvm` が使えること。
 
 ### plmux
 PRO DJ LINK のモニター・曲履歴・Ableton Link・Clojure の式のサーバー [TechnoTUT/plmux](https://github.com/TechnoTUT/plmux) を、`main` のクラスタで動かす。使い方は [plmux](/service/plmux)。
@@ -277,7 +264,7 @@ Pod は 2 つに分けている。
 - Ableton Link は Pod の全てのネットワークで広報される。DJ ネットワーク (VLAN 10) には出さず、AV ネットワーク (VLAN 20) だけに出すため、Carabiner を VLAN 20 だけにつないだ Pod に分けている。Carabiner は 127.0.0.1 でしか待ち受けないので、plmux が中継する。
 - `plmux-carabiner` に届けば Link のテンポを変えられるので、NetworkPolicy で `plmux` の Pod からだけ受ける。テンポと拍を TCP で送るので、同じノードに置くようにしている (podAffinity)。
 - PRO DJ LINK の UDP (50000-50002) を使い、SQLite に書くので、どちらもレプリカは 1 つ (`Recreate`)。hostNetwork は使わないので、どのノードでも動く (br10・br20 は全ノードにある)。
-- VLAN 10・20 のアドレスは NAD の host-local で、ノードごとに `10.10.0.2`・`10.10.16.2` から払い出す。別のノードの Pod や VM と同じアドレスになることがある。そのときは Pod を作り直す。
+- VLAN 10・20 のアドレスは NAD の host-local で、ノードごとに `10.10.0.2`・`10.10.16.2` から払い出す。別のノードの Pod と同じアドレスになることがある。そのときは Pod を作り直す。
 - Link のテンポを流すのは 1 つだけにする。個人の PC の BLT などでも Link に追従させていると、テンポの元が 2 つになる。
 - 式から dmxctl などへ送る OSC は、ノードの IP (`dmz`) に SNAT されて FortiGate を通る。FortiGate に `dmz` から送り先への UDP (dmxctl は 9000) を許可するポリシーが必要。
 - クライアントからは、FortiGate が `k8s-svc` への HTTP を許可している VLAN (DJ、AV など) と管理用 VLAN から届く。
@@ -364,7 +351,7 @@ ongeki は、ongeki だけで動く Kubernetes のクラスタ `nas` である�
 | Ansible | `ansible-playbook -i inventory/nas.yml playbooks/site.yml`。変数は `inventory/group_vars/all` (共通) を `inventory/group_vars/nas_cluster.yml` で上書きする |
 | OS | AlmaLinux 10 (SELinux は Enforcing のまま)。Ansible のロールは Debian と RHEL 系の両方に対応している |
 | ネットワーク | FortiGate の `port9` (`192.168.98.0/30`)。`main` のノードと L2 が別なので、Pod 間の通信は FortiGate が BGP の経路で中継する |
-| 動かすもの | Cilium (BGP、LB IPAM、Cluster Mesh) と Samba だけ。Multus、KubeVirt、NFS、Argo CD、bind9 などは入れない |
+| 動かすもの | Cilium (BGP、LB IPAM、Cluster Mesh) と Samba だけ。Multus、NFS、Argo CD、bind9 などは入れない |
 | データ | `/nas` (sda + sdb の md RAID0、ext4)。local PV でそのまま Samba にマウントする |
 | Samba | [`k8s/manifest/nas/`](https://github.com/TechnoTUT/Infra/tree/main/k8s/manifest/nas)。イメージは [TechnoTUT/samba](https://github.com/TechnoTUT/samba) (`ghcr.io/technotut/samba`) |
 | アドレス | `drive.svc.technotut.net` → `10.14.0.128` (LoadBalancer。`main` の bind9 に固定で載せる)。SMB (TCP 445) だけ |
@@ -403,7 +390,7 @@ Samba の設定は ConfigMap (`k8s/manifest/nas/configmap.yaml`) にある。変
 3. **FortiGate**: BGP の相手、`main` と `nas` の間の通信、Samba への SMB を許可する (設定例は下)。DNS の `drive` はまだ消さない。
 4. **`main` にマージ**: `k8s/manifest/nas/` を Argo CD が参照できるようにする。
 5. **`main` の Ansible**: `ansible-playbook playbooks/site.yml`。Cilium が新しい設定で再起動し、bind9 に `drive` が載る。Argo CD の Application `nas` は、手順 4 のマージで `root` が作る (`nas` のクラスタを登録するまではエラーになる)。
-6. **`main` の Pod を作り直す**: Cilium の再起動が終わってから、Deployment・DaemonSet・StatefulSet を順に再起動する。KubeVirt の VM も再起動する。
+6. **`main` の Pod を作り直す**: Cilium の再起動が終わってから、Deployment・DaemonSet・StatefulSet を順に再起動する。
    ```bash
    for ns in $(kubectl get ns -o jsonpath='{.items[*].metadata.name}'); do
      kubectl -n "$ns" rollout restart deployment,daemonset,statefulset 2>/dev/null
@@ -500,7 +487,7 @@ Ansible で反映するものと、Argo CD で反映するものがある。
 
 | 変更するもの | 反映の方法 |
 |---|---|
-| Cilium、LoadBalancer の IP プール、BGP、Multus、KubeVirt、Argo CD、bind9・ExternalDNS など (`k8s/ansible/`) | `site.yml` を流す |
+| Cilium、LoadBalancer の IP プール、BGP、Multus、Argo CD、bind9・ExternalDNS など (`k8s/ansible/`) | `site.yml` を流す |
 | Argo CD の Application の追加・削除 (`k8s/manifest/apps/`) | `main` にマージすると、Argo CD の `root` が登録する。`site.yml` は不要 |
 | 各アプリの manifest (`k8s/manifest/`) | `main` にマージすると、Argo CD が同期する。`site.yml` は不要 |
 

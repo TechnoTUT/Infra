@@ -31,7 +31,6 @@ DJ 機器の PRO DJ LINK、映像伝送の NDI・RTMP、テンポ同期の Ablet
 | CNI | Cilium（kube-proxy 置き換え、BGP で LoadBalancer IP を広報、Cluster Mesh）、Multus |
 | ストレージ | NFS（nfs-subdir-external-provisioner）。NAS は ongeki の `/nas`（local PV） |
 | GitOps | Argo CD |
-| VM | KubeVirt, CDI |
 
 詳細: [構築方法](./docs/content/computing/deploy.mdx)
 
@@ -60,7 +59,6 @@ DJ 機器の PRO DJ LINK、映像伝送の NDI・RTMP、テンポ同期の Ablet
 | `time/` | 時刻表示 |
 | `nas/` | Samba（`nas` のクラスタ。ongeki の `/nas`。イメージは [TechnoTUT/samba](https://github.com/TechnoTUT/samba)） |
 | `plmux/` | PRO DJ LINK のモニター・曲履歴・Ableton Link・Clojure の式（[TechnoTUT/plmux](https://github.com/TechnoTUT/plmux)） |
-| `infrastructure/cdi/` | CDI の設定 |
 | `apps/` | Argo CD の Application (App of Apps の子) |
 
 Argo CD に登録するアプリケーションは [`k8s/manifest/apps/`](./k8s/manifest/apps/) に Application の YAML として置いています (App of Apps)。`main` にマージすると、Argo CD が親の Application (`root`) から自動で登録します。
