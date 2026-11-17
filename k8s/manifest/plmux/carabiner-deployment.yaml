@@ -1,0 +1,76 @@
+# Ableton Link (Carabiner)。plmux と同じイメージを carabiner モードで動かす。
+# Link は Pod の全てのインターフェースで広報されるので、Multus では VJ/AV の VLAN20 (br20) にだけつなぐ
+# (DJ の VLAN10 には出さない)。Carabiner は 127.0.0.1 でしか待ち受けないので、plmux が中継する (17000/tcp)。
+# plmux はテンポと拍をこの Pod に TCP で送るので、なるべく同じノードに置く。
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: plmux-carabiner
+  labels:
+    app: plmux-carabiner
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: plmux-carabiner
+  template:
+    metadata:
+      labels:
+        app: plmux-carabiner
+      annotations:
+        k8s.v1.cni.cncf.io/networks: kube-public/vlan20-bridge@av
+    spec:
+      securityContext:
+        runAsUser: 10001
+        runAsGroup: 10001
+      affinity:
+        podAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              topologyKey: kubernetes.io/hostname
+              labelSelector:
+                matchLabels:
+                  app: plmux
+      containers:
+      - name: carabiner
+        image: ghcr.io/technotut/plmux:0.2.0      # plmux と同じタグにする
+        imagePullPolicy: IfNotPresent
+        args: ["carabiner"]
+        env:
+        - name: PLMUX_CARABINER_PORT               # 中継が待ち受けるポート (plmux がつなぐ)
+          value: "17000"
+        - name: PLMUX_CARABINER_INTERNAL_PORT      # Carabiner 本体 (127.0.0.1 だけ)
+          value: "17001"
+        - name: JAVA_TOOL_OPTIONS
+          value: "-Djava.awt.headless=true -XX:+UseSerialGC -XX:MaxRAMPercentage=50"
+        ports:
+        - name: carabiner
+          containerPort: 17000
+        readinessProbe:
+          tcpSocket:
+            port: carabiner
+          periodSeconds: 10
+        livenessProbe:
+          tcpSocket:
+            port: carabiner
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            memory: 256Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: ["ALL"]
+        volumeMounts:
+        - { name: tmp, mountPath: /tmp }        # 同梱の Carabiner の実行ファイルの展開先
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      restartPolicy: Always

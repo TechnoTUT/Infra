@@ -1,0 +1,16 @@
+# plmux から Carabiner への接続 (クラスタの中だけ)。
+apiVersion: v1
+kind: Service
+metadata:
+  name: plmux-carabiner
+  labels:
+    app: plmux-carabiner
+spec:
+  selector:
+    app: plmux-carabiner
+  type: ClusterIP
+  ports:
+  - name: carabiner
+    protocol: TCP
+    port: 17000
+    targetPort: carabiner

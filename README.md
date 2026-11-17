@@ -59,6 +59,7 @@ DJ 機器の PRO DJ LINK、映像伝送の NDI・RTMP、テンポ同期の Ablet
 | `time/` | 時刻表示 |
 | `blt/` | Beat Link Trigger（KubeVirt の VM と noVNC・xrdp） |
 | `nas/` | Samba（`nas` のクラスタ。ongeki の `/nas`。イメージは [TechnoTUT/samba](https://github.com/TechnoTUT/samba)） |
+| `plmux/` | PRO DJ LINK のモニター・曲履歴・Ableton Link・Clojure の式（[TechnoTUT/plmux](https://github.com/TechnoTUT/plmux)） |
 | `infrastructure/cdi/` | CDI の設定 |
 | `apps/` | Argo CD の Application (App of Apps の子) |
 

@@ -1,0 +1,11 @@
+# 曲の履歴と GUI の設定 (SQLite の plmux.db)。書き込むのは plmux の Pod 1 つだけ (replicas: 1、Recreate)。
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: plmux-data
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: nfs-client
+  resources:
+    requests:
+      storage: 1Gi

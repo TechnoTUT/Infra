@@ -1,0 +1,18 @@
+# Web GUI・API・WebSocket (/ws)・OBS 用オーバーレイ (/overlay)。
+apiVersion: v1
+kind: Service
+metadata:
+  name: plmux
+  labels:
+    app: plmux
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: plmux.svc.technotut.net
+spec:
+  selector:
+    app: plmux
+  type: LoadBalancer
+  ports:
+  - name: http
+    protocol: TCP
+    port: 80
+    targetPort: http
