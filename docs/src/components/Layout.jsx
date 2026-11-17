@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation } from 'react-router';
-import { pageByPath, sectionPages, sectionStart } from '../content.js';
+import { pageByPath, sectionGroups, sectionPages, sectionStart } from '../content.js';
 import { site } from '../site.config.js';
 import Logo from './Logo.jsx';
 import Search from './Search.jsx';
@@ -12,7 +12,7 @@ export default function Layout() {
   const section = current?.section ?? null;
   // 1ページだけのセクションではサイドバーを出さない
   const all = section ? sectionPages(section) : [];
-  const items = all.length > 1 ? all : [];
+  const groups = all.length > 1 ? sectionGroups(section) : [];
 
   return (
     <>
@@ -34,16 +34,21 @@ export default function Layout() {
           <ThemeToggle />
         </div>
       </header>
-      <div className={'main' + (items.length ? ' has-sidebar' : '')}>
-        {items.length > 0 && (
+      <div className={'main' + (groups.length ? ' has-sidebar' : '')}>
+        {groups.length > 0 && (
           <aside className="sidebar">
-            <ul>
-              {items.map((p) => (
-                <li key={p.path}>
-                  <Link to={p.path} className={p.path === key ? 'active' : ''}>{p.label}</Link>
-                </li>
-              ))}
-            </ul>
+            {groups.map((g, i) => (
+              <div key={g.label ?? i} className="sidebar-group">
+                {g.label && <div className="sidebar-group-title">{g.label}</div>}
+                <ul>
+                  {g.pages.map((p) => (
+                    <li key={p.path}>
+                      <Link to={p.path} className={p.path === key ? 'active' : ''}>{p.label}</Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </aside>
         )}
         <main className="content">

@@ -82,6 +82,11 @@ a { color: var(--link); }
   overflow-y: auto; padding: 1rem .75rem; border-right: 1px solid var(--border);
 }
 .sidebar ul { list-style: none; margin: 0; padding: 0; }
+.sidebar-group + .sidebar-group { margin-top: 1rem; }
+.sidebar-group-title {
+  padding: .35rem .75rem; font-size: .75rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .04em; color: var(--muted);
+}
 .sidebar a { display: block; padding: .4rem .75rem; border-radius: 6px; color: var(--fg); text-decoration: none; }
 .sidebar a:hover { background: var(--hover); }
 .sidebar a.active { background: var(--hover); color: var(--primary); font-weight: 600; }
