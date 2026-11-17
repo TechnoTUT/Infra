@@ -3,6 +3,10 @@ on:
       paths:
         - "docs/**"
         - ".github/workflows/ci.yaml"
+    # main へのマージには "Build and Link Test" が必須なので、PR では変更したファイルに
+    # かかわらず毎回動かす（docs/ を変えない PR でもチェックが付くように）
+    pull_request:
+      branches: [main]
 
 jobs:
     ci:
