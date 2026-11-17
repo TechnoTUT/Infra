@@ -1,6 +1,7 @@
 import { Link } from 'react-router';
 import { Highlight } from 'prism-react-renderer';
 import Mermaid from './Mermaid.jsx';
+import { SwitchPanel, SwitchVlanOverview } from './SwitchPanel.jsx';
 import reposData from '../data/repos.json';
 
 function A({ href = '', children, ...rest }) {
@@ -94,4 +95,4 @@ export function RepoCard({ repo, href, description, languages }) {
   );
 }
 
-export default { a: A, pre: Pre, Admonition, RepoCard };
+export default { a: A, pre: Pre, Admonition, RepoCard, SwitchPanel, SwitchVlanOverview };

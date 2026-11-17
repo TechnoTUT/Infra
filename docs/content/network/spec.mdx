@@ -138,7 +138,25 @@ VLAN 99・100 は `po1` ではなく、それぞれ専用のポート (`mgmt`, `
 - **IGMP Snooping**: マルチキャストを使う DJ (VLAN 10) と AV (VLAN 20) では、N-1 が Querier になります (`10.10.0.2`, `10.10.16.2`)。
 - **PoE**: 一部のスイッチは PoE で機器に給電できます。N-3 はポート 1 - 8 で給電します (装置全体 125 W、ポートあたり最大 31.2 W)。
 
+### N-1 (AT-SH510-28GTX) のポート割り当て
+
+<SwitchPanel preset="N-1" />
+
+| ポート | VLAN | 用途 |
+| :--- | :--- | :--- |
+| 1 (`port2.0.1`) | 全 VLAN (tagged) | Kubernetes ノード (`main`) |
+| 2 (`port2.0.2`) | 全 VLAN (tagged) | トランク (部室運用時は N-3 ポート 7 等) |
+| 3 (`port2.0.3`) | 100 (untagged) | FortiGate `dmz` (SV) |
+| 4 (`port2.0.4`) | 99 (untagged) | FortiGate `mgmt` (管理) |
+| 5 - 12 (`port2.0.5 - 2.0.12`) | 全 VLAN (tagged, `po1`) | FortiGate `po1` (上流トランク / LACP) |
+| 13 - 20 (`port2.0.13 - 2.0.20`) | 全 VLAN (tagged, `po2`) | N-4 `po1` (トランク / LACP) |
+| 21 - 22 (`port2.0.21 - 2.0.22`) | 全 VLAN (tagged, `sa1`) | N-5 / N-6 `sa1` (トランク / 静的 LAG) |
+| 23 - 24 (`port2.0.23 - 2.0.24`) | 全 VLAN (tagged) | Kubernetes ノード (`main`) |
+| 25 - 28 (`port2.0.25 - 2.0.28`) | 未割当 (SFP+) | 未使用 |
+
 ### N-3 (ApresiaLightGM110GT-PoE) のポート割り当て
+
+<SwitchPanel preset="N-3" />
 
 | ポート | VLAN | 用途 |
 | :--- | :--- | :--- |
@@ -151,6 +169,8 @@ N-3 のポート 9・10 はコンボポートで、ポート 9 は SFP 側、ポ
 
 ### N-4 (AT-x210-24GT) のポート割り当て
 
+<SwitchPanel preset="N-4" />
+
 | ポート | VLAN | 用途 |
 | :--- | :--- | :--- |
 | 1 - 2 | 40 (untagged) | PA |
@@ -162,6 +182,8 @@ N-3 のポート 9・10 はコンボポートで、ポート 9 は SFP 側、ポ
 | 17 - 24 | 全 VLAN (tagged, `po1`) | 上流へのトランク (LACP) |
 
 ### N-5 / N-6 (GS924M V2) のポート割り当て
+
+<SwitchPanel preset="N-5" />
 
 | ポート | VLAN | 用途 |
 | :--- | :--- | :--- |
