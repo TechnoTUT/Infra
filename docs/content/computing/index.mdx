@@ -21,22 +21,62 @@ TechnoTUTでは、以下のリポジトリでKubernetesの管理を行ってい�
 <RepoCard repo="TechnoTUT/Infra" />
 
 ## クラスタ構成
-Kubernetesのクラスタは2つあります。3台の物理サーバ(becky, packard, marie)で構成する `main` と、NAS の ongeki だけで動く `nas` です。2つのクラスタは Cilium Cluster Mesh でつないでいます。becky, packard, marie には Debian 13 trixie が、ongeki には AlmaLinux 10 がインストールされ、Kubeadmでクラスタが構築されています。
-Kubernetesのバージョンは、1.37です。
 
-| Node | CPU | Memory | IP Address | Role |
-|------|-----|--------|------------|------|
-| becky | 4CPU | 8GB | 192.168.99.200/25 | Control-Plane |
-| packard | 4CPU | 12GB | 192.168.99.201/25 | Worker |
-| marie | 4CPU | 12GB | 192.168.99.202/25 | Worker |
-| ongeki | 4CPU | 8GB | 192.168.98.2/30 | `nas` のクラスタ (Control-Plane 兼 Worker。Samba) |
+Kubernetes のクラスタは 2 つあります。3 台の物理サーバ (`becky`, `packard`, `marie`) で構成する `main` と、NAS の `ongeki` だけで動く `nas` です。2 つのクラスタは **Cilium Cluster Mesh** でつないでいます。`becky`, `packard`, `marie` には Debian 13 (Trixie) が、`ongeki` には AlmaLinux 10 がインストールされ、`kubeadm` でクラスタが構築されています。
 
-Control-Planeノードは、Kubernetesの管理を担当し、APIサーバ、スケジューラー、コントローラマネージャなどのコンポーネントが動作しています。\
-Workerノードは、実際にコンテナが動作するノードであり、Podがスケジュールされます。
+```mermaid
+flowchart LR
+  fg["FortiGate 100D (AS 64646)"] -- "iBGP (LB IP / Pod CIDR)" --> main["main クラスタ (becky / packard / marie)"]
+  main <-- "Cilium Cluster Mesh (TCP 32379)" --> nas["nas クラスタ (ongeki)"]
+  main -- "Multus (br10 / br20)" --> vlans["DJ (VLAN 10) / AV (VLAN 20)"]
+  repo["GitHub (TechnoTUT/Infra)"] -- "GitOps 同期" --> argocd["Argo CD (main 上)"]
+  argocd -- "Application 配信" --> main
+  argocd -- "API (TCP 6443)" --> nas
+```
 
-### ArgoCD
-ArgoCDを使用すれば、GitHubリポジトリに配置されたマニフェストを自動で適用することができます。\
-GitHubリポジトリのマニフェストに更新があれば、自動で適用されます。
+| Node | OS | CPU | Memory | IP Address | Role |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `becky` | Debian 13 | 4 CPU | 8 GB | `192.168.99.200/25` | `main` Control-Plane / NFS サーバ (`/nfs`) |
+| `packard` | Debian 13 | 4 CPU | 12 GB | `192.168.99.201/25` | `main` Worker |
+| `marie` | Debian 13 | 4 CPU | 12 GB | `192.168.99.202/25` | `main` Worker |
+| `ongeki` | AlmaLinux 10 | 4 CPU | 8 GB | `192.168.98.2/30` | `nas` Control-Plane 兼 Worker (Local PV `/nas`) |
 
-使用するには、ArgoCDのWebUIにアクセスし、GitHub上のマニフェストを同期します。\
+Control-Plane ノードは、API サーバ・スケジューラ・コントローラマネージャなどの制御コンポーネントを実行し、Worker ノードはアプリケーションの Pod を実行します。
+
+## 技術スタック
+
+バージョンや CIDR などのパラメータは [k8s/ansible/inventory/group_vars/all/main.yml](https://github.com/TechnoTUT/Infra/blob/main/k8s/ansible/inventory/group_vars/all/main.yml) に集約しています。
+
+| 領域 | 採用技術 | バージョン / 設定 | 用途・特徴 |
+| :--- | :--- | :--- | :--- |
+| オーケストレーション | Kubernetes (`kubeadm`) | `1.37` | クラスタ構築・ライフサイクル管理 |
+| コンテナランタイム | `containerd` | Docker リポジトリ (`containerd.io`) | CRI ランタイム (パッケージ更新は手動) |
+| CNI / BGP / Ingress | Cilium | `1.20.4` | `kube-proxy` 置き換え、Native Routing、iBGP (AS `64646`, FortiGate が Route Reflector) による LoadBalancer IP / Pod CIDR 広報、Ingress、Cluster Mesh |
+| L2 マルチホーム | Multus | `v4.3.1` | `br10` / `br20` 経由で Pod を VLAN 10 (PRO DJ LINK)・VLAN 20 (Ableton Link) へ直結 |
+| ストレージ | NFS / Local PV | `nfs-subdir-external-provisioner` (`4.0.18`) | `becky` の `/nfs` を動的プロビジョニング、`ongeki` は `/nas` を Local PV として利用 |
+| 内部 DNS | `bind9` + ExternalDNS | - | `svc.technotut.net` ゾーンを管理し、FortiGate からの DNS 転送を受信 (`10.12.0.0`) |
+| GitOps | Argo CD | Helm Chart `10.12.1` | `main` ブランチの `k8s/manifest/` を自動同期 (`root` Application で各アプリを管理) |
+| CI Runner | Actions Runner Controller | `0.15.1` | GitHub Actions の self-hosted runner をジョブ実行時のみ Pod として起動 |
+
+## 構築と運用の仕組み
+
+クラスタの構築・設定反映は [k8s/ansible/](https://github.com/TechnoTUT/Infra/tree/main/k8s/ansible) の Ansible Playbook で自動化し、アプリケーションのデプロイは Argo CD による GitOps で行います。
+
+### Ansible による基盤構築
+管理用マシンから SSH で実行し、ノードには Ansible をインストールしません。Playbook (`playbooks/site.yml`) は冪等に設計されており、設定変更時も同じコマンドで差分のみ反映できます。
+
+| ロール | 対象 | 役割 |
+| :--- | :--- | :--- |
+| `network` | `main` 全ノード | VLAN 10・20 とブリッジ (`br10`, `br20`) の構成 |
+| `common` | 全ノード | DNS 固定、swap 無効化、カーネルモジュール・sysctl 設定、NFS クライアント導入 |
+| `containerd` | 全ノード | `containerd.io` の導入と設定 |
+| `nas` | `ongeki` | `/nas` の確認、ホスト Samba 停止、SELinux コンテキスト設定 |
+| `nfs` | `becky` | NFS サーバ (`/nfs`) の構築 |
+| `kubeadm` | 全ノード | `kubelet` / `kubeadm` / `kubectl` 導入、`kubeadm init` / `join` |
+| `addons` | Control-Plane | Helm、Cilium、Multus、NFS Provisioner、Argo CD、`bind9` / ExternalDNS の導入 |
+
+詳細な手順は [Kubernetes (k8s) 構築方法](/computing/deploy) を参照してください。実機を使わずに Podman 上で Playbook を検証するテスト手順は [Podman による疑似クラスタテスト](/computing/test) にまとめています。
+
+### Argo CD による GitOps
+Argo CD はリポジトリの `main` ブランチを監視しており、`k8s/manifest/apps/` や各アプリのマニフェストを更新してマージすると自動で同期されます。`nas` クラスタのアプリも `main` クラスタ上の Argo CD から管理しています。\
 https://cd.svc.technotut.net/
