@@ -243,8 +243,9 @@ tsig-keygen -a hmac-sha256 externaldns-key
 ansible-vault create inventory/group_vars/all/vault.yml
 ```
 
-### KubeVirt と BLT の VM
-BLT (Beat Link Trigger) は、KubeVirt の VM (`blt`) で動かす。KubeVirt と CDI は Ansible が導入する (`kubevirt_enabled: true`)。
+### KubeVirt
+VM を動かすときのために、KubeVirt と CDI を Ansible で導入している (`kubevirt_enabled: true`)。\
+以前は BLT (Beat Link Trigger) を VM (`blt`) で動かしていたが、[plmux](#plmux) に置き換えて削除した。いま VM はない。
 
 | コンポーネント | 内容 |
 |---|---|
@@ -252,16 +253,8 @@ BLT (Beat Link Trigger) は、KubeVirt の VM (`blt`) で動かす。KubeVirt �
 | CDI | operator のみ。CDI の CR は Argo CD の `cdi-config` が管理する |
 | virtctl | becky の `/usr/local/bin/virtctl` |
 
-VM と関連リソースは、Argo CD の `blt` Application が `k8s/manifest/blt` から作る。
-- 仮想マシンは 2CPU・メモリ 4GB。ディスクは CDI が Debian 13 のクラウドイメージを取得して、NFS 上の PVC (15Gi) に展開する。取得に時間がかかる。
-- VM は `kube-public/vlan10-bridge` と `kube-public/vlan20-bridge` につながる。各ノードにブリッジ (br10, br20) がないと、VM は起動しない。
+- VM を Multus の `kube-public/vlan10-bridge`・`vlan20-bridge` につなぐときは、各ノードにブリッジ (br10, br20) が必要。
 - 全ノードで `/dev/kvm` が使えること。
-
-```bash
-kubectl get vm,vmi,dv -n blt
-virtctl console blt -n blt
-```
-VM の cloud-init の初期パスワードは、構築後に変更する。
 
 ### plmux
 PRO DJ LINK のモニター・曲履歴・Ableton Link・Clojure の式のサーバー [TechnoTUT/plmux](https://github.com/TechnoTUT/plmux) を、`main` のクラスタで動かす。使い方は [plmux](/service/plmux)。
@@ -285,7 +278,7 @@ Pod は 2 つに分けている。
 - `plmux-carabiner` に届けば Link のテンポを変えられるので、NetworkPolicy で `plmux` の Pod からだけ受ける。テンポと拍を TCP で送るので、同じノードに置くようにしている (podAffinity)。
 - PRO DJ LINK の UDP (50000-50002) を使い、SQLite に書くので、どちらもレプリカは 1 つ (`Recreate`)。hostNetwork は使わないので、どのノードでも動く (br10・br20 は全ノードにある)。
 - VLAN 10・20 のアドレスは NAD の host-local で、ノードごとに `10.10.0.2`・`10.10.16.2` から払い出す。別のノードの Pod や VM と同じアドレスになることがある。そのときは Pod を作り直す。
-- Link のテンポを流すのは 1 つだけにする。BLT の VM の Carabiner でも Link に追従させていると、テンポの元が 2 つになる。
+- Link のテンポを流すのは 1 つだけにする。個人の PC の BLT などでも Link に追従させていると、テンポの元が 2 つになる。
 - 式から dmxctl などへ送る OSC は、ノードの IP (`dmz`) に SNAT されて FortiGate を通る。FortiGate に `dmz` から送り先への UDP (dmxctl は 9000) を許可するポリシーが必要。
 - クライアントからは、FortiGate が `k8s-svc` への HTTP を許可している VLAN (DJ、AV など) と管理用 VLAN から届く。
 
