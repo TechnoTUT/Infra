@@ -1,0 +1,22 @@
+# plmux (https://github.com/TechnoTUT/plmux): PRO DJ LINK のモニター・曲履歴・Ableton Link・Clojure の式。
+# Argo CD の Application `plmux` が、このディレクトリを kustomize でデプロイする。
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: plmux
+resources:
+  - configmap.yaml
+  - pvc.yaml
+  - deployment.yaml
+  - service.yaml
+  - carabiner-deployment.yaml
+  - carabiner-service.yaml
+  - networkpolicy.yaml
+
+# Clojure の式。イメージには同梱しないので、ここから ConfigMap を作って /config にマウントする。
+# 名前にハッシュを付けないので、更新すると Pod を作り直さずに plmux が数十秒で読み込み直す。
+configMapGenerator:
+  - name: plmux-expressions
+    files:
+      - expressions.clj
+    options:
+      disableNameSuffixHash: true

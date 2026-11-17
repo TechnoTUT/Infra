@@ -1,0 +1,19 @@
+# Carabiner に届けば Link のテンポを変えられるので、plmux の Pod からだけ受ける。
+# (Multus の VLAN20 側には効かない。Link の通信 (UDP マルチキャスト 20808) はそちらを通る)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: plmux-carabiner
+spec:
+  podSelector:
+    matchLabels:
+      app: plmux-carabiner
+  policyTypes: [Ingress]
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: plmux
+    ports:
+    - protocol: TCP
+      port: 17000

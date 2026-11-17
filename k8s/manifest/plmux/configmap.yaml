@@ -1,0 +1,22 @@
+# plmux の設定 (環境変数)。GUI (Settings タブ) で保存した値は plmux.db に入り、こちらより優先される。
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: plmux
+data:
+  TZ: "Asia/Tokyo"                  # 履歴 CSV の時刻表記
+  PLMUX_HTTP_PORT: "8080"
+  PLMUX_DATA_DIR: "/data"
+  PLMUX_DEVICE_NAME: "plmux"
+  PLMUX_HISTORY_MIN_PLAY_SECONDS: "15"
+  # Ableton Link を CDJ のテンポマスターに追従させる (VJ/AV の VLAN に広報する)。
+  # BLT の VM でも Carabiner で Link に追従させていると、テンポの元が 2 つになるので、どちらか一方にする。
+  PLMUX_LINK_MODE: "FOLLOW"
+  PLMUX_LINK_LATENCY_MS: "1"
+  PLMUX_LINK_ALIGN_BARS: "true"
+  # Carabiner は VLAN20 だけにつないだ別の Pod (plmux-carabiner) で動かす。この Pod では起動しない
+  PLMUX_CARABINER_HOST: "plmux-carabiner"
+  PLMUX_CARABINER_PORT: "17000"
+  PLMUX_CARABINER_EMBEDDED: "false"
+  PLMUX_WAVEFORM_STYLE: "THREE_BAND"
+  PLMUX_EXPRESSIONS_FILE: "/config/expressions.clj"
