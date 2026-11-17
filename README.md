@@ -60,8 +60,9 @@ DJ 機器の PRO DJ LINK、映像伝送の NDI・RTMP、テンポ同期の Ablet
 | `blt/` | Beat Link Trigger（KubeVirt の VM と noVNC・xrdp） |
 | `nas/` | Samba（`nas` のクラスタ。ongeki の `/nas`。イメージは [TechnoTUT/samba](https://github.com/TechnoTUT/samba)） |
 | `infrastructure/cdi/` | CDI の設定 |
+| `apps/` | Argo CD の Application (App of Apps の子) |
 
-Argo CD に登録するアプリケーションは [`k8s/ansible/inventory/group_vars/all/main.yml`](./k8s/ansible/inventory/group_vars/all/main.yml) の `argocd_apps` で管理しています。
+Argo CD に登録するアプリケーションは [`k8s/manifest/apps/`](./k8s/manifest/apps/) に Application の YAML として置いています (App of Apps)。`main` にマージすると、Argo CD が親の Application (`root`) から自動で登録します。
 
 ## よくある作業
 
@@ -70,6 +71,6 @@ Argo CD に登録するアプリケーションは [`k8s/ansible/inventory/group
 | ドキュメントを書く・プレビューする | [`docs/README.md`](./docs/README.md) |
 | クラスタを構築・再構築する | [`k8s/ansible/README.md`](./k8s/ansible/README.md) |
 | 実機に触れずに Ansible を試す | [`k8s/ansible/test/README.md`](./k8s/ansible/test/README.md) |
-| アプリケーションを追加する | `k8s/manifest/<name>/` にマニフェストを置き、`argocd_apps` に追加 |
+| アプリケーションを追加する | `k8s/manifest/<name>/` にマニフェストを置き、`k8s/manifest/apps/<name>.yaml` に Application を追加 |
 
 push すると、ドキュメントは GitHub Actions で自動的にビルドされ、Cloudflare Pages にデプロイされます（`main` が network.technotut.net）。
