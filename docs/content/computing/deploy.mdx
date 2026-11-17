@@ -33,11 +33,11 @@ Clusters: 2 (`main`: becky, packard, marie / `nas`: ongeki)。Cilium Cluster Mes
 | コンテナレジストリ | クラスタ内 (`registry.svc.technotut.net`) |
 | CI | GitHub Actions の self-hosted runner (ARC。ジョブのときだけ Pod を作る) |
 
-ノードのメモリが少ないため、Hubble や Argo CD の dex・notifications など、使わないコンポーネントは入れない。
+ノードのメモリが少ないため、Hubble や Argo CD の dex・notifications など、使わないコンポーネントは入れません。
 
 ## 構築の流れ
-構築は [k8s/ansible/](https://github.com/TechnoTUT/Infra/tree/main/k8s/ansible) の Ansible で行う。管理用のマシンから SSH で実行し、ノードには Ansible を入れない (ノードを最小かつ同一の構成に保つため)。\
-バージョン、CIDR、BGP のピアなどの設定は `inventory/group_vars/all/main.yml` に集約している。
+構築は [k8s/ansible/](https://github.com/TechnoTUT/Infra/tree/main/k8s/ansible) の Ansible で行います。管理用のマシンから SSH で実行し、ノードには Ansible を入れません (ノードを最小かつ同一の構成に保つため)。\
+バージョン、CIDR、BGP のピアなどの設定は `inventory/group_vars/all/main.yml` に集約しています。
 
 1. 事前準備 (手動): 管理用ネットワーク
 2. Ansible の準備
@@ -48,10 +48,10 @@ Clusters: 2 (`main`: becky, packard, marie / `nas`: ongeki)。Cilium Cluster Mes
 
 ## 1. 事前準備
 ### ネットワーク (管理用 VLAN は手動)
-各ノードの NIC と、管理用の VLAN 100 (IP アドレス、ゲートウェイ、DNS) は手動で設定する。この設定がないと、Ansible でノードに接続できない。\
-Multus 用の VLAN 10・20 とブリッジ (br10, br20) は、Ansible の `network` ロールが設定する。
+各ノードの NIC と、管理用の VLAN 100 (IP アドレス、ゲートウェイ、DNS) は手動で設定します。この設定がないと、Ansible でノードに接続できません。\
+Multus 用の VLAN 10・20 とブリッジ (br10, br20) は、Ansible の `network` ロールが設定します。
 
-`/etc/network/interfaces` の例 (becky。packard と marie は NIC 名が `enp2s0`)。
+`/etc/network/interfaces` の例 (becky。packard と marie は NIC 名が `enp2s0`) です。
 ```
 source /etc/network/interfaces.d/*
 
@@ -71,22 +71,22 @@ iface eno1.100 inet static
         dns-nameservers 192.168.99.129
         dns-search srv.utone.technotut.net
 ```
-`vlan` パッケージが必要 (`apt install vlan`)。
+`vlan` パッケージが必要です (`apt install vlan`)。
 
-`network` ロールは、次のことを行う。
-- `bridge-utils`、`vlan`、`dhcpcd-base` を入れ、`8021q` を読み込む。
-- `/etc/network/interfaces` にある VLAN 10・20 と br10・br20 の古い定義を取り除く (バックアップを取る)。二重に定義されていると `ifup -a` が失敗する。
-- `/etc/network/interfaces.d/k8s-vlans` に、VLAN 10・20 とブリッジを書く。ブリッジは DHCP でアドレスを取得する。
-- `/etc/dhcpcd.conf` で、ブリッジはデフォルトゲートウェイと DNS を受け取らない設定にする (管理用 VLAN の経路と `resolv.conf` を壊さないため)。
-- 対象のインターフェースだけを `ifup` する。`networking` の再起動や、管理用 VLAN には触れない。
+`network` ロールは、次のことを行います。
+- `bridge-utils`、`vlan`、`dhcpcd-base` を入れ、`8021q` を読み込みます。
+- `/etc/network/interfaces` にある VLAN 10・20 と br10・br20 の古い定義を取り除きます (バックアップを取ります)。二重に定義されていると `ifup -a` が失敗します。
+- `/etc/network/interfaces.d/k8s-vlans` に、VLAN 10・20 とブリッジを書きます。ブリッジは DHCP でアドレスを取得します。
+- `/etc/dhcpcd.conf` で、ブリッジはデフォルトゲートウェイと DNS を受け取らない設定にします (管理用 VLAN の経路と `resolv.conf` を壊さないため)。
+- 対象のインターフェースだけを `ifup` します。`networking` の再起動や、管理用 VLAN には触れません。
 
-設定後、`ip -br link show type bridge` で `br10` と `br20` があること、`ip -4 -br addr show br10` でアドレスが付いていることを確認する。VLAN の DHCP サーバがないと、アドレスは付かない (ブリッジ自体は起動する)。
+設定後、`ip -br link show type bridge` で `br10` と `br20` があること、`ip -4 -br addr show br10` でアドレスが付いていることを確認します。VLAN の DHCP サーバがないと、アドレスは付きません (ブリッジ自体は起動します)。
 
 ### NFS サーバ
-becky の NFS サーバ (`/nfs`) は Ansible の `nfs` ロールが設定する。手動の作業は不要。
+becky の NFS サーバ (`/nfs`) は Ansible の `nfs` ロールが設定します。手動の作業は不要です。
 
 ## 2. Ansible の準備
-管理用のマシンで実行する。ノードには `technotut` ユーザーで鍵認証の SSH ができ、sudo がパスワードなしで使えること。
+管理用のマシンで実行します。ノードには `technotut` ユーザーで鍵認証の SSH ができ、sudo がパスワードなしで使える必要があります。
 ```bash
 pip install ansible-core
 git clone https://github.com/TechnoTUT/Infra.git
@@ -94,7 +94,7 @@ cd Infra/k8s/ansible
 ansible-galaxy collection install -r requirements.yml
 ```
 
-Secret は Ansible Vault で暗号化する。パスワードは Git に入れず、管理用マシンの `~/.vault_pass` に置く。
+Secret は Ansible Vault で暗号化します。パスワードは Git に入れず、管理用マシンの `~/.vault_pass` に置きます。
 ```bash
 install -m 600 /dev/null ~/.vault_pass
 $EDITOR ~/.vault_pass
@@ -107,7 +107,7 @@ ansible-vault create inventory/group_vars/all/vault.yml   ## 例: vault.yml.exam
 ansible-playbook playbooks/site.yml
 ```
 
-`site.yml` は次の順に実行する。
+`site.yml` は次の順に実行します。
 
 | ロール | 内容 |
 |--------|------|
@@ -118,18 +118,18 @@ ansible-playbook playbooks/site.yml
 | kubeadm | kubelet・kubeadm・kubectl のインストール、`kubeadm init`、`kubeadm join` |
 | addons | Helm、Cilium、Multus と NAD、NFS provisioner、Argo CD と親の Application (`root`)、bind9 と ExternalDNS |
 
-`kubeadm init` は Pod CIDR を `10.15.0.0/16`、Service CIDR (ClusterIP) を `10.96.0.0/12` で作成する。kube-proxy は Cilium で置き換えるため入れない。
+`kubeadm init` は Pod CIDR を `10.15.0.0/16`、Service CIDR (ClusterIP) を `10.96.0.0/12` で作成します。kube-proxy は Cilium で置き換えるため入れません。
 
 ### LoadBalancer の IP
-LoadBalancer の IP は、Cilium の IP プール (`10.12.0.0/16`) から割り当てる。用途ごとにプールを分けている。
+LoadBalancer の IP は、Cilium の IP プール (`10.12.0.0/16`) から割り当てます。用途ごとにプールを分けています。
 
 | プール | 範囲 | 使う Service |
 |---|---|---|
 | `dns` | `10.12.0.0` | bind9 だけ (FortiGate の DNS 転送先) |
-| `default` | `10.12.0.1` 〜 `10.12.63.255` | IP を指定しない Service (自動で割り当てる) |
+| `default` | `10.12.0.1` 〜 `10.12.63.255` | IP を指定しない Service (自動で割り当てます) |
 | `static` | `10.12.64.0` 〜 `10.12.255.254` | IP を固定する Service |
 
-IP を固定する Service は、`loadBalancerIP` で IP を指定し、`lbipam.technotut.net/static: "true"` のラベルを付ける。ラベルがないと、`static` の範囲の IP は割り当てられない (`<pending>` のままになる)。
+IP を固定する Service は、`loadBalancerIP` で IP を指定し、`lbipam.technotut.net/static: "true"` のラベルを付けます。ラベルがないと、`static` の範囲の IP は割り当てられません (`<pending>` のままになります)。
 ```yaml
 metadata:
   labels:
@@ -138,19 +138,19 @@ spec:
   type: LoadBalancer
   loadBalancerIP: 10.12.77.252
 ```
-プールを分けているのは、IP を指定しない Service が、他の Service の固定 IP を先に取ってしまうのを防ぐため。
+プールを分けているのは、IP を指定しない Service が、他の Service の固定 IP を先に取ってしまうのを防ぐためです。
 
 ## 4. ルーター (FortiGate) の BGP 設定
-Cilium は、LoadBalancer の IP と Pod CIDR を BGP で広報する。\
-AS 番号は全体で `64646` (iBGP)、相手は FortiGate である。
+Cilium は、LoadBalancer の IP と Pod CIDR を BGP で広報します。\
+AS 番号は全体で `64646` (iBGP)、相手は FortiGate です。
 
 | クラスタ | ノード | 相手 | 広報する範囲 |
 |---|---|---|---|
 | `main` | becky, packard, marie | 192.168.99.129 (`dmz`) | `10.12.0.0/16`、`10.15.0.0/16` |
 | `nas` | ongeki | 192.168.98.1 (`port9`) | `10.14.0.0/24`、`10.13.0.0/16` |
 
-iBGP では、受け取った経路を他の iBGP ピアに再広報しないため、FortiGate 側でノードを route reflector client にする。\
-設定例 (実際の設定に合わせて調整する):
+iBGP では、受け取った経路を他の iBGP ピアに再広報しないため、FortiGate 側でノードを route reflector client にします。\
+設定例 (実際の設定に合わせて調整してください):
 ```
 config router bgp
     set as 64646
@@ -176,15 +176,15 @@ end
 ```
 
 ### FortiGate の Kubernetes SDN コネクタ
-FortiGate は Kubernetes の API から Service の IP を取得し、動的アドレス (`k8s-svc`、`k8s-ingress`、`k8s-nas-svc`) としてポリシーに使う。コネクタはクラスタごとに作る。
+FortiGate は Kubernetes の API から Service の IP を取得し、動的アドレス (`k8s-svc`、`k8s-ingress`、`k8s-nas-svc`) としてポリシーに使います。コネクタはクラスタごとに作ります。
 
 | コネクタ | クラスタ | API |
 |---|---|---|
 | `kubernetes` | `main` | `192.168.99.200:6443` |
 | `kubernetes-nas` | `nas` | `192.168.98.2:6443` |
 
-Ansible (`addons` の `fortigate-sdn.yml`) が、各クラスタに読み取りだけの ServiceAccount `kube-system/fortigate-sdn` と、期限のないトークンの Secret `fortigate-sdn-token` を作る。権限は [Fortinet の手順](https://docs.fortinet.com/document/fortigate/latest/administration-guide/508319/private-cloud-k8s-sdn-connector) と同じ (pods、namespaces、nodes、services の get / watch / list)。\
-トークンは Ansible の出力に出さない。各クラスタの control plane (becky、ongeki) で取り出して FortiGate に入れる。クラスタを作り直すとトークンも変わるので、入れ直す。
+Ansible (`addons` の `fortigate-sdn.yml`) が、各クラスタに読み取りだけの ServiceAccount `kube-system/fortigate-sdn` と、期限のないトークンの Secret `fortigate-sdn-token` を作ります。権限は [Fortinet の手順](https://docs.fortinet.com/document/fortigate/latest/administration-guide/508319/private-cloud-k8s-sdn-connector) と同じ (pods、namespaces、nodes、services の get / watch / list) です。\
+トークンは Ansible の出力に出しません。各クラスタの control plane (becky、ongeki) で取り出して FortiGate に入れます。クラスタを作り直すとトークンも変わるので、入れ直してください。
 ```bash
 kubectl -n kube-system get secret fortigate-sdn-token -o jsonpath='{.data.token}' | base64 -d
 ```
@@ -204,7 +204,7 @@ config system sdn-connector
     next
 end
 ```
-状態は FortiGate の `diagnose sys sdn status` で確認できる。
+状態は FortiGate の `diagnose sys sdn status` で確認できます。
 
 ## 5. 動作確認
 ```bash
@@ -213,31 +213,31 @@ kubectl get pods -A
 kubectl get ciliumbgpclusterconfigs
 kubectl -n argocd get applications
 ```
-Argo CD は LoadBalancer の IP でアクセスできる。初期パスワードは次で取得する。
+Argo CD は LoadBalancer の IP でアクセスできます。初期パスワードは次で取得します。
 ```bash
 kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
 ```
-`cd.svc.technotut.net` にアクセスして `admin` ユーザでログインできるか確認する。
+`cd.svc.technotut.net` にアクセスして `admin` ユーザでログインできるか確認します。
 
 ## 6. 任意の設定
 ### Multus
-PRO DJ LINK や Ableton Link のネットワークと L2 で接続する場合に使う。Multus と NetworkAttachmentDefinition は Ansible で導入する (`multus_enabled`、`multus_nads`)。
+PRO DJ LINK や Ableton Link のネットワークと L2 で接続する場合に使います。Multus と NetworkAttachmentDefinition は Ansible で導入します (`multus_enabled`、`multus_nads`)。
 
 | NetworkAttachmentDefinition | ブリッジ | サブネット |
 |---|---|---|
 | `kube-public/vlan10-bridge` | br10 | 10.10.0.0/20 |
 | `kube-public/vlan20-bridge` | br20 | 10.10.16.0/20 |
 
-ブリッジ (br10, br20) は `network` ロールが作る。
+ブリッジ (br10, br20) は `network` ロールが作ります。
 
-Cilium は既定で、他の CNI の設定ファイルを `*.cilium_bak` に退避する。Multus の設定 (`/etc/cni/net.d/00-multus.conflist`) も退避されて、Pod に br10・br20 のインターフェースが付かなくなる。そのため、`multus_enabled: true` のときは Cilium の `cni.exclusive` を `false` にしている。\
-構築済みのクラスタでこの設定を変えたときは、Multus を再起動して設定ファイルを作り直す (`kubectl -n kube-system rollout restart ds/kube-multus-ds`)。
+Cilium は既定で、他の CNI の設定ファイルを `*.cilium_bak` に退避します。Multus の設定 (`/etc/cni/net.d/00-multus.conflist`) も退避されて、Pod に br10・br20 のインターフェースが付かなくなります。そのため、`multus_enabled: true` のときは Cilium の `cni.exclusive` を `false` にしています。\
+構築済みのクラスタでこの設定を変えたときは、Multus を再起動して設定ファイルを作り直します (`kubectl -n kube-system rollout restart ds/kube-multus-ds`)。
 
 ### DNS (bind9 と ExternalDNS)
-`svc.technotut.net` ゾーンを bind9 で提供し、ExternalDNS (RFC2136) が Service・Ingress のレコードを自動登録する。Ansible の `dns` ロールが導入する。\
+`svc.technotut.net` ゾーンを bind9 で提供し、ExternalDNS (RFC2136) が Service・Ingress のレコードを自動登録します。Ansible の `dns` ロールが導入します。\
 https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/rfc2136.md
 
-TSIG の鍵を作り、Ansible Vault の `inventory/group_vars/all/vault.yml` に `vault_externaldns_tsig_secret` として保存する。鍵は Git に平文で置かない。
+TSIG の鍵を作り、Ansible Vault の `inventory/group_vars/all/vault.yml` に `vault_externaldns_tsig_secret` として保存します。鍵は Git に平文で置きません。
 ```bash
 tsig-keygen -a hmac-sha256 externaldns-key
 ansible-vault create inventory/group_vars/all/vault.yml
@@ -254,20 +254,20 @@ PRO DJ LINK のモニター・曲履歴・Ableton Link・Clojure の式のサー
 | データ | 曲の履歴と GUI の設定 (SQLite の `plmux.db`)。NFS 上の PVC `plmux-data` (1Gi) |
 | 式 | `expressions.clj` から ConfigMap `plmux-expressions` を作り、`/config` にマウントする |
 
-Pod は 2 つに分けている。
+Pod は 2 つに分けています。
 
 | Deployment | Multus | 役割 |
 |---|---|---|
-| `plmux` | `kube-public/vlan10-bridge` (`dj`) | PRO DJ LINK を受ける。Web GUI。Carabiner には `plmux-carabiner` の Service (17000/tcp) でつなぐ |
-| `plmux-carabiner` | `kube-public/vlan20-bridge` (`av`) | Ableton Link (Carabiner)。同じイメージを `carabiner` の引数で動かす |
+| `plmux` | `kube-public/vlan10-bridge` (`dj`) | PRO DJ LINK を受ける。Web GUI。Carabiner には `plmux-carabiner` の Service (17000/tcp) でつなぎます |
+| `plmux-carabiner` | `kube-public/vlan20-bridge` (`av`) | Ableton Link (Carabiner)。同じイメージを `carabiner` の引数で動かします |
 
-- Ableton Link は Pod の全てのネットワークで広報される。DJ ネットワーク (VLAN 10) には出さず、AV ネットワーク (VLAN 20) だけに出すため、Carabiner を VLAN 20 だけにつないだ Pod に分けている。Carabiner は 127.0.0.1 でしか待ち受けないので、plmux が中継する。
-- `plmux-carabiner` に届けば Link のテンポを変えられるので、NetworkPolicy で `plmux` の Pod からだけ受ける。テンポと拍を TCP で送るので、同じノードに置くようにしている (podAffinity)。
-- PRO DJ LINK の UDP (50000-50002) を使い、SQLite に書くので、どちらもレプリカは 1 つ (`Recreate`)。hostNetwork は使わないので、どのノードでも動く (br10・br20 は全ノードにある)。
-- VLAN 10・20 のアドレスは NAD の host-local で、ノードごとに `10.10.0.2`・`10.10.16.2` から払い出す。別のノードの Pod と同じアドレスになることがある。そのときは Pod を作り直す。
-- Link のテンポを流すのは 1 つだけにする。個人の PC の BLT などでも Link に追従させていると、テンポの元が 2 つになる。
-- 式から dmxctl などへ送る OSC は、ノードの IP (`dmz`) に SNAT されて FortiGate を通る。FortiGate に `dmz` から送り先への UDP (dmxctl は 9000) を許可するポリシーが必要。
-- クライアントからは、FortiGate が `k8s-svc` への HTTP を許可している VLAN (DJ、AV など) と管理用 VLAN から届く。
+- Ableton Link は Pod の全てのネットワークで広報されます。DJ ネットワーク (VLAN 10) には出さず、AV ネットワーク (VLAN 20) だけに出すため、Carabiner を VLAN 20 だけにつないだ Pod に分けています。Carabiner は 127.0.0.1 でしか待ち受けないので、plmux が中継します。
+- `plmux-carabiner` に届けば Link のテンポを変えられるので、NetworkPolicy で `plmux` の Pod からだけ受けます。テンポと拍を TCP で送るので、同じノードに置くようにしています (podAffinity)。
+- PRO DJ LINK の UDP (50000-50002) を使い、SQLite に書くので、どちらもレプリカは 1 つ (`Recreate`) です。hostNetwork は使わないので、どのノードでも動きます (br10・br20 は全ノードにあります)。
+- VLAN 10・20 のアドレスは NAD の host-local で、ノードごとに `10.10.0.2`・`10.10.16.2` から払い出します。別のノードの Pod と同じアドレスになることがあります。そのときは Pod を作り直してください。
+- Link のテンポを流すのは 1 つだけにしてください。個人の PC の BLT などでも Link に追従させていると、テンポの元が 2 つになります。
+- 式から dmxctl などへ送る OSC は、ノードの IP (`dmz`) に SNAT されて FortiGate を通ります。FortiGate に `dmz` から送り先への UDP (dmxctl は 9000) を許可するポリシーが必要です。
+- クライアントからは、FortiGate が `k8s-svc` への HTTP を許可している VLAN (DJ、AV など) と管理用 VLAN から届きます。
 
 ```bash
 kubectl -n plmux get pods -o wide
@@ -275,37 +275,37 @@ kubectl -n plmux logs deploy/plmux | grep -iE "VirtualCdj|Carabiner|expressions"
 ```
 
 ### クラスタ内のコンテナレジストリ
-自前でビルドしたイメージ (NDI Discovery Server など) は、クラスタ内のレジストリに置く。Ansible が導入する (`registry_enabled: true`)。
+自前でビルドしたイメージ (NDI Discovery Server など) は、クラスタ内のレジストリに置きます。Ansible が導入します (`registry_enabled: true`)。
 
 | 項目 | 内容 |
 |---|---|
-| アドレス | `registry.svc.technotut.net` (固定の ClusterIP `10.96.0.100` の 80 番。HTTP。クラスタの外からは届かない) |
-| データ | becky の NFS の `/nfs/registry` (固定の PV。`reset.yml` で作り直しても残る) |
+| アドレス | `registry.svc.technotut.net` (固定の ClusterIP `10.96.0.100` の 80 番。HTTP。クラスタの外からは届きません) |
+| データ | becky の NFS の `/nfs/registry` (固定の PV。`reset.yml` で作り直しても残ります) |
 | イメージの参照 | `registry.svc.technotut.net/<名前>:<タグ>` (例: `registry.svc.technotut.net/technotut/ndi-discovery-server:main`) |
 
-名前は、次のように引けるようにしている。
-- bind9 (`svc.technotut.net`) に、固定のレコード `registry` → `10.96.0.100` を載せる (`bind9_static_records`)。学内から名前は引けるが、ClusterIP なのでクラスタの外からは届かない。
-- Pod: CoreDNS が `svc.technotut.net` を bind9 に問い合わせる (Ansible が CoreDNS の設定を置く)。kubeadm の更新で CoreDNS の設定が既定に戻ったときは、`site.yml` を流し直す。
-- ノード: TUT の DNS を参照するため bind9 の名前は引けない。`common` ロールが `/etc/hosts` に書く。
+名前は、次のように引けるようにしています。
+- bind9 (`svc.technotut.net`) に、固定のレコード `registry` → `10.96.0.100` を載せます (`bind9_static_records`)。学内から名前は引けますが、ClusterIP なのでクラスタの外からは届きません。
+- Pod: CoreDNS が `svc.technotut.net` を bind9 に問い合わせます (Ansible が CoreDNS の設定を置きます)。kubeadm の更新で CoreDNS の設定が既定に戻ったときは、`site.yml` を流し直します。
+- ノード: TUT の DNS を参照するため bind9 の名前は引けません。`common` ロールが `/etc/hosts` に書きます。
 
-ノードの containerd は、Cilium (kube-proxy の置き換え) を通じて ClusterIP に届く。HTTP のレジストリから取得できるよう、`containerd` ロールが `/etc/containerd/certs.d/registry.svc.technotut.net/hosts.toml` を置く。
+ノードの containerd は、Cilium (kube-proxy の置き換え) を通じて ClusterIP に届きます。HTTP のレジストリから取得できるよう、`containerd` ロールが `/etc/containerd/certs.d/registry.svc.technotut.net/hosts.toml` を置きます。
 
 #### イメージの入れ直し
-`/nfs` のデータが消えたときなど、レジストリに必要なイメージがないときは、`site.yml` が GitHub Actions のワークフローを起動してビルドし直す。
-- 対象は `registry_images` に書く (イメージ名、タグ、リポジトリ、ワークフロー、ブランチ)。
-- `site.yml` の最後に、レジストリに各イメージがあるかを調べ、ないものだけワークフローを起動する。ビルドは self-hosted runner で進み、`site.yml` は完了を待たない。
-- ワークフローの起動には GitHub App (`technotut-k8s-runner`) を使う。App に Repository permissions の **Actions: Read and write** を付け、対象のリポジトリへのアクセスを許可しておく。起動できなかったときは、`site.yml` は止まらずに警告を出す。
-- 対象のワークフローには `workflow_dispatch` のトリガーが必要。
+`/nfs` のデータが消えたときなど、レジストリに必要なイメージがないときは、`site.yml` が GitHub Actions のワークフローを起動してビルドし直します。
+- 対象は `registry_images` に書きます (イメージ名、タグ、リポジトリ、ワークフロー、ブランチ)。
+- `site.yml` の最後に、レジストリに各イメージがあるかを調べ、ないものだけワークフローを起動します。ビルドは self-hosted runner で進み、`site.yml` は完了を待ちません。
+- ワークフローの起動には GitHub App (`technotut-k8s-runner`) を使います。App に Repository permissions の **Actions: Read and write** を付け、対象のリポジトリへのアクセスを許可しておきます。起動できなかったときは、`site.yml` は止まらずに警告を出します。
+- 対象のワークフローには `workflow_dispatch` のトリガーが必要です。
 
 
 ### GitHub Actions の self-hosted runner
-TechnoTUT の全リポジトリから使える self-hosted runner を、[Actions Runner Controller](https://github.com/actions/actions-runner-controller) (ARC) の runner scale set で動かす。Ansible が導入する (`arc_enabled: true`)。
-- runner は常駐しない。ジョブが来たときだけ runner の Pod を作り、CPU とメモリを確保する。ジョブが終わると Pod は消える。
-- 常駐するのは、ジョブを待つ controller と listener の Pod だけ (合わせてメモリ 100MB 程度)。
-- runner は dind (Docker in Docker) で、`docker build` が使える。クラスタ内のレジストリに push できる。
-- 同時に動く runner は 1 つ (`arc_max_runners`)。メモリが少ないため。
+TechnoTUT の全リポジトリから使える self-hosted runner を、[Actions Runner Controller](https://github.com/actions/actions-runner-controller) (ARC) の runner scale set で動かします。Ansible が導入します (`arc_enabled: true`)。
+- runner は常駐しません。ジョブが来たときだけ runner の Pod を作り、CPU とメモリを確保します。ジョブが終わると Pod は消えます。
+- 常駐するのは、ジョブを待つ controller と listener の Pod だけです (合わせてメモリ 100MB 程度)。
+- runner は dind (Docker in Docker) で、`docker build` が使えます。クラスタ内のレジストリに push できます。
+- 同時に動く runner は 1 つです (`arc_max_runners`)。メモリが少ないためです。
 
-ワークフローでは、`runs-on` に runner scale set の名前 (`k8s`) を書く。
+ワークフローでは、`runs-on` に runner scale set の名前 (`k8s`) を書きます。
 ```yaml
 jobs:
   build:
@@ -319,14 +319,14 @@ jobs:
 ```
 
 #### GitHub App の準備
-ARC は GitHub App で GitHub に接続する。TechnoTUT の org owner が作る。
-1. TechnoTUT の Settings → Developer settings → GitHub Apps → New GitHub App で作る。
+ARC は GitHub App で GitHub に接続します。TechnoTUT の org owner が作成します。
+1. TechnoTUT の Settings → Developer settings → GitHub Apps → New GitHub App で作成します。
    - Homepage URL: 任意 (例: リポジトリの URL)
-   - Webhook: Active のチェックを外す
-   - 権限: Organization permissions の **Self-hosted runners** を Read and write にする。イメージの入れ直しのため、Repository permissions の **Actions** も Read and write にする (Metadata は Read-only のまま)
-2. 作成後、App ID を控え、Private key を生成してダウンロードする。
-3. Install App から TechnoTUT にインストールする。リポジトリは All repositories か、`registry_images` のリポジトリを含めて選ぶ。インストール後の URL の末尾の数字が、インストール ID。
-4. Ansible Vault に保存する。
+   - Webhook: Active のチェックを外します
+   - 権限: Organization permissions の **Self-hosted runners** を Read and write にします。イメージの入れ直しのため、Repository permissions の **Actions** も Read and write にします (Metadata は Read-only のまま)
+2. 作成後、App ID を控え、Private key を生成してダウンロードします。
+3. Install App から TechnoTUT にインストールします。リポジトリは All repositories か、`registry_images` のリポジトリを含めて選びます。インストール後の URL の末尾の数字が、インストール ID です。
+4. Ansible Vault に保存します。
 ```bash
 ansible-vault edit inventory/group_vars/all/vault.yml
 ```
@@ -338,31 +338,31 @@ vault_arc_github_app_private_key: |
   ...
   -----END RSA PRIVATE KEY-----
 ```
-5. `site.yml` を流す。GitHub App の情報が Vault にないときは、controller だけを入れて runner は作らない (警告が出る)。
+5. `site.yml` を流します。GitHub App の情報が Vault にないときは、controller だけを入れて runner は作りません (警告が出ます)。
 
-TechnoTUT の Settings → Actions → Runner groups で、`Default` グループを public リポジトリにも使わせる設定にしない。privileged な Pod でジョブが動くため。
+TechnoTUT の Settings → Actions → Runner groups で、`Default` グループを public リポジトリにも使わせる設定にしないでください。privileged な Pod でジョブが動くためです。
 
 ### NAS (ongeki) と Cluster Mesh
-ongeki は、ongeki だけで動く Kubernetes のクラスタ `nas` である。ホストで動いていた Samba を、このクラスタのコンテナに移した。\
-`main` と `nas` は Cilium Cluster Mesh でつなぎ、`nas` のアプリは `main` の Argo CD が配る。
+ongeki は、ongeki だけで動く Kubernetes のクラスタ `nas` です。ホストで動いていた Samba を、このクラスタのコンテナに移しました。\
+`main` と `nas` は Cilium Cluster Mesh でつなぎ、`nas` のアプリは `main` の Argo CD が配ります。
 
 | 項目 | 内容 |
 |---|---|
-| Ansible | `ansible-playbook -i inventory/nas.yml playbooks/site.yml`。変数は `inventory/group_vars/all` (共通) を `inventory/group_vars/nas_cluster.yml` で上書きする |
-| OS | AlmaLinux 10 (SELinux は Enforcing のまま)。Ansible のロールは Debian と RHEL 系の両方に対応している |
-| ネットワーク | FortiGate の `port9` (`192.168.98.0/30`)。`main` のノードと L2 が別なので、Pod 間の通信は FortiGate が BGP の経路で中継する |
-| 動かすもの | Cilium (BGP、LB IPAM、Cluster Mesh) と Samba だけ。Multus、NFS、Argo CD、bind9 などは入れない |
-| データ | `/nas` (sda + sdb の md RAID0、ext4)。local PV でそのまま Samba にマウントする |
+| Ansible | `ansible-playbook -i inventory/nas.yml playbooks/site.yml`。変数は `inventory/group_vars/all` (共通) を `inventory/group_vars/nas_cluster.yml` で上書きします |
+| OS | AlmaLinux 10 (SELinux は Enforcing のまま)。Ansible のロールは Debian と RHEL 系の両方に対応しています |
+| ネットワーク | FortiGate の `port9` (`192.168.98.0/30`)。`main` のノードと L2 が別なので、Pod 間の通信は FortiGate が BGP の経路で中継します |
+| 動かすもの | Cilium (BGP、LB IPAM、Cluster Mesh) と Samba だけです。Multus、NFS、Argo CD、bind9 などは入れません |
+| データ | `/nas` (sda + sdb の md RAID0、ext4)。local PV でそのまま Samba にマウントします |
 | Samba | [`k8s/manifest/nas/`](https://github.com/TechnoTUT/Infra/tree/main/k8s/manifest/nas)。イメージは [TechnoTUT/samba](https://github.com/TechnoTUT/samba) (`ghcr.io/technotut/samba`) |
-| アドレス | `drive.svc.technotut.net` → `10.14.0.128` (LoadBalancer。`main` の bind9 に固定で載せる)。SMB (TCP 445) だけ |
-| アカウント | `vault.yml` の `vault_samba_smbpasswd` (smbpasswd 形式) から Ansible が Secret `samba-accounts` を作る |
+| アドレス | `drive.svc.technotut.net` → `10.14.0.128` (LoadBalancer。`main` の bind9 に固定で載せます)。SMB (TCP 445) だけ |
+| アカウント | `vault.yml` の `vault_samba_smbpasswd` (smbpasswd 形式) から Ansible が Secret `samba-accounts` を作ります |
 
 Cluster Mesh の構成:
-- クラスタの名前と ID は `cilium_cluster_name` と `cilium_cluster_id` (`main` は 1、`nas` は 2)。**変えたら、そのクラスタの全ての Pod を作り直す** (セキュリティ ID に cluster ID が入るため)。
-- Pod CIDR は重ならないようにする (`main` は 10.15.0.0/16、`nas` は 10.13.0.0/16)。両方を含む `10.12.0.0/14` を `ipv4NativeRoutingCIDR` にし、Pod 間の通信を NAT しない。VLAN 10・20 (`10.10.0.0/16`) や外部拠点 (`10.8.0.0/16`) を含めると、その宛先への通信が NAT されずに戻りの経路が合わなくなるため、範囲に入れない。
-- clustermesh-apiserver は、各クラスタのノードの IP の 32379 番 (NodePort) で公開する。相手の指定は `cilium_clustermesh_clusters`。
-- 両方のクラスタの証明書を同じ CA で作る。CA は `vault.yml` の `vault_cilium_ca_crt` と `vault_cilium_ca_key`。
-- 別のクラスタの Service を使うときは、両方のクラスタに同じ名前空間・名前の Service を置き、`service.cilium.io/global: "true"` の注釈を付ける ([Global Services](https://docs.cilium.io/en/stable/network/clustermesh/services/))。
+- クラスタの名前と ID は `cilium_cluster_name` と `cilium_cluster_id` (`main` は 1、`nas` は 2) です。**変えたら、そのクラスタの全ての Pod を作り直してください** (セキュリティ ID に cluster ID が入るため)。
+- Pod CIDR は重ならないようにします (`main` は 10.15.0.0/16、`nas` は 10.13.0.0/16)。両方を含む `10.12.0.0/14` を `ipv4NativeRoutingCIDR` にし、Pod 間の通信を NAT しません。VLAN 10・20 (`10.10.0.0/16`) や外部拠点 (`10.8.0.0/16`) を含めると、その宛先への通信が NAT されずに戻りの経路が合わなくなるため、範囲に入れません。
+- clustermesh-apiserver は、各クラスタのノードの IP の 32379 番 (NodePort) で公開します。相手の指定は `cilium_clustermesh_clusters` です。
+- 両方のクラスタの証明書を同じ CA で作ります。CA は `vault.yml` の `vault_cilium_ca_crt` と `vault_cilium_ca_key` です。
+- 別のクラスタの Service を使うときは、両方のクラスタに同じ名前空間・名前の Service を置き、`service.cilium.io/global: "true"` の注釈を付けます ([Global Services](https://docs.cilium.io/en/stable/network/clustermesh/services/))。
 
 状態の確認 (各クラスタの control plane で):
 ```bash
@@ -371,32 +371,32 @@ kubectl -n kube-system exec ds/cilium -c cilium-agent -- cilium-dbg status | gre
 ```
 
 RHEL 系のノードで Ansible が Debian と違う設定をするところ:
-- パッケージは dnf で入れる。containerd.io と kubelet などは、リポジトリの `exclude` で通常の `dnf update` から外す (Debian の `apt-mark hold` に当たる)。
-- NetworkManager に `/etc/resolv.conf` を書き換えさせない (`dns=none`)。Cilium のインターフェースは NetworkManager の管理から外す。
-- firewalld は止める (Cilium と競合するため)。`nic` 以外にデフォルト経路 (学内の無線 LAN など) があると、その先からも kubelet や NodePort に届くので、Ansible が警告を出す。不要な接続は止める。
-- `br_netfilter` のために `kernel-modules-extra` を入れる。
-- ホストの SELinux は Enforcing のまま。containerd の CRI では SELinux を使わない (`containerd_enable_selinux: false`)。使うと、kubeadm の static Pod (etcd、kube-apiserver) が `/var/lib/etcd` や `/etc/kubernetes/pki` を読めずに起動しない。`nas` ロールは `/nas` のラベルを `container_file_t` にする (CRI の SELinux を有効にしても Samba が読み書きできるように)。
+- パッケージは dnf で入れます。containerd.io と kubelet などは、リポジトリの `exclude` で通常の `dnf update` から外します (Debian の `apt-mark hold` に当たります)。
+- NetworkManager に `/etc/resolv.conf` を書き換えさせません (`dns=none`)。Cilium のインターフェースは NetworkManager の管理から外します。
+- firewalld は止めます (Cilium と競合するため)。`nic` 以外にデフォルト経路 (学内の無線 LAN など) があると、その先からも kubelet や NodePort に届くので、Ansible が警告を出します。不要な接続は止めてください。
+- `br_netfilter` のために `kernel-modules-extra` を入れます。
+- ホストの SELinux は Enforcing のままです。containerd の CRI では SELinux を使いません (`containerd_enable_selinux: false`)。使うと、kubeadm の static Pod (etcd、kube-apiserver) が `/var/lib/etcd` や `/etc/kubernetes/pki` を読めずに起動しません。`nas` ロールは `/nas` のラベルを `container_file_t` にします (CRI の SELinux を有効にしても Samba が読み書きできるようにするため)。
 
-Samba の設定は ConfigMap (`k8s/manifest/nas/configmap.yaml`) にある。変えたら `nas` のクラスタで `kubectl -n nas rollout restart deployment/samba` を実行する。\
-パスワードを変えるときは、新しい行を作って `vault_samba_smbpasswd` を差し替え、`nas` の `site.yml` を流してから Pod を作り直す (行の作り方は [TechnoTUT/samba の README](https://github.com/TechnoTUT/samba))。
+Samba の設定は ConfigMap (`k8s/manifest/nas/configmap.yaml`) にあります。変えたら `nas` のクラスタで `kubectl -n nas rollout restart deployment/samba` を実行してください。\
+パスワードを変えるときは、新しい行を作って `vault_samba_smbpasswd` を差し替え、`nas` の `site.yml` を流してから Pod を作り直します (行の作り方は [TechnoTUT/samba の README](https://github.com/TechnoTUT/samba))。
 
 #### 構築と移行の手順
-`main` の Cilium の設定 (クラスタの名前と ID、`ipv4NativeRoutingCIDR`) が変わるので、`main` の全ての Pod を作り直す。また `nas` の `site.yml` を流すと、ongeki のホストの Samba が止まる。どちらもイベントのない時間に行う。
+`main` の Cilium の設定 (クラスタの名前と ID、`ipv4NativeRoutingCIDR`) が変わるので、`main` の全ての Pod を作り直します。また `nas` の `site.yml` を流すと、ongeki のホストの Samba が止まります。どちらもイベントのない時間に行ってください。
 
-1. **バックアップ**: `/nas` は RAID0 で冗長性がない。できれば先に別のディスクに写す。
-2. **Vault**: `ansible-vault edit inventory/group_vars/all/vault.yml` で次を入れる (例は `vault.yml.example`)。
+1. **バックアップ**: `/nas` は RAID0 で冗長性がありません。できれば先に別のディスクに写してください。
+2. **Vault**: `ansible-vault edit inventory/group_vars/all/vault.yml` で次を入れます (例は `vault.yml.example`)。
    - `vault_samba_smbpasswd`: ongeki で `sudo pdbedit -L -w` を実行した出力。
-   - `vault_cilium_ca_crt`、`vault_cilium_ca_key`: Cluster Mesh の CA。`openssl req -x509 -newkey rsa:2048 -nodes -days 3650 -subj "/CN=Cilium CA" -keyout ca.key -out ca.crt` で作る。
-3. **FortiGate**: BGP の相手、`main` と `nas` の間の通信、Samba への SMB を許可する (設定例は下)。DNS の `drive` はまだ消さない。
-4. **`main` にマージ**: `k8s/manifest/nas/` を Argo CD が参照できるようにする。
-5. **`main` の Ansible**: `ansible-playbook playbooks/site.yml`。Cilium が新しい設定で再起動し、bind9 に `drive` が載る。Argo CD の Application `nas` は、手順 4 のマージで `root` が作る (`nas` のクラスタを登録するまではエラーになる)。
-6. **`main` の Pod を作り直す**: Cilium の再起動が終わってから、Deployment・DaemonSet・StatefulSet を順に再起動する。
+   - `vault_cilium_ca_crt`、`vault_cilium_ca_key`: Cluster Mesh の CA。`openssl req -x509 -newkey rsa:2048 -nodes -days 3650 -subj "/CN=Cilium CA" -keyout ca.key -out ca.crt` で作ります。
+3. **FortiGate**: BGP の相手、`main` と `nas` の間の通信、Samba への SMB を許可します (設定例は下)。DNS の `drive` はまだ消しません。
+4. **`main` にマージ**: `k8s/manifest/nas/` を Argo CD が参照できるようにします。
+5. **`main` の Ansible**: `ansible-playbook playbooks/site.yml`。Cilium が新しい設定で再起動し、bind9 に `drive` が載ります。Argo CD の Application `nas` は、手順 4 のマージで `root` が作ります (`nas` のクラスタを登録するまではエラーになります)。
+6. **`main` の Pod を作り直す**: Cilium の再起動が終わってから、Deployment・DaemonSet・StatefulSet を順に再起動します。
    ```bash
    for ns in $(kubectl get ns -o jsonpath='{.items[*].metadata.name}'); do
      kubectl -n "$ns" rollout restart deployment,daemonset,statefulset 2>/dev/null
    done
    ```
-7. **`nas` の Ansible**: `ansible-playbook -i inventory/nas.yml playbooks/site.yml`。ongeki で `kubeadm init` を行い、Cilium、Samba の Secret を入れ、`main` の Argo CD に `nas` のクラスタを登録する。Argo CD が Samba を配る。
+7. **`nas` の Ansible**: `ansible-playbook -i inventory/nas.yml playbooks/site.yml`。ongeki で `kubeadm init` を行い、Cilium、Samba の Secret を入れ、`main` の Argo CD に `nas` のクラスタを登録します。Argo CD が Samba を配ります。
 8. **確認**:
    ```bash
    # ongeki で
@@ -405,10 +405,10 @@ Samba の設定は ConfigMap (`k8s/manifest/nas/configmap.yaml`) にある。変
    kubectl -n nas logs deploy/samba      # entrypoint: account technotut (uid 1000)
    kubectl -n kube-system exec ds/cilium -c cilium-agent -- cilium-dbg troubleshoot clustermesh
    ```
-   FortiGate で `get router info bgp network 10.14.0.128/32` を実行し、次ホップが `192.168.98.2` になっていることを確認する。MGMT から `smbclient //10.14.0.128/nas -U technotut -m SMB3 -c ls` で中身が見えることを確認する。
-9. **DNS**: FortiGate の `drive` のレコードを消す。以後は bind9 が `drive.svc.technotut.net` → `10.14.0.128` を返す。`\\drive.svc.technotut.net\nas` で接続しているクライアントはそのまま使える。`192.168.98.2` を直接指定しているクライアントは接続先を変える。
+   FortiGate で `get router info bgp network 10.14.0.128/32` を実行し、次ホップが `192.168.98.2` になっていることを確認します。MGMT から `smbclient //10.14.0.128/nas -U technotut -m SMB3 -c ls` で中身が見えることを確認します。
+9. **DNS**: FortiGate の `drive` のレコードを消します。以後は bind9 が `drive.svc.technotut.net` → `10.14.0.128` を返します。`\\drive.svc.technotut.net\nas` で接続しているクライアントはそのまま使えます。`192.168.98.2` を直接指定しているクライアントは接続先を変えてください。
 
-FortiGate の設定例 (実際の設定に合わせて調整する):
+FortiGate の設定例 (実際の設定に合わせて調整してください):
 ```
 config firewall address
     edit "k8s-cl"
@@ -470,32 +470,32 @@ config system dns-database
     next
 end
 ```
-FortiGate は、クラスタごとの Kubernetes SDN コネクタで Service の IP を動的アドレスにする (`main` は `kubernetes` → `k8s-svc`、`nas` は `kubernetes-nas` → `k8s-nas-svc`。設定は下の「FortiGate の Kubernetes SDN コネクタ」)。Pod CIDR は固定のアドレス (`k8s-cl`、`k8s-nas-pod`) にする。\
-Cluster Mesh では、Pod から相手のクラスタのノードへの通信も NAT されない (相手のノードも Cilium のノードの一覧に入るため)。そのため、ポリシーには両方のクラスタの Pod CIDR を入れる。\
-`main` と `nas` の間で使う主な通信は、Argo CD → ongeki の API (TCP 6443)、clustermesh-apiserver (TCP 32379、両方向)、Pod 間の通信 (任意のポート) である。
+FortiGate は、クラスタごとの Kubernetes SDN コネクタで Service の IP を動的アドレスにします (`main` は `kubernetes` → `k8s-svc`、`nas` は `kubernetes-nas` → `k8s-nas-svc`。設定は上の「FortiGate の Kubernetes SDN コネクタ」)。Pod CIDR は固定のアドレス (`k8s-cl`、`k8s-nas-pod`) にします。\
+Cluster Mesh では、Pod から相手のクラスタのノードへの通信も NAT されません (相手のノードも Cilium のノードの一覧に入るため)。そのため、ポリシーには両方のクラスタの Pod CIDR を入れます。\
+`main` と `nas` の間で使う主な通信は、Argo CD → ongeki の API (TCP 6443)、clustermesh-apiserver (TCP 32379、両方向)、Pod 間の通信 (任意のポート) です。
 
-ホストの Samba に戻すときは、Argo CD の `nas` を止めてから、ongeki で `sudo semanage fcontext -d '/nas(/.*)?' && sudo restorecon -R /nas` でラベルを戻し、`sudo systemctl enable --now smb` で起動する。FortiGate の `drive` のレコードも戻す。
+ホストの Samba に戻すときは、Argo CD の `nas` を止めてから、ongeki で `sudo semanage fcontext -d '/nas(/.*)?' && sudo restorecon -R /nas` でラベルを戻し、`sudo systemctl enable --now smb` で起動します。FortiGate の `drive` のレコードも戻してください。
 
 ## 構築済みのクラスタに設定変更を反映する
-`inventory/group_vars/all/main.yml` やロールを変えたときは、構築と同じコマンドで `site.yml` を流し直す。データは消えない。
+`inventory/group_vars/all/main.yml` やロールを変えたときは、構築と同じコマンドで `site.yml` を流し直します。データは消えません。
 ```bash
 ansible-playbook playbooks/site.yml
 ```
-`site.yml` は何度流しても同じ状態になる (冪等) ように作っている。すでに設定済みの部分は変更されず、差分だけが反映される。`kubeadm init` と `kubeadm join` も、ノードがすでにクラスタに参加していれば実行されない。
+`site.yml` は何度流しても同じ状態になる (冪等) ように作っています。すでに設定済みの部分は変更されず、差分だけが反映されます。`kubeadm init` と `kubeadm join` も、ノードがすでにクラスタに参加していれば実行されません。
 
-Ansible で反映するものと、Argo CD で反映するものがある。
+Ansible で反映するものと、Argo CD で反映するものがあります。
 
 | 変更するもの | 反映の方法 |
 |---|---|
-| Cilium、LoadBalancer の IP プール、BGP、Multus、Argo CD、bind9・ExternalDNS など (`k8s/ansible/`) | `site.yml` を流す |
-| Argo CD の Application の追加・削除 (`k8s/manifest/apps/`) | `main` にマージすると、Argo CD の `root` が登録する。`site.yml` は不要 |
-| 各アプリの manifest (`k8s/manifest/`) | `main` にマージすると、Argo CD が同期する。`site.yml` は不要 |
+| Cilium、LoadBalancer の IP プール、BGP、Multus、Argo CD、bind9・ExternalDNS など (`k8s/ansible/`) | `site.yml` を流します |
+| Argo CD の Application の追加・削除 (`k8s/manifest/apps/`) | `main` にマージすると、Argo CD の `root` が登録します。`site.yml` は不要です |
+| 各アプリの manifest (`k8s/manifest/`) | `main` にマージすると、Argo CD が同期します。`site.yml` は不要です |
 
-Argo CD は GitHub の `main` を参照する。manifest の変更と Ansible の変更が関係するときは、manifest を先に `main` に入れ、Argo CD の同期を確認してから `site.yml` を流す。\
-例: IP を固定する Service を足すときは、`lbipam.technotut.net/static` ラベルを付けた manifest が同期された後でないと、`static` プールから IP が割り当てられない。
+Argo CD は GitHub の `main` を参照します。manifest の変更と Ansible の変更が関係するときは、manifest を先に `main` に入れ、Argo CD の同期を確認してから `site.yml` を流してください。\
+例: IP を固定する Service を足すときは、`lbipam.technotut.net/static` ラベルを付けた manifest が同期された後でないと、`static` プールから IP が割り当てられません。
 
 ## クラスタを作り直す
-全ノードのクラスタを破棄して、データも消える。実行前に確認のプロンプトが出る。
+全ノードのクラスタを破棄するため、データも消えます。実行前に確認のプロンプトが出ます。
 ```bash
 ansible-playbook playbooks/reset.yml
 ansible-playbook playbooks/site.yml
