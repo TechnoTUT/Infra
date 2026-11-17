@@ -53,6 +53,7 @@ DJ 機器の PRO DJ LINK、映像伝送の NDI・RTMP、テンポ同期の Ablet
 | --- | --- |
 | `cam1/`, `cam2/` | カメラ用の nginx と CoreDNS |
 | `dmx/` | QLC+（照明制御） |
+| `dmxsim/` | 照明シミュレータ（Art-Net を受けて 3D で表示。イメージは [TechnoTUT/dmxsim](https://github.com/TechnoTUT/dmxsim)） |
 | `live/` | RTMP サーバ |
 | `ndi/` | NDI Discovery Server |
 | `speedtest/` | 速度測定 |
