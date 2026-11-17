@@ -4,6 +4,9 @@ slug: /
 sidebar_position: 1
 ---
 
+import Mermaid from '../src/components/Mermaid.jsx';
+import { overviewDiagram } from '../src/data/overviewDiagram.js';
+
 このページ及び図・コードは、TechnoTUTの[GitHubリポジトリ](https://github.com/TechnoTUT/Infra)で管理されています。
 
 <RepoCard repo="TechnoTUT/Infra" />
@@ -22,3 +25,16 @@ NDI(Network Device Interface)やRTMPを活用した高品質な映像の伝送�
 ### 4. 分散処理による高負荷処理の実行・高信頼性の確保
 ネットワークを活用することで、複数の計算機に処理を分散し1台の計算機では不可能な処理を実行できます。これにより、大規模な映像処理を可能にし、イベントの演出や技術的な革新を支援します。\
 また、複数の計算機に同じ処理を実行させることで、1台の計算機が故障してもサービスを継続できる高信頼性なシステムを構築します。
+
+## 会場内ネットワークの全体像
+
+会場内では、用途ごとに分割した VLAN と [Kubernetes コンテナ基盤](/computing) を中心に、DJ・VJ・照明・PA・映像配信の各システムが連携して動作しています。
+
+<Mermaid code={overviewDiagram} fullPageTo="/diagram" />
+
+- **DJ・演出同期 ([PRO DJ LINK](/service/prodjlink) / [plmux](/service/plmux) / Ableton Link / OSC)**: DJ ブースの再生状態やテンポを Kubernetes 上の `plmux` が取得し、Ableton Link や OSC で VJ ソフトや照明制御 (`dmxctl`) へ同期します。
+- **映像伝送 ([NDI](/service/ndi) / [utone-linux](/service/utone-linux))**: カメラ・PC・VJ 間の映像は AV ネットワーク (VLAN 20) 上の NDI で低遅延に共有し、プロジェクタ出力やブースディスプレイ (`ldisp`)、照明の色連動に活用します。
+- **映像配信 ([RTMP](/service/live))**: カメラからの映像は Kubernetes 上の中継・配信サーバへ RTMP で集約し、OBS での取り込みや会場外への配信に利用します。
+- **照明制御 ([Art-Net](/service/art-net) / [dmxsim](/service/dmxsim))**: `dmxctl` などから送出された Art-Net 信号で LED BAR や DMX 灯体を制御し、事前検証用の 3D シミュレータにも接続できます。
+- **音響制御 ([PA](/service/pa))**: 独立した PA 用 VLAN 上のデジタルミキサー (Soundcraft Ui12) を、会場 Wi-Fi 経由の iPad や `soundcraft-ui-mcp` から操作します。
+- **ネットワーク・コンテナ基盤 ([通信基盤](/network) / [計算基盤](/computing))**: FortiGate 100D とコアスイッチ (N-1) が各 VLAN の制御とルーティングを担い、Kubernetes クラスタが各種サービスを冗長構成で提供します。
