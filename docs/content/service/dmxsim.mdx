@@ -34,7 +34,6 @@ QLC+の場合は、`Inputs/Outputs` タブでUniverseの出力に `ArtNet` を�
 <Admonition type="info">
 
 - **送信先は直接指定する**: 照明シミュレータはコンテナ基盤上 (`10.12.0.0/16`) で動いているため、ブロードキャストやArtPollによる自動検出は届きません。送信先のIPアドレスを直接指定してください。
-- **通信できるVLAN**: 画面 (HTTP) は DJ (VLAN 10) と AV (VLAN 20) から開けます。Art-Net (UDP 6454) は MGMT (VLAN 99) から送信できます。
 - **同時に送らない**: 複数の照明ソフトから同じUniverseに送ると、値が交互に届いて表示がちらつきます。
 
 </Admonition>
