@@ -44,7 +44,7 @@ DJ 機器の PRO DJ LINK、映像伝送の NDI・RTMP、テンポ同期の Ablet
 | [`network/`](./network/) | スイッチの設定（`config/`）、トポロジ図・配線図（draw.io） |
 | [`media/`](./media/) | 図などの素材 |
 | `.devcontainer/` | ドキュメント編集用の Dev Container |
-| `.github/` | CI（ドキュメントのビルド・リンクテスト）と Cloudflare Pages へのデプロイ |
+| `.github/` | CI（ドキュメントのビルド・リンクテスト、Podman の疑似クラスタでの Ansible のテスト）と Cloudflare Pages へのデプロイ |
 
 ### `k8s/manifest/` のアプリケーション
 

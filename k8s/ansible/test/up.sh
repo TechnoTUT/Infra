@@ -15,7 +15,7 @@ for n in becky:200 packard:201; do
   $P run -d --name "$h" --hostname "$h" --privileged --systemd=always --cgroupns=private \
     --network "$NET" --ip "$ip" --memory 2500m \
     -v "$h-containerd:/var/lib/containerd" -v "$h-kubelet:/var/lib/kubelet" \
-    -v /lib/modules:/lib/modules:ro "$IMG" >/dev/null
+    -v /lib/modules:/lib/modules:ro -v /boot:/boot:ro "$IMG" >/dev/null
 done
 
 # Cilium が /sys/fs/bpf を使えるように、bpffs を shared にする（コンテナ固有の対処）
