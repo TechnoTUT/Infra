@@ -1,4 +1,4 @@
-N-4#show run
+N-4(config)#sho run
 !
 service password-encryption
 !
@@ -6,10 +6,10 @@ hostname N-4
 !
 no banner motd
 !
-username manager privilege 15 password 8 $1$bJoVec4D$JwOJGPr7YqoExA0GVasdE0
+username *** privilege 15 password 8 ***
 !
 ssh server v2only
-ssh server allow-users manager
+ssh server allow-users ***
 service ssh
 !
 no service telnet
@@ -28,7 +28,7 @@ ip domain-lookup
 no service dhcp-server
 spanning-tree mode rstp
 !
-no lacp global-passive-mode enable
+lacp global-passive-mode enable
 !
 vlan database
  vlan 10,20,30,40,42-45,99-100 state enable
@@ -91,5 +91,3 @@ line con 0
 line vty 0 4
 !
 end
-
-N-4#
