@@ -16,8 +16,9 @@ TechnoTUT Network では、Kubernetes をコンテナオーケストレーショ
 ## Kubernetes とは
 Kubernetesは、複数サーバで複数のコンテナを管理するためのツールです。
 
-TechnoTUTでは、以下のリポジトリでKubernetesの管理を行っています。\
-[![TechnoTUT/Infra - GitHub](https://gh-card.dev/repos/TechnoTUT/Infra.svg?fullname=)](https://github.com/TechnoTUT/Infra)
+TechnoTUTでは、以下のリポジトリでKubernetesの管理を行っています。
+
+<RepoCard repo="TechnoTUT/Infra" />
 
 ## クラスタ構成
 Kubernetesのクラスタは2つあります。3台の物理サーバ(becky, packard, marie)で構成する `main` と、NAS の ongeki だけで動く `nas` です。2つのクラスタは Cilium Cluster Mesh でつないでいます。becky, packard, marie には Debian 13 trixie が、ongeki には AlmaLinux 10 がインストールされ、Kubeadmでクラスタが構築されています。

@@ -8,6 +8,7 @@
     "start": "vite",
     "build": "vite build && vite build --ssr src/entry-server.jsx --outDir .ssr && node scripts/prerender.mjs",
     "serve": "node scripts/serve.mjs",
+    "fetch-repos": "node scripts/fetch-repos.mjs",
     "clear": "rm -rf build .ssr"
   },
   "dependencies": {
