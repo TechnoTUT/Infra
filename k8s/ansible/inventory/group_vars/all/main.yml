@@ -4,8 +4,6 @@ k8s_minor: "1.37"            # pkgs.k8s.io のリポジトリ系列
 cilium_version: "1.20.4"
 helm_version: "v4.3.1"
 multus_version: "v4.3.1"
-kubevirt_version: "v1.9.1"
-cdi_version: "v1.66.1"
 argocd_chart_version: "10.12.1"
 arc_version: "0.15.1"                 # actions-runner-controller (gha-runner-scale-set)
 nfs_provisioner_chart_version: "4.0.18"
@@ -58,7 +56,6 @@ common_packages_absent:
   - firmware-amd-graphics
 
 # ===== オプション =====
-kubevirt_enabled: true       # VM を動かすときに使う。BLT の VM は plmux に置き換えたので、いま VM はない（false にできる）
 multus_enabled: true         # PRO DJ LINK / Ableton Link 用の L2 接続
 # NetworkAttachmentDefinition（現行クラスタと同じ。ブリッジは各ノードの /etc/network/interfaces で作る）
 multus_nads:
