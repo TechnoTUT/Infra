@@ -163,5 +163,20 @@
         "pct": 4.9
       }
     ]
+  },
+  "TechnoTUT/soundcraft-ui-mcp": {
+    "description": "AIOps for \"The Utopia Tone\": MCP server that lets AI agents safely operate the Soundcraft Ui digital mixer",
+    "languages": [
+      {
+        "name": "Python",
+        "color": "#3572A5",
+        "pct": 99.5
+      },
+      {
+        "name": "Dockerfile",
+        "color": "#384d54",
+        "pct": 0.5
+      }
+    ]
   }
 }

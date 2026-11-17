@@ -1,6 +1,6 @@
 ---
 title: Live
-sidebar_position: 6
+sidebar_position: 9
 ---
 
 網内では、RTMP配信サーバを運用しています。\
@@ -21,7 +21,42 @@ RTMPについて: https://ja.wikipedia.org/wiki/Real_Time_Messaging_Protocol
 
 <RepoCard repo="TechnoTUT/sony-camera-rtmp-relay" />
 
-配信にあたって、カメラのWi-Fi設定でSSID `TechnoTUT_Cam1` または `TechnoTUT_Cam2` に接続し、カメラに接続設定を書き込む必要があります。設定方法は上記リポジトリのREADMEを参照してください。
+#### 仕組み
+ソニー製カメラ (Sony HDR-CX680 等) のライブストリーミング機能は、もともと Ustream (`api.ustream.tv`) への配信を前提としています。そこで、カメラ側の名前解決と API 応答をコンテナ基盤上でエミュレートし、網内の `rtmp-live-server` へ中継する仕組みを採用しています。
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as オペレーター
+    participant Cam as ソニー製カメラ
+    participant DNS as CoreDNS (:53)
+    participant HTTP as Nginx HTTP (:80)
+    participant RTMP as Nginx RTMP (:1935)
+    participant Dest as rtmp-live-server<br/>(live.svc.technotut.net)
+
+    User->>Cam: ライブストリーミング開始
+    Cam->>DNS: DNS 問い合わせ (api.ustream.tv)
+    DNS-->>Cam: 中継用 Nginx の IP を返却
+    Cam->>HTTP: GET /users/self/channels.json
+    HTTP-->>Cam: 偽の配信先情報を返却 (rtmp://api.ustream.tv/mystream)
+    Cam->>RTMP: RTMP 配信開始 (app: mystream)
+    RTMP->>Dest: RTMP リレー (live/cam1 または live/cam2)
+```
+
+カメラが 2 台同時に同じ仕組みで配信できるよう、`cam1` (VLAN 44, `TechnoTUT_Cam1`) と `cam2` (VLAN 45, `TechnoTUT_Cam2`) でそれぞれ独立した CoreDNS と Nginx を動かしています。
+
+| カメラ | SSID / VLAN | CoreDNS IP | Nginx (中継) IP | 転送先 |
+| :--- | :--- | :--- | :--- | :--- |
+| `cam1` | `TechnoTUT_Cam1` (VLAN 44) | `10.12.77.253` | `10.12.77.252` | `rtmp://rtmp-service.live:1935/live/cam1` |
+| `cam2` | `TechnoTUT_Cam2` (VLAN 45) | `10.12.77.254` | `10.12.77.251` | `rtmp://rtmp-service.live:1935/live/cam2` |
+
+#### カメラの初期設定・配信手順
+配信にあたって、カメラのWi-Fi設定でSSID `TechnoTUT_Cam1` または `TechnoTUT_Cam2` に接続し、あらかじめ [Sony-PMCA-RE](https://github.com/ma1co/Sony-PMCA-RE/releases) を使ってカメラにダミーの配信設定ファイル (`stream.cfg`) を書き込んでおく必要があります。
+
+```powershell
+curl https://raw.githubusercontent.com/TechnoTUT/sony-camera-rtmp-relay/refs/heads/main/stream.cfg -o stream.cfg
+pmca-console-v0.18-win.exe stream -w stream.cfg
+```
 
 配信を行うには、カメラ本体から以下のように操作します。\
 https://helpguide.sony.net/cam/1610/v1/ja/contents/TP0000949148.html

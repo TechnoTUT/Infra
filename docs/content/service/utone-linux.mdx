@@ -1,26 +1,28 @@
 ---
 title: utone-linux
-sidebar_position: 8
+sidebar_position: 10
 ---
 
-[utone-linux](https://github.com/TechnoTUT/utone-linux) は、The Utopia Tone の会場ネットワークの末端 (エッジ) に置く端末向けの Linux です。HDMI と NDI を相互に変換する IP ゲートウェイのほか、入口のフライヤー表示や、NDI をブースディスプレイ用に変換する IP-IP の映像変換も担います。Debian Live をもとにしており、DVD や USB メモリから起動するだけで使えます。OS のインストールは不要です。
+[utone-linux](https://github.com/TechnoTUT/utone-linux) は、The Utopia Tone の会場ネットワークの末端 (エッジ) に置く端末向けの Linux です。HDMI と NDI を相互に変換する IP ゲートウェイのほか、入口のフライヤー表示、NDI をブースディスプレイ用に変換する IP-IP の映像変換、照明制御ソフトウェアの実行も担います。Debian Live をもとにしており、DVD や USB メモリから起動するだけで使えます。OS のインストールは不要です。
 
-次の 2 つのツールを同梱しています。
+次の 3 つのツールを同梱しています。
 
 | ツール | 機能 | 主に使う VLAN |
 | :--- | :--- | :--- |
 | [moip-toolkit](https://github.com/TechnoTUT/moip-toolkit) | NDI の受信 (RX)・送信 (TX)、デジタルサイネージ、Web UI | AV (VLAN 20) |
 | [booth-display](https://github.com/TechnoTUT/booth-display) | DJ ブースのタイル状ディスプレイ (LG LD290EJS-FPN1 × 3 枚) へ映像を配信するコントローラ | AV (VLAN 20) → LDISP (VLAN 43) |
+| [dmxctl](https://github.com/TechnoTUT/dmxctl) | USB-DMX / Art-Net による照明制御、Ableton Link / OSC 同期 | AV (VLAN 20) |
 
 ## utone-linux の役割
 
-utone-linux は、会場で次の 3 つの役割を担います。
+utone-linux は、会場で次の 4 つの役割を担います。
 
 | 役割 | 内容 | 使う機能 | 接続する VLAN |
 | :--- | :--- | :--- | :--- |
 | IP ゲートウェイ | HDMI と NDI の相互変換 | [送信 (TX)](#送信-tx)、[受信 (RX)](#受信-rx) | AV (VLAN 20) |
 | 入口のフライヤー表示 | Web GUI からフライヤー画像を差し替えて表示 | [サイネージ](#サイネージ) | ENT (VLAN 42) |
 | IP-IP の映像変換 | NDI をブースディスプレイ用のストリームに変換して送出 | [ブースディスプレイ](#ブースディスプレイ) | AV (VLAN 20) → LDISP (VLAN 43) |
+| 照明制御 | USB-DMX や Art-Net による灯体制御・演出同期 | [照明制御 (dmxctl)](#照明制御-dmxctl) | AV (VLAN 20) |
 
 ```mermaid
 flowchart LR
@@ -31,6 +33,7 @@ flowchart LR
     subgraph AV["AV (VLAN 20)"]
         N(("NDI"))
         U4["utone-linux<br/>booth-display"]
+        U5["utone-linux<br/>dmxctl"]
     end
     subgraph ENT["ENT (VLAN 42)"]
         U3["utone-linux<br/>サイネージ"] -- HDMI --> F["入口ディスプレイ<br/>(フライヤー)"]
@@ -40,6 +43,7 @@ flowchart LR
     end
     U1 -- NDI --> N -- NDI --> U2
     N -- NDI --> U4 -- "UDP H.264" --> B
+    N -- "NDI (色連動)" --> U5 -- "USB-DMX / Art-Net" --> L["照明機材 / dmxsim"]
     PC["スタッフの PC・スマートフォン"] -- "Web GUI (HTTP 8000)" --> U3
 ```
 
@@ -67,7 +71,7 @@ HDMI ケーブルは長くても 15〜20m 程度しか引けませんが、NDI �
 入口のディスプレイに utone-linux をつなぎ、イベントのフライヤーを表示します。画像はブラウザの Web GUI からアップロードして差し替えるため、表示用の端末を直接操作する必要はありません。当日のタイムテーブル変更などにも、手元の PC やスマートフォンからすぐ対応できます。
 
 - 表示用の端末は、エントランス・受付用の ENT (VLAN 42) に接続します。
-- DJ (VLAN 10) から ENT への通信は FortiGate で全て許可されているため、DJ ブースの PC などからも Web GUI を操作できます。
+- DJ (VLAN 10) の DJ ブースの PC などからも Web GUI を操作できます。
 
 ### IP-IP の映像変換 (NDI → ブースディスプレイ)
 
@@ -86,6 +90,7 @@ flowchart LR
         RX["utone-linux<br/>NDI 受信 (nrx)"]
         VJ["VJ PC<br/>(Resolume, OBS)"]
         BTH["utone-linux<br/>booth-display (bth)"]
+        DMX["utone-linux<br/>dmxctl"]
     end
     subgraph LDISP["LDISP (VLAN 43) 192.168.12.48/28"]
         D1["ブースディスプレイ<br/>Left / Center / Right"]
@@ -93,13 +98,18 @@ flowchart LR
     subgraph SV["Kubernetes (SV, VLAN 100)"]
         DS["NDI Discovery Server<br/>ndi.svc.technotut.net"]
         DNS["bind9<br/>*.svc.technotut.net"]
+        PLMUX["plmux<br/>(Ableton Link / OSC)"]
+        DMXSVC["dmx / dmxsim<br/>(Art-Net)"]
     end
     FG["FortiGate<br/>ゲートウェイ / DHCP / DNS"]
 
     TX -- "NDI (mDNS + マルチキャスト)" --> RX
     VJ -- NDI --> BTH
+    VJ -- "NDI (色連動) / Ableton Link" --> DMX
     BTH -- "UDP H.264<br/>8554〜" --> FG --> D1
     TX -. "NDI 登録 (TCP 5959)" .-> DS
+    PLMUX -- "Ableton Link / OSC (UDP 9000)" --> DMX
+    DMX -- "Art-Net (UDP 6454)" --> FG --> DMXSVC
     AV -. DHCP / DNS .-> FG -. "svc.technotut.net を転送" .-> DNS
 ```
 
@@ -109,9 +119,10 @@ flowchart LR
 | 名前解決 | AV (VLAN 20) | FortiGate の DNS。`svc.technotut.net` は Kubernetes 上の bind9 (`10.12.0.0`) に転送される | DNS |
 | NDI 送受信 | AV (VLAN 20) | mDNS による機器検出。マルチキャスト送信のため N-1 が IGMP Snooping Querier | mDNS (UDP 5353)、NDI (TCP/UDP 5959〜)、マルチキャスト `239.255.0.0/16` |
 | NDI ソースの登録・検索 | AV (VLAN 20) | [NDI Discovery Server](/service/ndi#ndi-discovery-server) (設定済み)。現在は VLAN をまたいだ NDI はできない | TCP 5959 |
-| フライヤー表示 (サイネージ Web GUI) | ENT (VLAN 42) | FortiGate の DHCP (`192.168.12.34` 〜 `192.168.12.46`)。DJ → ENT は全て許可 | HTTP (TCP 8000) |
-| ブースディスプレイへの配信 | AV (VLAN 20) → LDISP (VLAN 43) | FortiGate のポリシー `al-av-ledd` (AV → LDISP を全て許可) | UDP 8554〜 (ディスプレイごとに 1 ポート) |
+| フライヤー表示 (サイネージ Web GUI) | ENT (VLAN 42) | DHCP (`192.168.12.34` 〜 `192.168.12.46`)。DJ (VLAN 10) からもアクセス可能 | HTTP (TCP 8000) |
+| ブースディスプレイへの配信 | AV (VLAN 20) → LDISP (VLAN 43) | AV から LDISP へストリーム送出 | UDP 8554〜 (ディスプレイごとに 1 ポート) |
 | booth-display Web GUI | AV (VLAN 20) | — | HTTP (TCP 8080)、WebSocket |
+| 照明制御 (`dmxctl`) | AV (VLAN 20) | NDI からの色取得、[plmux](/service/plmux) / VJ との Ableton Link・OSC 連携、Art-Net で `dmx` / `dmxsim` へ送信 | NDI、Ableton Link、OSC (UDP 9000)、Art-Net (UDP 6454) |
 | リモート操作 | AV (VLAN 20) | — | SSH (TCP 22) |
 
 VLAN とサブネットは [VLAN・IPアドレス設計](/network/vlan)、VLAN 間の通信制御は [ネットワーク仕様](/network/spec#通信制御) を参照してください。
@@ -120,7 +131,7 @@ VLAN とサブネットは [VLAN・IPアドレス設計](/network/vlan)、VLAN �
 
 - NDI を扱う utone-linux の端末は **AV (VLAN 20)** のポートに接続します。NDI は mDNS で機器を検出するため、送信側と受信側は同じ VLAN に置きます。入口のフライヤー表示だけに使う端末は **ENT (VLAN 42)** に接続します。
 - AV からインターネットへは HTTP/HTTPS だけが通ります。Kubernetes の Service・Ingress へは HTTP, HTTPS, RTMP, RDP, VNC が通ります。
-- DJ (VLAN 10) と PA (VLAN 40) から AV への通信は全て許可されているため、DJ ブースや PA 卓の PC からも Web UI を操作できます。
+- DJ (VLAN 10) の DJ ブースや PA (VLAN 40) の PA 卓の PC からも Web UI を操作できます。
 
 </Admonition>
 
@@ -244,13 +255,35 @@ flowchart LR
     end
 ```
 
-- コントローラは NDI を受信するため AV (VLAN 20) に置き、ディスプレイは LDISP (VLAN 43) に置きます。AV → LDISP の通信は FortiGate のポリシー `al-av-ledd` で全て許可されています。
+- コントローラは NDI を受信するため AV (VLAN 20) に置き、ディスプレイは LDISP (VLAN 43) に置きます。
 - ディスプレイの IP アドレス・ポート・切り出し位置は `/opt/booth-display/config.yaml` で設定します。初期値は全て `127.0.0.1` (ポート `8554` 〜 `8556`) なので、実際のディスプレイのアドレスに書き換えます。Web GUI の設定画面からも変更できます。
 - `config.yaml` にディスプレイのアドレスを書くため、ディスプレイの IP アドレスは固定します。
 - Intel GPU の VA-API (`h264_vaapi`) があればハードウェアでエンコードし、なければ `libx264` に切り替わります。
 - NDI 入力には NDI SDK のランタイム (`libndi.so.6`) を使います。ISO のビルド時に `/usr/local/lib` にインストールされます。
 
 詳細は [booth-display の README](https://github.com/TechnoTUT/booth-display) を参照してください。
+
+## 照明制御 (dmxctl)
+
+[dmxctl](https://github.com/TechnoTUT/dmxctl) は、デスクトップ環境なしでディスプレイに直接描画する KMS/DRM 版 (`dmxctl-kmsdrm`) として同梱されています。コンソール (TTY) または SSH から実行すると、接続されたディスプレイにフルスクリーンで UI が表示されます。
+
+```bash
+dmxctl-kmsdrm
+```
+
+起動時に自動で立ち上げる場合は、ユーザサービスを有効にします。
+
+```bash
+systemctl --user enable --now dmxctl.service
+```
+
+- 終了するときは `Ctrl+Q` またはメニューの `File → Quit` を使います（停止前にレーザー消灯・ディマー 0 の安全値を送信します）。
+- 別のアプリ（例: `nrx`）がディスプレイを使用している間は起動できません。
+- Live ユーザーは `video`・`input`・`dialout` グループに所属しているため、ディスプレイ・キーボード/マウス・USB-DMX (`/dev/ttyUSB0`) を追加設定なしで利用できます。
+- 設定は `~/.config/dmxctl/` に保存されます。再起動後も設定を残す場合は、永続ストレージ (persistence) を設定してください。
+- UI の表示倍率は `DMXCTL_SCALE=1.5 dmxctl-kmsdrm` のように環境変数で変更できます。
+
+詳細は [dmxctl の README](https://github.com/TechnoTUT/dmxctl) を参照してください。
 
 ## コマンドとサービスの一覧
 
@@ -260,6 +293,7 @@ flowchart LR
 | `ntx` | `ndi-tx.service` | NDI 送信 | NDI (TCP/UDP 5959〜) |
 | `nweb` | `ndi-web.service` | moip-toolkit の Web UI・API (サイネージ) | TCP 8000 |
 | `bth` | `booth.service` | booth-display コントローラ | TCP 8080 (Web GUI)、UDP 8554〜 (送信) |
+| `dmxctl-kmsdrm` | `dmxctl.service` | 照明制御 (KMS/DRM) | — (USB-DMX / Art-Net / OSC / Ableton Link) |
 
 サービスのファイルは `~/.config/systemd/user/` にあります。
 

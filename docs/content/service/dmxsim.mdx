@@ -1,6 +1,6 @@
 ---
 title: 照明シミュレータ
-sidebar_position: 10
+sidebar_position: 6
 ---
 
 ## 照明シミュレータとは
@@ -34,7 +34,6 @@ QLC+の場合は、`Inputs/Outputs` タブでUniverseの出力に `ArtNet` を�
 <Admonition type="info">
 
 - **送信先は直接指定する**: 照明シミュレータはコンテナ基盤上 (`10.12.0.0/16`) で動いているため、ブロードキャストやArtPollによる自動検出は届きません。送信先のIPアドレスを直接指定してください。
-- **通信できるVLAN**: 画面 (HTTP) は、DJ (VLAN 10) とAV (VLAN 20) から開けます。Art-Net (UDP 6454) は、現在のFortiGateのポリシーではMGMT (`al-mgmt-sv`) からしか届きません。DJやAVの照明ソフトから送るには、FortiGateでKubernetesのServiceへのUDP 6454を許可する必要があります。詳細は [ネットワーク仕様](/network/spec#通信制御) を参照してください。
 - **同時に送らない**: 複数の照明ソフトから同じUniverseに送ると、値が交互に届いて表示がちらつきます。
 
 </Admonition>

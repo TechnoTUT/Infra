@@ -1,6 +1,6 @@
 ---
 title: NDI
-sidebar_position: 7
+sidebar_position: 8
 ---
 
 ## NDIとは
@@ -80,16 +80,11 @@ TechnoTUT Networkでは、コンテナ基盤上でNDI Discovery Serverを提供�
 | :--- | :--- |
 | アドレス | `10.12.230.254` (`ndi.svc.technotut.net`) |
 | ポート | TCP 5959 |
-| 利用できるVLAN | AV (VLAN 20) のみ (FortiGateのポリシー `al-av-sv` で許可) |
+| 利用できるVLAN | AV (VLAN 20) のみ |
 
 <Admonition type="info">
 
-現在のTechnoTUT Networkでは、VLANをまたいだNDIの送受信はできません。
-
-- Discovery Serverに接続できるのは、AV (VLAN 20) からだけです。
-- AVへの通信がFortiGateで許可されているのは、DJ (VLAN 10) とPA (VLAN 40) からだけです。DJとPAからはDiscovery Serverに接続できません。
-
-VLANをまたいでNDIを使うには、Discovery Serverへの通信と、送信側・受信側の間の通信の両方を、FortiGateで許可する必要があります。詳細は [ネットワーク仕様](/network/spec#通信制御) を参照してください。
+現在のTechnoTUT Networkでは、VLANをまたいだNDIの送受信はできません。Discovery Server に接続できるのは AV (VLAN 20) のみです（DJ や PA からは接続できません）。
 
 </Admonition>
 

@@ -1,7 +1,23 @@
 ---
 title: PA
-sidebar_position: 5
+sidebar_position: 7
 ---
+
+## デジタルミキサーの設置方法
+
+デジタルミキサーには **Soundcraft Ui12** を使用しています。
+
+1. ミキサーを PA 卓周りに設置し、電源ケーブルと音声入出力（XLR / フォーン等）を配線します。
+2. LAN ケーブルを PA 用 VLAN 40 (`pa`, `192.168.12.0/27`) のポートに接続します（[ネットワーク仕様](/network/spec) 参照）。
+   - **N-4**: ポート 1 - 2
+   - **N-5 / N-6**: ポート 1 - 2
+3. ミキサーの電源を入れます。ネットワーク接続後、IP アドレス（`192.168.12.22`）が割り当てられ、ブラウザから `http://pa.svc.technotut.net/`（または `http://192.168.12.22/`）へアクセスできるようになります。
+
+<Admonition type="info">
+
+操作用の iPad や PC は、ミキサー内蔵の Wi-Fi ホットスポットではなく、会場ネットワーク側の Wi-Fi (`TechnoTUT_PA_5G` / `TechnoTUT_PA`) または有線 LAN へ接続してください。
+
+</Admonition>
 
 ## デジタルミキサーの使用方法
 
@@ -27,3 +43,36 @@ iPad2やiPad mini (初代)、iPad mini 2など安価 (¥1000~) に入手でき�
 ![](/img/service/pa/IMG_0011.PNG)
 5. Soundcraft Ui Appが追加されました。
 ![](/img/service/pa/IMG_0012.PNG)
+
+## AI による操作 (`soundcraft-ui-mcp`)
+
+[TechnoTUT/soundcraft-ui-mcp](https://github.com/TechnoTUT/soundcraft-ui-mcp) は、Claude Code や Claude Desktop などの MCP クライアントから Soundcraft Ui12 を安全に操作するための MCP サーバーです。WebSocket プロトコル (`SETD^path^value`) でミキサーと通信します。
+
+<RepoCard repo="TechnoTUT/soundcraft-ui-mcp" />
+
+### 主な特徴・安全設計
+- **フェードインによる安全制御**: ライブ中の急激な音量変化を防ぐため、フェーダー・AUX センド・EQ ブースト・コンプレッサーゲインを上げる操作やミュート解除はゆっくりフェードインします（デフォルト `1 dB/s`）。音量を下げる操作やミュートは即時反映されます。
+- **上限チェックと手動優先**: 上限値（デフォルトはフェーダー・AUX センド `0 dB`、EQ ブースト `+6 dB`）を超える操作は `confirm=true` がない限り拒否されます。フェード中に Web UI や実機で同じパラメータが手動操作された場合は、フェードを自動停止して手動操作を優先します。
+- **リアルタイム計測**: メーター (`get_meters`) や周波数スペクトラム (`get_spectrum`) を取得でき、会場の鳴り方に応じた EQ やフェーダーの調整に利用できます。
+- **対応機能**: チャンネルのフェーダー・ミュート・ソロ・パン、AUX センド、パラメトリック EQ・HPF、コンプレッサー・ゲート、マスター/AUX の 31 バンドグラフィック EQ など。
+
+### セットアップ例
+
+```bash
+git clone https://github.com/TechnoTUT/soundcraft-ui-mcp.git
+cd soundcraft-ui-mcp
+uv sync
+uv run scripts/smoke.py   # 接続確認（読み取り専用、既定 MIXER_IP: 192.168.12.22）
+```
+
+Claude Code から利用する場合は以下のように登録します。
+
+```bash
+claude mcp add soundcraft -- uv --directory /path/to/soundcraft-ui-mcp run soundcraft-ui-mcp
+```
+
+Streamable HTTP で起動する場合は `--transport http` を指定します（外部アドレスで待ち受ける場合は `MCP_AUTH_TOKEN` の設定が必要です）。
+
+```bash
+uv run soundcraft-ui-mcp --transport http   # http://127.0.0.1:8000/mcp
+```
