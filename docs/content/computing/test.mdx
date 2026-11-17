@@ -1,0 +1,68 @@
+---
+title: Podman による疑似クラスタテスト
+sidebar_label: テスト
+sidebar_position: 3
+---
+
+実機に触れずに [k8s/ansible/](https://github.com/TechnoTUT/Infra/tree/main/k8s/ansible) の Playbook (`site.yml`) を検証するため、[k8s/ansible/test/](https://github.com/TechnoTUT/Infra/tree/main/k8s/ansible/test) に Podman による疑似クラスタ環境を用意しています。`becky`・`packard`・`frr` の 3 つの特権 systemd コンテナを起動し、`podman exec` 経由で Ansible を実行します。
+
+## 構成
+
+| コンテナ | IP | 役割 |
+| :--- | :--- | :--- |
+| `becky` | `172.31.99.200` | Control-Plane |
+| `packard` | `172.31.99.201` | Worker |
+| `frr` | `172.31.99.129` | FortiGate の代わり (iBGP, AS `64646`, route-reflector) |
+
+Pod CIDR (`10.15.0.0/16`)、Service CIDR (`10.96.0.0/12`)、LoadBalancer の IP プール (`10.12.0.0/16`) は本番と同じです。
+
+## 前提
+
+- **rootful の `podman` (`sudo`)**: `kubeadm` と Cilium が特権・cgroup・BPF を必要とするため。
+- ホストのカーネルで `overlay` が利用できること（カーネルモジュールの読み込みや `net.*` の sysctl がホストに影響します）。
+- メモリ空き容量が 4 GB 程度あること（ノードコンテナは 1 台あたり最大 2.5 GB）。
+- `ansible-core` と `containers.podman` コレクションが導入されていること（`k8s/ansible/test/requirements.yml`）。
+- **kubeconfig はコンテナ内のものだけを使うこと**（ホストの `kubectl` / `helm` は使いません）。
+
+## 実行手順
+
+```bash
+cd k8s/ansible/test
+ansible-galaxy collection install -r requirements.yml
+./up.sh              # コンテナ・ネットワーク・FRR を作成
+./run.sh stage1      # ノード準備 → kubeadm init / join
+./run.sh stage2      # Cilium・BGP・Multus・NFS provisioner・Argo CD
+./run.sh stage3      # bind9 と ExternalDNS
+```
+
+同じ stage を 2 回実行すると、冪等性 (`changed=0`) を確認できます。検証後は `./down.sh` でコンテナ・ネットワーク・ボリューム・イメージをすべて削除できます。
+
+コンテナ内の `kubectl` や FRR の BGP 状態は次のように確認します。
+
+```bash
+sudo podman exec becky kubectl get pods -A
+sudo podman exec frr vtysh -c 'show bgp summary'
+sudo podman exec frr vtysh -c 'show ip bgp'
+```
+
+## 検証できること・できないこと
+
+- **検証できること**: `kubeadm init` / `join`、Pod / Service の CIDR、Cilium (`kube-proxy` 置き換え、Ingress、LB IP プール)、BGP (FRR での経路確認)、Argo CD、`bind9` と ExternalDNS (Service の annotation から A レコードが登録される)
+- **検証できないこと**: 実機の VLAN とブリッジ、`network` ロール、Multus の L2 通信、NFS provisioner の実動作 (NFS サーバがない)、`marie` (`packard` と同じ設定)
+
+## テスト用の上書き (`vars.yml`)
+
+コンテナ固有の事情に対処するため、`k8s/ansible/test/vars.yml` で次の変数を上書きしています（本番の値は変更しません）。
+
+| 変数 | 理由 |
+| :--- | :--- |
+| `common_disable_swap`, `kubelet_fail_swap_on` | ホストの swap を止めないため |
+| `common_kernel_modules`, `common_sysctls` | RHEL 系のホストカーネルには `br_netfilter` がないため |
+| `kubeadm_ignore_preflight_errors` | 上記に伴う preflight チェックの無視 |
+| `argocd_network_policy` | 入れ子のコンテナでは NetworkPolicy 下の probe が通らないため |
+| `node_dns_servers` | テストを実行する環境から TUT の DNS サーバに届かないため、公開 DNS を使用 |
+| `argocd_root_include` | メモリ節約のため、`root` から作る Application を一部 (`cam1`, `dmx`) に限定 |
+
+## CI での自動実行
+
+`k8s/ansible/` を変更する PR と `main` への push では、GitHub Actions ([.github/workflows/ansible-test.yaml](https://github.com/TechnoTUT/Infra/blob/main/.github/workflows/ansible-test.yaml)) が ubuntu ランナー上で同じ手順（`up.sh` → `stage1`〜`3` → ノード・Cilium・Argo CD・BGP の確認 → `stage1` 再実行による冪等性確認）を自動実行します。Actions の画面から手動実行 (`workflow_dispatch`) も可能です。
