@@ -23,7 +23,7 @@ Clusters: 2 (`main`: becky, packard, marie / `nas`: ongeki)。Cilium Cluster Mes
 | Kubernetes | 1.37 |
 | コンテナランタイム | containerd (Docker の apt リポジトリの containerd.io) |
 | CNI | Cilium 1.20 (kube-proxy 置き換え、native routing、BGP、Ingress) |
-| Pod CIDR | 10.11.0.0/16 (`nas` は 10.13.0.0/16)。`10.8.0.0/13` 宛ては NAT しない (両方のクラスタの Pod 間)。外部へ出る通信はノードの IP に NAT する |
+| Pod CIDR | 10.15.0.0/16 (`nas` は 10.13.0.0/16)。`10.12.0.0/14` 宛ては NAT しない (両方のクラスタの Pod 間)。外部や VLAN 10・20 へ出る通信はノードの IP に NAT する |
 | Service CIDR (ClusterIP) | 10.96.0.0/12 (kubeadm の既定値) |
 | LoadBalancer IP | 10.12.0.0/16 (`nas` は 10.14.0.0/24。BGP で FortiGate に広報)。`10.12.0.0` は bind9 専用 (FortiGate の DNS 転送先) |
 | Cluster Mesh | Cilium Cluster Mesh。`main` (ID 1) と `nas` (ID 2)。clustermesh-apiserver はノードの IP の 32379 番 (NodePort) |
@@ -118,7 +118,7 @@ ansible-playbook playbooks/site.yml
 | kubeadm | kubelet・kubeadm・kubectl のインストール、`kubeadm init`、`kubeadm join` |
 | addons | Helm、Cilium、Multus と NAD、NFS provisioner、KubeVirt と CDI、Argo CD と親の Application (`root`)、bind9 と ExternalDNS |
 
-`kubeadm init` は Pod CIDR を `10.11.0.0/16`、Service CIDR (ClusterIP) を `10.96.0.0/12` で作成する。kube-proxy は Cilium で置き換えるため入れない。
+`kubeadm init` は Pod CIDR を `10.15.0.0/16`、Service CIDR (ClusterIP) を `10.96.0.0/12` で作成する。kube-proxy は Cilium で置き換えるため入れない。
 
 ### LoadBalancer の IP
 LoadBalancer の IP は、Cilium の IP プール (`10.12.0.0/16`) から割り当てる。用途ごとにプールを分けている。
@@ -146,7 +146,7 @@ AS 番号は全体で `64646` (iBGP)、相手は FortiGate である。
 
 | クラスタ | ノード | 相手 | 広報する範囲 |
 |---|---|---|---|
-| `main` | becky, packard, marie | 192.168.99.129 (`dmz`) | `10.12.0.0/16`、`10.11.0.0/16` |
+| `main` | becky, packard, marie | 192.168.99.129 (`dmz`) | `10.12.0.0/16`、`10.15.0.0/16` |
 | `nas` | ongeki | 192.168.98.1 (`port9`) | `10.14.0.0/24`、`10.13.0.0/16` |
 
 iBGP では、受け取った経路を他の iBGP ピアに再広報しないため、FortiGate 側でノードを route reflector client にする。\
@@ -372,7 +372,7 @@ ongeki は、ongeki だけで動く Kubernetes のクラスタ `nas` である�
 
 Cluster Mesh の構成:
 - クラスタの名前と ID は `cilium_cluster_name` と `cilium_cluster_id` (`main` は 1、`nas` は 2)。**変えたら、そのクラスタの全ての Pod を作り直す** (セキュリティ ID に cluster ID が入るため)。
-- Pod CIDR は重ならないようにする (`main` は 10.11.0.0/16、`nas` は 10.13.0.0/16)。両方を含む `10.8.0.0/13` を `ipv4NativeRoutingCIDR` にし、Pod 間の通信を NAT しない。`10.0.0.0/8` にしないのは、学内の 10.x (ongeki の無線 LAN など) への通信まで NAT されなくなるため。
+- Pod CIDR は重ならないようにする (`main` は 10.15.0.0/16、`nas` は 10.13.0.0/16)。両方を含む `10.12.0.0/14` を `ipv4NativeRoutingCIDR` にし、Pod 間の通信を NAT しない。VLAN 10・20 (`10.10.0.0/16`) や外部拠点 (`10.8.0.0/16`) を含めると、その宛先への通信が NAT されずに戻りの経路が合わなくなるため、範囲に入れない。
 - clustermesh-apiserver は、各クラスタのノードの IP の 32379 番 (NodePort) で公開する。相手の指定は `cilium_clustermesh_clusters`。
 - 両方のクラスタの証明書を同じ CA で作る。CA は `vault.yml` の `vault_cilium_ca_crt` と `vault_cilium_ca_key`。
 - 別のクラスタの Service を使うときは、両方のクラスタに同じ名前空間・名前の Service を置き、`service.cilium.io/global: "true"` の注釈を付ける ([Global Services](https://docs.cilium.io/en/stable/network/clustermesh/services/))。

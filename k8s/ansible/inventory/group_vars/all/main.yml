@@ -14,7 +14,7 @@ nfs_provisioner_chart_version: "4.0.18"
 # ===== ネットワーク =====
 api_endpoint: "192.168.99.200"   # becky
 api_port: 6443
-pod_cidr: "10.11.0.0/16"
+pod_cidr: "10.15.0.0/16"
 service_cidr: "10.96.0.0/12"   # ClusterIP の範囲（kubeadm の既定値。LB の IP とは別）
 
 # ===== ストレージ（NFS サーバは becky を兼用）=====
@@ -80,9 +80,11 @@ cilium_bgp_peers:
 # 名前か ID を変えたら、全ての Pod を作り直す (セキュリティ ID に ID が入るため)。
 cilium_cluster_name: main
 cilium_cluster_id: 1
-# 両方のクラスタの Pod CIDR (main 10.11.0.0/16、nas 10.13.0.0/16) を含む範囲。この範囲への通信は NAT しない。
-# 10.0.0.0/8 にすると、学内の 10.x (ongeki の無線 LAN の 10.226.0.0/17 など) まで NAT しなくなる。
-cilium_native_routing_cidr: "10.8.0.0/13"
+# 両方のクラスタの Pod CIDR (main 10.15.0.0/16、nas 10.13.0.0/16) を含む範囲。この範囲への通信は NAT しない。
+# 10.12.0.0/14 (10.12-10.15) は LoadBalancer の IP (10.12、10.14) も含むが、どちらも経路はクラスタ側にあるので問題ない。
+# VLAN 10・20 (10.10.0.0/16) と外部拠点 (10.8.0.0/16 など) は含めない。含めると、Pod の通信が NAT されずに
+# br10 などから直接出て、戻りの経路が合わずに届かない (Pod から TUT の DNS 10.10.0.1 が引けなくなった)。
+cilium_native_routing_cidr: "10.12.0.0/14"
 cilium_clustermesh_enabled: true
 # clustermesh-apiserver はノードの IP の NodePort で公開する (LoadBalancer の IP は相手の
 # クラスタの FortiGate のポリシーに個別に足す必要があるため)。

@@ -4,7 +4,7 @@
 
 # ===== Kubernetes =====
 api_endpoint: "192.168.98.2"         # ongeki
-pod_cidr: "10.13.0.0/16"             # main (10.11.0.0/16) と重ならないこと (Cluster Mesh の要件)
+pod_cidr: "10.13.0.0/16"             # main (10.15.0.0/16) と重ならないこと (Cluster Mesh の要件)
 # 1 台で Pod も動かすので、control plane の taint を付けない。
 kubeadm_init_taints: []
 
