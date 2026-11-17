@@ -1,0 +1,22 @@
+# plmux (PRO DJ LINK のモニター・曲履歴・Ableton Link・Clojure の式)。k8s/manifest/plmux を kustomize で配る。
+# Multus で VLAN 10・20 につなぐ (Ansible の multus_enabled: true)。
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: plmux
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/TechnoTUT/Infra.git
+    targetRevision: HEAD
+    path: k8s/manifest/plmux
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: plmux
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
