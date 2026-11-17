@@ -1,0 +1,167 @@
+{
+  "Deep-Symmetry/beat-link-trigger": {
+    "description": "Trigger events and automate shows in response to events on Pioneer CDJs",
+    "languages": [
+      {
+        "name": "Clojure",
+        "color": "#db5855",
+        "pct": 98.7
+      },
+      {
+        "name": "HTML",
+        "color": "#e34c26",
+        "pct": 0.8
+      },
+      {
+        "name": "JavaScript",
+        "color": "#f1e05a",
+        "pct": 0.3
+      },
+      {
+        "name": "CSS",
+        "color": "#663399",
+        "pct": 0.2
+      }
+    ]
+  },
+  "TechnoTUT/Infra": {
+    "description": "Network and Kubernetes infrastructure: switch configs, Ansible cluster provisioning, manifests, and documentation.",
+    "languages": [
+      {
+        "name": "Jinja",
+        "color": "#a52a22",
+        "pct": 78.4
+      },
+      {
+        "name": "Clojure",
+        "color": "#db5855",
+        "pct": 11
+      },
+      {
+        "name": "Shell",
+        "color": "#89e051",
+        "pct": 9.5
+      },
+      {
+        "name": "Dockerfile",
+        "color": "#384d54",
+        "pct": 1.2
+      }
+    ]
+  },
+  "TechnoTUT/dmxsim": {
+    "description": "Lighting simulation for \"The Utopia Tone\"",
+    "languages": [
+      {
+        "name": "JavaScript",
+        "color": "#f1e05a",
+        "pct": 91.5
+      },
+      {
+        "name": "CSS",
+        "color": "#663399",
+        "pct": 5.1
+      },
+      {
+        "name": "HTML",
+        "color": "#e34c26",
+        "pct": 3
+      },
+      {
+        "name": "Dockerfile",
+        "color": "#384d54",
+        "pct": 0.4
+      }
+    ]
+  },
+  "TechnoTUT/plmux": {
+    "description": "Web UI for Beat Link Trigger workflows — PRO DJ LINK monitor, waveforms, track history, Ableton Link & OBS overlay (built for XDJ-AZ)",
+    "languages": [
+      {
+        "name": "Java",
+        "color": "#b07219",
+        "pct": 61.1
+      },
+      {
+        "name": "Vue",
+        "color": "#41b883",
+        "pct": 27.3
+      },
+      {
+        "name": "TypeScript",
+        "color": "#3178c6",
+        "pct": 5.3
+      },
+      {
+        "name": "Clojure",
+        "color": "#db5855",
+        "pct": 4
+      },
+      {
+        "name": "CSS",
+        "color": "#663399",
+        "pct": 1
+      },
+      {
+        "name": "Dockerfile",
+        "color": "#384d54",
+        "pct": 0.5
+      },
+      {
+        "name": "HTML",
+        "color": "#e34c26",
+        "pct": 0.5
+      },
+      {
+        "name": "Shell",
+        "color": "#89e051",
+        "pct": 0.3
+      }
+    ]
+  },
+  "TechnoTUT/rtmp-live-server": {
+    "description": "Deploy the streaming server immediately with container.",
+    "languages": [
+      {
+        "name": "Vue",
+        "color": "#41b883",
+        "pct": 53
+      },
+      {
+        "name": "XSLT",
+        "color": "#EB8CEB",
+        "pct": 33.4
+      },
+      {
+        "name": "TypeScript",
+        "color": "#3178c6",
+        "pct": 9.2
+      },
+      {
+        "name": "Dockerfile",
+        "color": "#384d54",
+        "pct": 2.6
+      },
+      {
+        "name": "Shell",
+        "color": "#89e051",
+        "pct": 1.8
+      }
+    ]
+  },
+  "TechnoTUT/sony-camera-rtmp-relay": {
+    "description": "Enable live streaming on Sony cameras",
+    "languages": [
+      {
+        "name": "Dockerfile",
+        "color": "#384d54",
+        "pct": 95.1
+      },
+      {
+        "name": "Shell",
+        "color": "#89e051",
+        "pct": 4.9
+      }
+    ]
+  }
+}
