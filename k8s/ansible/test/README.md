@@ -29,6 +29,13 @@ sudo podman exec frr vtysh -c 'show bgp summary'
 sudo podman exec frr vtysh -c 'show ip bgp'
 ```
 
+## CI
+`k8s/ansible/` を変更する PR と `main` への push では、GitHub Actions ([`.github/workflows/ansible-test.yaml`](../../../.github/workflows/ansible-test.yaml)) が同じ手順を ubuntu のランナーで実行する。`up.sh` → stage1〜3 → ノード・Cilium・Argo CD・BGP の確認 → stage1 の再実行で冪等性 (`changed=0`) の確認、の順。Actions の画面から手動でも実行できる (workflow_dispatch)。
+
+CI 固有の対処:
+- Vault のパスワードは CI にないため、`vault.yml` を空のファイルに差し替える。テストに要る値は `vars.yml` にある。
+- ランナーの Docker が `FORWARD` を DROP にするので、ポリシーを ACCEPT にし、ブリッジの通信を iptables に通さない (ノード間の Pod の通信のため)。
+
 ## 構成
 | 名前 | IP | 役割 |
 |---|---|---|

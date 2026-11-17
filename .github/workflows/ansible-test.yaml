@@ -1,0 +1,131 @@
+name: Ansible Cluster Test
+
+# k8s/ansible/test/ の Podman による疑似クラスタ (becky / packard / FRR) をランナー上に作り、
+# site.yml と同じロールを stage1 -> stage2 -> stage3 の順に流す。
+on:
+  push:
+    branches: [main]
+    paths:
+      - "k8s/ansible/**"
+      - ".github/workflows/ansible-test.yaml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "k8s/ansible/**"
+      - ".github/workflows/ansible-test.yaml"
+  workflow_dispatch:
+
+concurrency:
+  group: ansible-test-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  cluster:
+    name: Ansible on Podman cluster
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    defaults:
+      run:
+        working-directory: k8s/ansible/test
+    env:
+      ANSIBLE_FORCE_COLOR: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # イメージ (Cilium, Argo CD など) で容量が足りなくなるため、使わないツールを消す
+      - name: Free disk space
+        working-directory: .
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          df -h /
+
+      # ランナーの Docker は FORWARD を DROP にする。ノード間の Pod の通信 (10.15.0.0/16) は
+      # podman のブリッジを通るので、ブリッジの通信を iptables に通さず、FORWARD も許可する。
+      - name: Prepare host network
+        working-directory: .
+        run: |
+          sudo iptables -P FORWARD ACCEPT
+          if [ -e /proc/sys/net/bridge/bridge-nf-call-iptables ]; then
+            sudo sysctl -w net.bridge.bridge-nf-call-iptables=0 net.bridge.bridge-nf-call-ip6tables=0
+          fi
+          podman --version
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Ansible
+        run: |
+          pip install ansible-core
+          ansible-galaxy collection install -r ../requirements.yml
+          ansible-galaxy collection install -r requirements.yml
+          ansible --version
+
+      # vault.yml は暗号化されていて CI にはパスワードがない。テストに要る値は vars.yml にある。
+      - name: Replace vault with an empty file
+        run: echo '{}' > ../inventory/group_vars/all/vault.yml
+
+      - name: Create containers
+        run: ./up.sh
+
+      - name: "stage1: node prep, kubeadm init / join"
+        run: ./run.sh stage1
+
+      - name: "stage2: Cilium, BGP, Multus, NFS provisioner, Argo CD"
+        run: ./run.sh stage2
+
+      - name: "stage3: bind9 and ExternalDNS"
+        run: ./run.sh stage3
+
+      - name: Verify cluster
+        run: |
+          P="sudo -n podman"
+          $P exec becky kubectl wait --for=condition=Ready node --all --timeout=300s
+          $P exec becky kubectl get nodes -o wide
+          $P exec becky kubectl -n kube-system rollout status daemonset/cilium --timeout=300s
+          $P exec becky kubectl -n argocd rollout status deployment/argocd-server --timeout=600s
+          # becky / packard の両方と BGP が Established (State/PfxRcd が数字) になること
+          established=0
+          for i in $(seq 1 30); do
+            established=$($P exec frr vtysh -c 'show bgp ipv4 unicast summary' \
+              | awk '/^172\.31\.99\.20[01] / && $10 ~ /^[0-9]+$/' | wc -l)
+            [ "$established" = 2 ] && break
+            sleep 10
+          done
+          $P exec frr vtysh -c 'show bgp ipv4 unicast summary'
+          $P exec frr vtysh -c 'show ip bgp'
+          if [ "$established" != 2 ]; then
+            echo "::error::BGP sessions established: $established/2"
+            exit 1
+          fi
+
+      - name: Idempotency (stage1 again)
+        run: |
+          ./run.sh stage1 | tee "$RUNNER_TEMP/stage1-again.log"
+          if grep -E 'changed=[1-9]' "$RUNNER_TEMP/stage1-again.log"; then
+            echo "::error::stage1 is not idempotent"
+            exit 1
+          fi
+
+      - name: Dump cluster state
+        if: failure()
+        run: |
+          P="sudo -n podman"
+          $P ps -a
+          $P exec becky kubectl get nodes -o wide || true
+          $P exec becky kubectl get pods -A -o wide || true
+          $P exec becky kubectl get events -A --sort-by=.lastTimestamp | tail -100 || true
+          $P exec becky journalctl -u kubelet --no-pager | tail -200 || true
+          $P exec packard journalctl -u kubelet --no-pager | tail -100 || true
+          $P exec frr vtysh -c 'show bgp summary' || true
+          df -h /
+          free -m
+
+      - name: Tear down
+        if: always()
+        run: ./down.sh
