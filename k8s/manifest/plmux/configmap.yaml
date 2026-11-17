@@ -10,7 +10,7 @@ data:
   PLMUX_DEVICE_NAME: "plmux"
   PLMUX_HISTORY_MIN_PLAY_SECONDS: "15"
   # Ableton Link を CDJ のテンポマスターに追従させる (VJ/AV の VLAN に広報する)。
-  # BLT の VM でも Carabiner で Link に追従させていると、テンポの元が 2 つになるので、どちらか一方にする。
+  # ほかに Link のテンポを流すもの (個人の PC の BLT など) があると、テンポの元が 2 つになるので、どちらか一方にする。
   PLMUX_LINK_MODE: "FOLLOW"
   PLMUX_LINK_LATENCY_MS: "1"
   PLMUX_LINK_ALIGN_BARS: "true"

@@ -42,7 +42,7 @@ Pod CIDR は 10.11.0.0/16、Service CIDR (ClusterIP) は 10.96.0.0/12、LB の I
 `kubeadm init` / `join`、Pod / Service の CIDR、Cilium (kube-proxy 置き換え、Ingress、LB IP プール)、BGP (FRR での経路確認)、ArgoCD、bind9 と ExternalDNS (Service の annotation から A レコードが登録される)。
 
 ## 検証できないこと
-KubeVirt / CDI と BLT の VM、実機の VLAN とブリッジ、Multus の L2 通信、NFS provisioner の実動作 (NFS サーバがない)、network ロール、marie (packard と同じ設定)、Haswell でのメモリの余裕。
+KubeVirt / CDI、実機の VLAN とブリッジ、Multus の L2 通信、NFS provisioner の実動作 (NFS サーバがない)、network ロール、marie (packard と同じ設定)、Haswell でのメモリの余裕。
 
 ## テスト用の上書き (`vars.yml`)
 コンテナ固有の事情に対処するために、次の変数を上書きしている。本番の値は変えない。
