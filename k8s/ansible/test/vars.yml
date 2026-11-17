@@ -11,11 +11,9 @@ kubeadm_ignore_preflight_errors:
   - FileContent--proc-sys-net-bridge-bridge-nf-call-iptables
   - Swap
 
-# 入れ子のコンテナでは VM を動かさない（メモリ節約）。blt / cdi-config の Application も外す
+# 入れ子のコンテナでは VM を動かさない（メモリ節約）。root から作る Application も cam1 と dmx だけにする
 kubevirt_enabled: false
-argocd_apps:
-  - { name: cam1, path: cam1, namespace: cam1 }
-  - { name: dmx, path: dmx, namespace: qlcplus }
+argocd_root_include: "{cam1.yaml,dmx.yaml}"
 
 # このテスト環境（TUT の外）からは TUT の DNS サーバに届かないため、公開 DNS を使う
 node_dns_servers: ["1.1.1.1"]

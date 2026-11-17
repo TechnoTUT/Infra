@@ -1,0 +1,24 @@
+# App of Apps の親。k8s/manifest/apps の Application を Argo CD が自分で作る。
+# main に Application の YAML を足すと登録され、消すと登録が外れる (アプリの中身は消えない)。
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: {{ argocd_repo_url }}
+    targetRevision: HEAD
+    path: {{ argocd_root_path }}
+{% if argocd_root_include is defined %}
+    directory:
+      include: "{{ argocd_root_include }}"
+{% endif %}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
