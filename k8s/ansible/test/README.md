@@ -63,7 +63,7 @@ Pod CIDR は 10.15.0.0/16、Service CIDR (ClusterIP) は 10.96.0.0/12、LB の I
 | `node_dns_servers` | テストを動かす PC から TUT の DNS サーバに届かないため、公開 DNS を使う |
 | `argocd_root_include` | メモリ節約のため、root から作る Application は `cam1` と `dmx` だけにする |
 
-`up.sh` は、Cilium が `/sys/fs/bpf` を使えるように bpffs を shared でマウントする。
+`up.sh` は、Cilium が `/sys/fs/bpf` を使えるように bpffs を shared でマウントする。また、kubeadm の preflight がカーネルの設定を読めるように、ホストの `/lib/modules` と `/boot` を読み取り専用でマウントする (Ubuntu では設定が `/boot/config-*` にある)。
 
 ## 注意
 - コンテナの DNS の search ドメインに podman のネットワーク由来の `dns.podman` が入る。CoreDNS の上流 (podman の DNS) が Pod から応答しないため、相対名の名前解決は遅くなる。ExternalDNS の bind9 は FQDN (末尾のドット) で指定してあるので影響しない。
