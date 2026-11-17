@@ -116,7 +116,7 @@
       （Samba の Pod は Secret ができるまで起動しない）。
   when: groups['nas'] | default([]) | length > 0 and vault_samba_smbpasswd is not defined
 
-# ---- KubeVirt と CDI（BLT の VM 用）----
+# ---- KubeVirt と CDI（VM 用）----
 # CDI の CR は ArgoCD の cdi-config が管理するので、ここでは operator だけを入れる。
 - name: KubeVirt と CDI
   when: kubevirt_enabled
