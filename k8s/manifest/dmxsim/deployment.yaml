@@ -20,8 +20,9 @@ spec:
     spec:
       containers:
       - name: dmxsim
-        image: registry.svc.technotut.net/technotut/dmxsim:main
-        imagePullPolicy: Always
+        # TechnoTUT/dmxsim のリリース（タグ v1.0.0 → イメージ 1.0.0）。更新するときはここを書き換える
+        image: ghcr.io/technotut/dmxsim:1.0.0
+        imagePullPolicy: IfNotPresent
         env:
         # 画面に表示する Art-Net の送り先（Pod の IP ではなく LoadBalancer の名前と IP）
         - name: ADVERTISE

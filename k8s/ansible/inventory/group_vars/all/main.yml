@@ -160,11 +160,6 @@ registry_images:
     repo: TechnoTUT/ndi-discovery-server
     workflow: release-container.yml
     ref: main
-  - image: technotut/dmxsim
-    tag: main
-    repo: TechnoTUT/dmxsim
-    workflow: release-container.yml
-    ref: main
 
 # ===== LoadBalancer の IP プール =====
 # LoadBalancer の IP は 10.12.0.0/16（BGP で広報する）。用途ごとにプールを分ける。
