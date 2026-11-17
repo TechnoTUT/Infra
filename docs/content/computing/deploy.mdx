@@ -263,6 +263,37 @@ virtctl console blt -n blt
 ```
 VM の cloud-init の初期パスワードは、構築後に変更する。
 
+### plmux
+PRO DJ LINK のモニター・曲履歴・Ableton Link・Clojure の式のサーバー [TechnoTUT/plmux](https://github.com/TechnoTUT/plmux) を、`main` のクラスタで動かす。使い方は [plmux](/service/plmux)。
+
+| 項目 | 内容 |
+|---|---|
+| manifest | [`k8s/manifest/plmux/`](https://github.com/TechnoTUT/Infra/tree/main/k8s/manifest/plmux) (kustomize)。Argo CD の Application `plmux` は [`k8s/manifest/apps/plmux.yaml`](https://github.com/TechnoTUT/Infra/blob/main/k8s/manifest/apps/plmux.yaml) |
+| イメージ | `ghcr.io/technotut/plmux:<バージョン>` (public。plmux のタグ `v*` で GitHub Actions がビルドする)。`imagePullPolicy: IfNotPresent` なので、更新するときは 2 つの Deployment のタグを両方変える |
+| エンドポイント | `http://plmux.svc.technotut.net` (Web GUI・API・WebSocket `/ws`・OBS 用 `/overlay`) |
+| データ | 曲の履歴と GUI の設定 (SQLite の `plmux.db`)。NFS 上の PVC `plmux-data` (1Gi) |
+| 式 | `expressions.clj` から ConfigMap `plmux-expressions` を作り、`/config` にマウントする |
+
+Pod は 2 つに分けている。
+
+| Deployment | Multus | 役割 |
+|---|---|---|
+| `plmux` | `kube-public/vlan10-bridge` (`dj`) | PRO DJ LINK を受ける。Web GUI。Carabiner には `plmux-carabiner` の Service (17000/tcp) でつなぐ |
+| `plmux-carabiner` | `kube-public/vlan20-bridge` (`av`) | Ableton Link (Carabiner)。同じイメージを `carabiner` の引数で動かす |
+
+- Ableton Link は Pod の全てのネットワークで広報される。DJ ネットワーク (VLAN 10) には出さず、AV ネットワーク (VLAN 20) だけに出すため、Carabiner を VLAN 20 だけにつないだ Pod に分けている。Carabiner は 127.0.0.1 でしか待ち受けないので、plmux が中継する。
+- `plmux-carabiner` に届けば Link のテンポを変えられるので、NetworkPolicy で `plmux` の Pod からだけ受ける。テンポと拍を TCP で送るので、同じノードに置くようにしている (podAffinity)。
+- PRO DJ LINK の UDP (50000-50002) を使い、SQLite に書くので、どちらもレプリカは 1 つ (`Recreate`)。hostNetwork は使わないので、どのノードでも動く (br10・br20 は全ノードにある)。
+- VLAN 10・20 のアドレスは NAD の host-local で、ノードごとに `10.10.0.2`・`10.10.16.2` から払い出す。別のノードの Pod や VM と同じアドレスになることがある。そのときは Pod を作り直す。
+- Link のテンポを流すのは 1 つだけにする。BLT の VM の Carabiner でも Link に追従させていると、テンポの元が 2 つになる。
+- 式から dmxctl などへ送る OSC は、ノードの IP (`dmz`) に SNAT されて FortiGate を通る。FortiGate に `dmz` から送り先への UDP (dmxctl は 9000) を許可するポリシーが必要。
+- クライアントからは、FortiGate が `k8s-svc` への HTTP を許可している VLAN (DJ、AV など) と管理用 VLAN から届く。
+
+```bash
+kubectl -n plmux get pods -o wide
+kubectl -n plmux logs deploy/plmux | grep -iE "VirtualCdj|Carabiner|expressions"
+```
+
 ### クラスタ内のコンテナレジストリ
 自前でビルドしたイメージ (NDI Discovery Server など) は、クラスタ内のレジストリに置く。Ansible が導入する (`registry_enabled: true`)。
 

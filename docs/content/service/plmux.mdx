@@ -1,0 +1,49 @@
+---
+title: plmux
+sidebar_position: 9
+---
+
+## plmux とは
+plmux は、[PRO DJ LINK](/service/prodjlink) で DJ 機器 (XDJ-AZ など) の再生状態を受け取り、ブラウザで見られるようにするサーバーです。\
+[Beat Link Trigger](/service/beatlinktrigger) の主な機能を、画面のないサーバーと Web の画面で動かしています。\
+[![TechnoTUT/plmux - GitHub](https://gh-card.dev/repos/TechnoTUT/plmux.svg?fullname=)](https://github.com/TechnoTUT/plmux)\
+[コンテナ基盤](/computing)上で常に動いているので、DJ 機器を DJ ネットワークにつなぐだけで使えます。
+
+## 機能
+- 各デッキの曲名・アーティスト・アートワーク・BPM・波形・再生位置の表示
+- 曲の履歴 (セッションごと。CSV でダウンロードできる)
+- OBS のブラウザソース用の「Now Playing」オーバーレイ
+- [Ableton Link](#ableton-link) を CDJ/XDJ のテンポマスターに追従させる (VJ ソフトなどとテンポ・小節の頭を揃える)
+- [Clojure の式](#clojure-の式)による機能の追加 (例: [dmxctl](https://github.com/TechnoTUT/dmxctl) で照明を曲に合わせる)
+
+## 使用方法
+1. [TechnoTUT Network](/network)に接続します。
+2. ブラウザで http://plmux.svc.technotut.net へアクセスします。
+   - `Decks`: 各デッキの状態と波形
+   - `History`: 曲の履歴。DJ の出番ごとにセッションを作ると、その間の曲だけを CSV にできます
+   - `Ableton Link`: Link の状態と同期のモード
+   - `Expressions`: Clojure の式の内容と実行状況 (見るだけ)
+   - `Settings`: 波形の表示形式、オーバーレイの見た目など
+3. OBS で曲名を出すときは、ブラウザソースに `http://plmux.svc.technotut.net/overlay` (1920×1080) を追加します。
+
+XDJ-AZ は **PRO DJ LINK (LINK) モード**にしてください。それ以外のモードでは、画面に警告が出ます。
+
+## Ableton Link
+plmux は、CDJ/XDJ のテンポマスターのテンポと拍 (小節の頭) を Ableton Link に流します。\
+Link は **AV ネットワーク (VLAN 20)** にだけ広報しています。VJ ソフト (Resolume、TouchDesigner など) や照明ソフト (dmxctl) を動かす PC を AV ネットワークにつなぎ、Link を有効にしてください。
+
+- Link のテンポを流すのは 1 つだけにしてください。[Beat Link Trigger](/service/beatlinktrigger) の Carabiner でも Link に追従させていると、テンポの元が 2 つになります。
+- 同期のモードは `Ableton Link` タブで変えられます (`Off` / `Monitor` / `Follow CDJ Master`)。
+
+## Clojure の式
+Beat Link Trigger の式と同じように、Clojure で機能を足せます。式は Infra リポジトリの [`k8s/manifest/plmux/expressions.clj`](https://github.com/TechnoTUT/Infra/blob/main/k8s/manifest/plmux/expressions.clj) に書きます。\
+`main` にマージすると Argo CD が配り、plmux が数十秒で読み込み直します。plmux の画面からは編集できません (画面に認証がないため)。
+
+いまは、dmxctl に照明の色・明るさ (波形の色と大きさ) と曲の構成 (フレーズ) を送る式が入っています。\
+書き方は [plmux の README](https://github.com/TechnoTUT/plmux#clojure-expressions) を参照してください。
+
+## 開発者向け情報
+- DJ ネットワーク (VLAN 10) と AV ネットワーク (VLAN 20) には、Multus でつないでいます。
+  - plmux 本体は VLAN 10 だけ (PRO DJ LINK)。
+  - Ableton Link (Carabiner) は別の Pod で、VLAN 20 だけ。Link は Pod の全てのネットワークで広報されるため、DJ ネットワークに出さないよう分けています。
+- 構成は [構築方法](/computing/deploy#plmux) を参照してください。
