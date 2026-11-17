@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cam2
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/TechnoTUT/Infra.git
+    targetRevision: HEAD
+    path: k8s/manifest/cam2
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cam2
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
