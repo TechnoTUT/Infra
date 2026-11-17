@@ -1,0 +1,62 @@
+---
+title: 照明シミュレータ
+sidebar_position: 10
+---
+
+## 照明シミュレータとは
+照明シミュレータ (dmxsim) は、照明ソフトから送ったArt-Netを受けて、会場の灯体を3Dで点灯させるWebアプリです。照明機材を設置しなくても、ブラウザで演出を確認できます。
+- 会場の間取りの中に、ムービングヘッド・パーライト・レーザー・ミラーボール (Twinkle Ball) を配置して表示する
+- 各灯体の取扱説明書のDMXチャートに沿って、色・ゴボ・パン/チルト・ストロボなどを再現する
+- スモーク中のビーム、床や壁に当たる光も表示する
+- 灯体ごとのチャンネル値と、512chのDMXモニターを表示する
+
+TechnoTUT Networkでは、コンテナ基盤上で照明シミュレータを提供しています。\
+[![TechnoTUT/dmxsim - GitHub](https://gh-card.dev/repos/TechnoTUT/dmxsim.svg?fullname=)](https://github.com/TechnoTUT/dmxsim)
+
+| 項目 | 値 |
+| :--- | :--- |
+| 画面 | http://dmxsim.svc.technotut.net/ |
+| Art-Netの送信先 | `10.12.241.254` (`dmxsim.svc.technotut.net`) |
+| ポート | Art-Net: UDP 6454、画面: TCP 80 |
+| Universe | 0 (Net 0 / SubNet 0 / Universe 0) |
+
+## 照明シミュレータを利用する
+
+### 画面を開く
+ブラウザで http://dmxsim.svc.technotut.net/ を開きます。左上の表示が緑になれば、Art-Netを受信しています。\
+受信が止まると、最後に受け取った値のまま表示を続けます。
+
+### 照明ソフトの設定
+照明ソフトの出力をArt-Netにし、送信先に `10.12.241.254` をユニキャストで指定します。Universeは0です。\
+QLC+の場合は、`Inputs/Outputs` タブでUniverseの出力に `ArtNet` を選び、設定 (スパナのアイコン) で送信先のIPアドレスを `10.12.241.254` にします。
+
+<Admonition type="info">
+
+- **送信先は直接指定する**: 照明シミュレータはコンテナ基盤上 (`10.12.0.0/16`) で動いているため、ブロードキャストやArtPollによる自動検出は届きません。送信先のIPアドレスを直接指定してください。
+- **通信できるVLAN**: 画面 (HTTP) は、DJ (VLAN 10) とAV (VLAN 20) から開けます。Art-Net (UDP 6454) は、現在のFortiGateのポリシーではMGMT (`al-mgmt-sv`) からしか届きません。DJやAVの照明ソフトから送るには、FortiGateでKubernetesのServiceへのUDP 6454を許可する必要があります。詳細は [ネットワーク仕様](/network/spec#通信制御) を参照してください。
+- **同時に送らない**: 複数の照明ソフトから同じUniverseに送ると、値が交互に届いて表示がちらつきます。
+
+</Admonition>
+
+### 画面の操作
+| 操作 | 内容 |
+| :--- | :--- |
+| 左下のボタン | 視点の切り替え (Overview / Audience / DJ / Top) |
+| 左ドラッグ | その場で見回す |
+| W A S D / Space / Shift | 前後左右 / 上昇 / 下降 |
+| 右のパネル | `Fixtures`: 灯体ごとの状態とチャンネル値、`DMX`: 512chのモニター、`View`: スモークの量・壁の表示・解像度など |
+
+## 灯体とアドレス
+| 灯体 | アドレス | チャンネル数 |
+| :--- | :--- | :--- |
+| MINI SPOT 30 1〜4 (ムービングヘッド、天吊り) | 1, 10, 19, 28 | 9 |
+| Twinkle Ball 1 (ミラーボール) | 37 | 8 |
+| PAR 1〜2 (天井、ステージを照らす) | 45, 50 | 5 (RGBWA) |
+| LASER SCAN 300 1〜2 | 55, 72 | 17 |
+| PAR 3〜4 (DJブース前の床、斜め上45°で交差) | 89, 94 | 5 (RGBWA) |
+
+灯体の配置やチャンネル構成は、[TechnoTUT/dmxsim](https://github.com/TechnoTUT/dmxsim) の `config/` で設定しています。
+
+## 更新する
+灯体の配置や設定を変えるときは、[TechnoTUT/dmxsim](https://github.com/TechnoTUT/dmxsim) を変更し、バージョンのタグ (例: `v1.1.0`) をpushします。GitHub Actionsがイメージをビルドして `ghcr.io/technotut/dmxsim` に置き、Releaseを作ります。\
+その後、このリポジトリの `k8s/manifest/dmxsim/deployment.yaml` のイメージのタグを書き換えて `main` にマージすると、Argo CDが入れ替えます。
