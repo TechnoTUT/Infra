@@ -6,12 +6,17 @@ export const site = {
   logo: '/img/technotut_logo.svg',
   editUrl: 'https://github.com/TechnoTUT/Infra/tree/main/docs/',
   github: 'https://github.com/TechnoTUT/Infra/',
-  // docs/content 直下のフォルダ名 = セクション
+  // docs/content 直下のフォルダ名 (groups 指定時は複数フォルダを1タブにまとめる)
   sections: [
-    { id: 'network', label: 'Network' },
-    { id: 'computing', label: 'Computing' },
+    {
+      id: 'nw-compute',
+      label: 'NW/Compute',
+      groups: [
+        { folder: 'network', label: 'Network' },
+        { folder: 'computing', label: 'Compute' },
+      ],
+    },
     { id: 'service', label: 'Service' },
-    { id: 'web', label: 'Web' },
   ],
   footerLinks: [
     { label: 'Home', href: 'https://technotut.net' },
