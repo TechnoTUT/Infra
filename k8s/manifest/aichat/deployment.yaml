@@ -1,4 +1,4 @@
-# aichat: Gemini (無料枠の gemini-4-hydrogen) で、クラスタの状態とリポジトリを読んで答える Web チャット。
+# aichat: Gemini API の無料枠のモデル (gemma-4-31b-it) で、クラスタの状態とリポジトリを読んで答える Web チャット。
 # git-sync が TechnoTUT/Infra の main を 5 分ごとに取り込み、チャットはそれを読む (ドキュメントとマニフェスト)。
 # Gemini の API キーの Secret (aichat) は Ansible が作る (roles/addons/tasks/aichat.yml)。
 apiVersion: apps/v1
@@ -34,7 +34,8 @@ spec:
         image: ghcr.io/technotut/aichat:main
         imagePullPolicy: Always
         env:
-        - { name: GEMINI_MODEL, value: gemini-4-hydrogen }
+        # gemini-4-hydrogen は RPD が少なく (1 問で複数リクエスト使う)、混雑で 503 も返すため Gemma 4 にする
+        - { name: GEMINI_MODEL, value: gemma-4-31b-it }
         - { name: REPO_DIR, value: /repo/current }
         - { name: MAX_CONCURRENT, value: "2" }   # 無料枠のレート制限に合わせて同時に動かす質問を絞る
         - name: GEMINI_API_KEY
