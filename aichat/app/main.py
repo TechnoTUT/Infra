@@ -16,6 +16,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from google import genai
 from google.genai import errors, types
 from pydantic import BaseModel, Field
@@ -38,6 +39,8 @@ SLOTS = threading.Semaphore(int(os.environ.get("MAX_CONCURRENT", "2")))
 STATIC = Path(__file__).parent / "static"
 gemini = genai.Client(api_key=API_KEY) if API_KEY else None
 app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
+# ロゴと favicon (booth-display と同じ TechnoTUT のロゴ)
+app.mount("/static", StaticFiles(directory=STATIC), name="static")
 
 
 class Message(BaseModel):
