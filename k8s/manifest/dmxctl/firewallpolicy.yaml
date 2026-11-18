@@ -22,3 +22,17 @@ spec:
   service: [DMXCTL-REMOTE-9300]
   action: accept
   comments: dmxctl remote from VLAN20
+---
+# 操作パネル (dmx.svc.technotut.net) は Cilium Ingress の共有 LB で受けるので、宛先は k8s-ingress。
+apiVersion: fortigate.technotut.net/v1alpha1
+kind: FirewallPolicy
+metadata:
+  name: al-dmxctl-panel
+spec:
+  srcintf: [sw20]
+  dstintf: [dmz]
+  srcaddr: [VLAN20 subnet]
+  dstaddr: [k8s-ingress]
+  service: [HTTP]
+  action: accept
+  comments: dmxctl panel from VLAN20

@@ -1,0 +1,26 @@
+# ndi: 演出側 (VLAN20) の NDI 機器から Discovery Server (TCP 5959) を許可する。
+# FortiGate の設定は fortigate-operator が反映する (https://github.com/TechnoTUT/fortigate-operator)。
+# 宛先の LB IP は FortiGate の Kubernetes SDN コネクタの動的アドレス k8s-svc に含まれる。
+apiVersion: fortigate.technotut.net/v1alpha1
+kind: FirewallService
+metadata:
+  name: ndi-discovery
+  namespace: ndi
+spec:
+  name: NDI-DISCOVERY-5959
+  tcpPortrange: ["5959"]
+  comment: NDI Discovery Server
+---
+apiVersion: fortigate.technotut.net/v1alpha1
+kind: FirewallPolicy
+metadata:
+  name: al-ndi-av
+  namespace: ndi
+spec:
+  srcintf: [sw20]
+  dstintf: [dmz]
+  srcaddr: [VLAN20 subnet]
+  dstaddr: [k8s-svc]
+  service: [NDI-DISCOVERY-5959]
+  action: accept
+  comments: ndi discovery from VLAN20

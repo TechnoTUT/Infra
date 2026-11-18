@@ -1,0 +1,30 @@
+# live: VLAN10 (DJ) と VLAN20 (AV) から、RTMP と HTTP を許可する。
+# FortiGate の設定は fortigate-operator が反映する (https://github.com/TechnoTUT/fortigate-operator)。
+# 宛先の LB IP は FortiGate の Kubernetes SDN コネクタの動的アドレス k8s-svc に含まれる。
+apiVersion: fortigate.technotut.net/v1alpha1
+kind: FirewallPolicy
+metadata:
+  name: al-live-av
+  namespace: live
+spec:
+  srcintf: [sw20]
+  dstintf: [dmz]
+  srcaddr: [VLAN20 subnet]
+  dstaddr: [k8s-svc]
+  service: [HTTP, RTMP]
+  action: accept
+  comments: live from VLAN20
+---
+apiVersion: fortigate.technotut.net/v1alpha1
+kind: FirewallPolicy
+metadata:
+  name: al-live-dj
+  namespace: live
+spec:
+  srcintf: [sw10]
+  dstintf: [dmz]
+  srcaddr: [VLAN10 subnet]
+  dstaddr: [k8s-svc]
+  service: [HTTP, RTMP]
+  action: accept
+  comments: live from VLAN10

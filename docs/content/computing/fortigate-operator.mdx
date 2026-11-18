@@ -4,7 +4,7 @@ sidebar_label: fortigate-operator
 sidebar_position: 5
 ---
 
-FortiGate のファイアウォールポリシー、アドレス、サービスを、Kubernetes の manifest で管理します。コントローラ [fortigate-operator](https://github.com/TechnoTUT/fortigate-operator) が manifest の内容を FortiGate の REST API で反映するため、ポリシーを必要とするアプリケーションの manifest と同じ Git の管理下に置けます。本書は、その全体構成と運用方法を整理したものです。
+FortiGate のファイアウォールポリシー、アドレス、サービスを、Kubernetes の manifest で管理します。コントローラ [fortigate-operator](https://github.com/TechnoTUT/fortigate-operator) が manifest の内容を FortiGate の REST API で反映するため、ポリシーを必要とするアプリケーションの manifest と同じ Git の管理下に置けます。本書は、その全体構成を整理したものです。
 
 <RepoCard repo="TechnoTUT/fortigate-operator" />
 
@@ -141,9 +141,3 @@ execute api-user generate-key fortigate-operator    # 出力を vault_fortigate_
 ```
 
 `dmz` で REST API (HTTPS) を受けるため、`dmz` の `allowaccess` に `https` が必要です (ExternalDNS と共通)。
-
-## 運用
-- **ポリシーの追加:** アプリケーションの manifest に `FirewallPolicy` などを加え、Argo CD で反映します。
-- **既存の手作りのポリシー:** `fortigate.technotut.net/adopt: "true"` の annotation を付けて引継ぎます。現在、コントローラが管理するポリシーはまだありません (27 件の既存ポリシーは手作りのまま)。
-- **障害時:** `kubectl get fortigate -A` の `READY` と `REASON` を確認します。FortiGate が書込みを拒否した場合は、`status.conditions` の message に FortiGate のエラーが含まれます。
-- **FortiGate 側の手動の変更:** 管理対象は次の再確認で元に戻されます。変更を残したい場合は、manifest を修正してください。
