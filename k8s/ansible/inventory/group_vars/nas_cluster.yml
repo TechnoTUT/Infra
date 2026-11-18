@@ -38,6 +38,7 @@ arc_enabled: false
 dns_enabled: false                   # drive.svc.technotut.net は main の ExternalDNS が載せる (dns_static_records)
 cilium_ingress_enabled: false
 fortigate_operator_enabled: false    # FortiGate のポリシーは main の fortigate-operator が書く
+aichat_enabled: false                # aichat は main のクラスタだけ
 # main の Argo CD が管理する (argocd_server の becky にクラスタを登録する)。
 argocd_enabled: false
 argocd_register_cluster: true

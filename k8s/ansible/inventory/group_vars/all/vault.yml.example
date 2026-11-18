@@ -7,6 +7,8 @@ vault_externaldns_fortigate_token: "CHANGE_ME"
 # 例: fortigate-operator が使う FortiGate の REST API 管理者の API キー
 #     FortiGate で execute api-user generate-key fortigate-operator を実行した出力
 vault_fortigate_operator_token: "CHANGE_ME"
+# 例: aichat が使う Gemini API キー (Google AI Studio の Get API key で発行する。無料枠でよい)
+vault_gemini_api_key: "CHANGE_ME"
 # 例: GitHub Actions の self-hosted runner (ARC) が使う GitHub App
 #     TechnoTUT の org に App を作ってインストールし、次の 3 つを入れる
 vault_arc_github_app_id: "CHANGE_ME"                 # App ID (または Client ID)

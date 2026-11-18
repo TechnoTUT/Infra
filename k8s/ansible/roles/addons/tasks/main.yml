@@ -147,6 +147,18 @@
   ansible.builtin.include_tasks: fortigate-operator.yml
   when: fortigate_operator_enabled
 
+# ---- aichat の Gemini API キー（チャット本体は Argo CD が入れる）----
+- name: aichat
+  ansible.builtin.include_tasks: aichat.yml
+  when: aichat_enabled and vault_gemini_api_key is defined
+
+- name: Gemini API キーがないことを知らせる
+  ansible.builtin.debug:
+    msg: >
+      vault.yml に vault_gemini_api_key がないため、aichat の Secret を作らない
+      （チャットの画面は起動するが「API キー未設定」になる）。
+  when: aichat_enabled and vault_gemini_api_key is not defined
+
 # ---- ArgoCD ----
 - name: ArgoCD
   when: argocd_enabled

@@ -224,6 +224,11 @@ externaldns_fortigate_dry_run: false   # true なら FortiGate に書かず、�
 # FortiGate 側は accprofile と api-user の fortigate-operator (firewall の policy / address / service を read-write)。
 fortigate_operator_namespace: fortigate-operator
 
+# ===== aichat (k8s/manifest/aichat) =====
+# Gemini でクラスタの状態とリポジトリを読んで答える Web チャット。本体は Argo CD が入れ、
+# Ansible は API キーの Secret だけを作る。キーは vault.yml の vault_gemini_api_key に置く。
+aichat_namespace: aichat
+
 # ===== NAS（nas グループのノード。ongeki）=====
 # /nas（md RAID0、ext4）をそのまま Samba のコンテナにマウントする（k8s/manifest/nas/ の local PV）。
 # SELinux のラベルを container_file_t にし、ホストの Samba (smb, nmb) は止める。
@@ -239,6 +244,7 @@ dns_enabled: true            # ExternalDNS (FortiGate の webhook)
 cilium_ingress_enabled: true
 fortigate_sdn_enabled: true  # FortiGate の Kubernetes SDN コネクタ用の ServiceAccount (両方のクラスタ)
 fortigate_operator_enabled: true  # fortigate-operator の API キーの Secret (main のクラスタだけ)
+aichat_enabled: true         # aichat の Gemini API キーの Secret (main のクラスタだけ)
 
 # ===== RHEL 系のノード（ongeki: AlmaLinux 10）=====
 # containerd の CRI で SELinux を使うか。true にすると Pod が container_t で動くが、kubeadm の
