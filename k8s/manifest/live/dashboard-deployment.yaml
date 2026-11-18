@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rtmp-dashboard
+  labels:
+    app: rtmp-dashboard
+  namespace: live
+spec:
+  selector:
+    matchLabels:
+      app: rtmp-dashboard
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: rtmp-dashboard
+    spec:
+      containers:
+      - name: rtmp-dashboard
+        image: ghcr.io/technotut/rtmp-live-server-dashboard:main
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
+        env:
+        - name: RTMP_STAT_URL
+          value: http://rtmp-service/stat
+        - name: RTMP_THUMBNAIL_BASE_URL
+          value: http://rtmp-service/thumbnails
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 500m
+            memory: 256Mi
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rtmp-dashboard
+  labels:
+    app: rtmp-dashboard
+  namespace: live
+spec:
+  selector:
+    app: rtmp-dashboard
+  type: ClusterIP
+  ports:
+    - name: http
+      protocol: TCP
+      port: 3000
+      targetPort: 3000
