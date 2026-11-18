@@ -36,7 +36,7 @@ spec:
         env:
         # gemini-4-hydrogen と gemma-4-31b-it は混雑で 503 を返し続けたため Flash にする
         - { name: GEMINI_MODEL, value: gemini-3.8-flash }
-        - { name: REPO_DIR, value: /repo/current }
+        - { name: REPO_DIR, value: /repo/git/current }
         - { name: MAX_CONCURRENT, value: "2" }   # 無料枠のレート制限に合わせて同時に動かす質問を絞る
         - name: GEMINI_API_KEY
           valueFrom:
@@ -69,10 +69,15 @@ spec:
         args:
         - --repo=https://github.com/TechnoTUT/Infra.git
         - --ref=main
-        - --root=/repo
+        # emptyDir (/repo) の持ち主は root なので、git が dubious ownership で拒むことがある。
+        # git-sync 自身に作らせたサブディレクトリを使い、中身の持ち主を git-sync の UID に揃える
+        - --root=/repo/git
         - --link=current
         - --depth=1
         - --period=300s
+        # WAN が不安定なので、取り込みに失敗してもコンテナを落とさずに再試行を続ける
+        - --max-failures=-1
+        - --init-period=10s   # 最初の取り込みが成功するまでは 10 秒おきに再試行する
         resources:
           requests:
             cpu: 10m
