@@ -115,7 +115,8 @@ ansible-playbook playbooks/site.yml
 | containerd | containerd.io のインストール |
 | nfs | becky を NFS サーバにする (`/nfs`) |
 | kubeadm | kubelet・kubeadm・kubectl のインストール、`kubeadm init`、`kubeadm join` |
-| addons | Helm、Cilium、Multus と NAD、NFS provisioner、Argo CD と親の Application (`root`)、ExternalDNS (FortiGate の webhook) |
+| vxlan_cni | vxlan-cni のプラグイン (`/opt/cni/bin/vxlan`) と DHCP デーモン (`cni-dhcp.service`) のインストール |
+| addons | Helm、Cilium、Multus と NAD (vxlan-cni を含む)、NFS provisioner、Argo CD と親の Application (`root`)、ExternalDNS (FortiGate の webhook) |
 
 `kubeadm init` は Pod CIDR を `10.15.0.0/16`、Service CIDR (ClusterIP) を `10.96.0.0/12` で作成します。kube-proxy は Cilium で置き換えるため入れません。
 
@@ -230,6 +231,66 @@ PRO DJ LINK や Ableton Link のネットワークと L2 で接続する場合�
 
 Cilium は既定で、他の CNI の設定ファイルを `*.cilium_bak` に退避します。Multus の設定 (`/etc/cni/net.d/00-multus.conflist`) も退避されて、Pod に br10・br20 のインターフェースが付かなくなります。そのため、`multus_enabled: true` のときは Cilium の `cni.exclusive` を `false` にしています。  
 構築済みのクラスタでこの設定を変えたときは、Multus を再起動して設定ファイルを作り直します (`kubectl -n kube-system rollout restart ds/kube-multus-ds`)。
+
+### vxlan-cni (VLAN を Pod の manifest で選ぶ)
+[vxlan-cni](https://github.com/TechnoTUT/vxlan-cni) は、Pod を VXLAN 経由で任意の VLAN につなぐ CNI プラグインです。Pod の manifest に VLAN の番号を書くだけで、その VLAN につながります。VLAN は FortiGate との間の VXLAN (VNI = VLAN ID) で運ぶので、ノードのトランクや VLAN の設定は要りません。
+
+```yaml
+metadata:
+  annotations:
+    k8s.v1.cni.cncf.io/networks: |
+      [{ "name": "vxlan", "namespace": "kube-public", "cni-args": { "vlan": 20 } }]
+```
+
+```mermaid
+flowchart LR
+  dev["VLAN 20 の機器"] --- n1["N-1"]
+  n1 -- "po1 (タグ 20)" --- vlan
+  subgraph fg["FortiGate"]
+    vlan["VLAN20"] --- sw["software switch"] --- vx["vxlan20 (dmz)"]
+  end
+  vx <-- "VXLAN (UDP 4789)" --> nvx
+  subgraph node["ノード"]
+    nvx["vxlan20"] --- br["vxbr20"]
+  end
+  br --- pod["Pod (net1)"]
+```
+
+| 項目 | 内容 |
+|---|---|
+| NAD | `kube-public/vxlan` の 1 つだけ。VLAN は Pod の `cni-args` の `vlan` で選ぶ |
+| 選べる VLAN | `vxlan_cni_allowed_vlans` に入れた VLAN だけ。それ以外はプラグインが拒否する。空のときは NAD を置かない |
+| アドレス | `dhcp` IPAM で、その VLAN の DHCP サーバ (FortiGate) から受け取る。DHCP の経路にあるデフォルトルートは捨てる (デフォルトルートは Cilium の `eth0`) |
+| VTEP | Pod を作ったノードに、`vxlan<VLAN>` とブリッジ `vxbr<VLAN>` をプラグインが作る。その VLAN の Pod がいなくなると消す |
+| MTU | 1450 (`dmz` の 1500 から VXLAN の 50 を引いた値) |
+| ノード間 | FortiGate は VXLAN の相手どうしを中継しないため、NAD の `peers` に全ノードの IP (`node_ip`) を入れている |
+
+Ansible の `vxlan_cni` ロールがプラグインと DHCP デーモン (`cni-dhcp.service`) を全ノードに入れ、`addons` ロールが NAD を作ります。
+
+#### VLAN を追加する手順
+1. FortiGate に、VLAN ごとに VXLAN と software switch を作ります。VLAN の IP アドレス、DHCP サーバ、ポリシーは software switch に移します。software switch のメンバーにした VLAN インターフェースには IP アドレスを付けられません。
+   ```
+   config system vxlan
+       edit "vxlan20"
+           set interface "dmz"
+           set vni 20
+           set remote-ip "192.168.99.200" "192.168.99.201" "192.168.99.202"
+       next
+   end
+   config system switch-interface
+       edit "sw20"
+           set vdom "root"
+           set member "VLAN20" "vxlan20"
+           set intra-switch-policy implicit
+       next
+   end
+   ```
+2. `vxlan_cni_allowed_vlans` に VLAN の番号を足して `site.yml` を流します。
+
+- ノードを追加したときは、FortiGate の `remote-ip` にも追加します。NAD の `peers` は `site.yml` で更新されます。
+- VXLAN のカプセル化と software switch の転送は、FortiGate 100D では CPU で処理されます。流量の多い VLAN で使う前に、FortiGate の CPU 使用率を確認してください。
+- software switch にアドレスを付けると、そのサブネットは BGP (connected の再配布) で広報されます。
+- FortiGate 100D (FortiOS 6.2.16) での動作確認の結果は [vxlan-cni の test/fortigate](https://github.com/TechnoTUT/vxlan-cni/tree/main/test/fortigate) にあります。
 
 ### DNS (ExternalDNS と FortiGate)
 `svc.technotut.net` ゾーンは FortiGate の DNS データベース (`config system dns-database`) に置きます。ExternalDNS が Service・Ingress・DNSEndpoint のレコードを、webhook ([TechnoTUT/external-dns-fortigate-webhook](https://github.com/TechnoTUT/external-dns-fortigate-webhook)) を通して FortiGate の REST API で書き換えます。Ansible の `dns` ロールが導入します。

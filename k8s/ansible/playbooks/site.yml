@@ -28,6 +28,12 @@
   hosts: workers
   roles: [kubeadm]
 
+- name: vxlan-cni（プラグインと DHCP デーモン）
+  hosts: k8s
+  roles:
+    - role: vxlan_cni
+      when: vxlan_cni_enabled
+
 - name: アドオンの導入
   hosts: control_plane
   roles: [addons]

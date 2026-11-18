@@ -1,0 +1,41 @@
+---
+# vxlan-cni (https://github.com/TechnoTUT/vxlan-cni) のプラグインと、dhcp IPAM 用の DHCP デーモンを入れる。
+# NetworkAttachmentDefinition は addons ロールが作る。
+# /opt/cni/bin は kubeadm ロールが入れる kubernetes-cni のパッケージが作る (dhcp プラグインもそこにある)。
+- name: dhcp プラグインがあることを確認する
+  ansible.builtin.stat:
+    path: /opt/cni/bin/dhcp
+  register: vxlan_cni_dhcp
+
+- name: dhcp プラグインがなければ止める
+  ansible.builtin.assert:
+    that: vxlan_cni_dhcp.stat.exists
+    fail_msg: /opt/cni/bin/dhcp がない。kubernetes-cni のパッケージが入っているか確認する。
+
+- name: vxlan プラグインを入れる
+  ansible.builtin.get_url:
+    url: "https://github.com/TechnoTUT/vxlan-cni/releases/download/{{ vxlan_cni_version }}/vxlan-linux-amd64"
+    dest: /opt/cni/bin/vxlan
+    checksum: "sha256:{{ vxlan_cni_sha256 }}"
+    mode: "0755"
+  become: true
+  register: vxlan_cni_download
+  retries: 3
+  delay: 10
+  until: vxlan_cni_download is succeeded
+
+- name: DHCP デーモンの unit を置く
+  ansible.builtin.template:
+    src: cni-dhcp.service.j2
+    dest: /etc/systemd/system/cni-dhcp.service
+    mode: "0644"
+  become: true
+  notify: restart cni-dhcp
+
+- name: DHCP デーモンを起動する
+  ansible.builtin.systemd_service:
+    name: cni-dhcp
+    enabled: true
+    state: started
+    daemon_reload: true
+  become: true

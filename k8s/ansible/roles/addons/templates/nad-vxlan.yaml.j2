@@ -1,0 +1,19 @@
+# vxlan-cni の NetworkAttachmentDefinition。全ての VLAN で共通。
+# Pod は cni-args の vlan で VLAN を選ぶ:
+#   k8s.v1.cni.cncf.io/networks: '[{"name": "{{ vxlan_cni_nad_name }}", "namespace": "{{ vxlan_cni_nad_namespace }}", "cni-args": {"vlan": 20}}]'
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: {{ vxlan_cni_nad_name }}
+  namespace: {{ vxlan_cni_nad_namespace }}
+spec:
+  config: |
+    {
+      "cniVersion": "1.0.0",
+      "name": "{{ vxlan_cni_nad_name }}",
+      "type": "vxlan",
+      "remote": "{{ vxlan_cni_remote }}",
+      "peers": {{ groups['k8s'] | map('extract', hostvars, 'node_ip') | list | to_json }},
+      "allowedVlans": {{ vxlan_cni_allowed_vlans | to_json }},
+      "ipam": { "type": "dhcp" }
+    }

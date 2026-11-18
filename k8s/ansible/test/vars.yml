@@ -35,3 +35,6 @@ externaldns_helm_wait: false
 # Cluster Mesh は検証しない (相手のクラスタがない)
 cilium_clustermesh_enabled: false
 cilium_native_routing_cidr: "10.15.0.0/16"
+
+# vxlan-cni の NAD を作るところまで確かめる (FortiGate がないので通信はしない)
+vxlan_cni_allowed_vlans: [20]

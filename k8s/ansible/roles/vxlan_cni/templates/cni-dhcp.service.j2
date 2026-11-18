@@ -1,0 +1,16 @@
+# Ansible (vxlan_cni ロール) が管理する。
+# CNI の dhcp IPAM が使う DHCP クライアントのデーモン。Pod の netns の中で DHCP を行う。
+[Unit]
+Description=CNI DHCP daemon (dhcp IPAM for vxlan-cni)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStartPre=/bin/mkdir -p /run/cni
+ExecStartPre=/bin/rm -f /run/cni/dhcp.sock
+ExecStart=/opt/cni/bin/dhcp daemon
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
