@@ -1,6 +1,6 @@
 # aichat
 
-TechnoTUT のインフラについて、Gemini API の無料枠のモデル (`gemma-4-31b-it`) が日本語で答える Web チャットです。
+TechnoTUT のインフラについて、Gemini API のモデル (`gemini-3.8-flash`) が日本語で答える Web チャットです。
 クラスタは読み取り専用の ServiceAccount で読み、リポジトリは git-sync が取り込んだものを読みます。
 
 - 使い方: [docs/content/service/aichat.mdx](../docs/content/service/aichat.mdx)

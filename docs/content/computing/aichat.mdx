@@ -12,7 +12,7 @@ sidebar_position: 6
 | ソース | [`aichat/`](https://github.com/TechnoTUT/Infra/tree/main/aichat) (Python、FastAPI、google-genai。依存は uv で管理) |
 | イメージ | `ghcr.io/technotut/aichat:main` (GitHub Actions の `aichat image` がビルド) |
 | マニフェスト | [`k8s/manifest/aichat/`](https://github.com/TechnoTUT/Infra/tree/main/k8s/manifest/aichat) (Argo CD の Application `aichat`) |
-| モデル | `gemma-4-31b-it` (Gemini API の無料枠)。Deployment の環境変数 `GEMINI_MODEL` で変える。1 問でツールを呼ぶたびに 1 リクエストを使うので、RPD の少ないモデルは避ける |
+| モデル | `gemini-3.8-flash` (Gemini API)。Deployment の環境変数 `GEMINI_MODEL` で変える。1 問でツールを呼ぶたびに 1 リクエストを使うので、RPD の少ないモデルは避ける |
 | URL | http://ai.svc.technotut.net (Cilium Ingress。VLAN 10・20 から HTTP を許可) |
 | API キー | Ansible の `aichat.yml` が Secret `aichat` を作成。Ansible Vault の `vault_gemini_api_key` に保管 |
 
