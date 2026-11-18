@@ -1,0 +1,14 @@
+# Ingress のバックエンド。外には出さない ClusterIP。
+apiVersion: v1
+kind: Service
+metadata:
+  name: aichat
+  labels:
+    app: aichat
+spec:
+  selector:
+    app: aichat
+  ports:
+  - name: http
+    port: 80
+    targetPort: http
