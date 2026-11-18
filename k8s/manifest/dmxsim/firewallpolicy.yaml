@@ -1,0 +1,40 @@
+# dmxsim: VLAN10 (DJ) と VLAN20 (AV) から、Art-Net (UDP 6454) と HTTP を許可する。
+# FortiGate の設定は fortigate-operator が反映する (https://github.com/TechnoTUT/fortigate-operator)。
+# 宛先の LB IP は FortiGate の Kubernetes SDN コネクタの動的アドレス k8s-svc に含まれる。
+apiVersion: fortigate.technotut.net/v1alpha1
+kind: FirewallService
+metadata:
+  name: dmxsim-artnet
+  namespace: dmxsim
+spec:
+  name: ARTNET-6454
+  udpPortrange: ["6454"]
+  comment: Art-Net
+---
+apiVersion: fortigate.technotut.net/v1alpha1
+kind: FirewallPolicy
+metadata:
+  name: al-dmxsim-av
+  namespace: dmxsim
+spec:
+  srcintf: [sw20]
+  dstintf: [dmz]
+  srcaddr: [VLAN20 subnet]
+  dstaddr: [k8s-svc]
+  service: [HTTP, ARTNET-6454]
+  action: accept
+  comments: dmxsim from VLAN20
+---
+apiVersion: fortigate.technotut.net/v1alpha1
+kind: FirewallPolicy
+metadata:
+  name: al-dmxsim-dj
+  namespace: dmxsim
+spec:
+  srcintf: [sw10]
+  dstintf: [dmz]
+  srcaddr: [VLAN10 subnet]
+  dstaddr: [k8s-svc]
+  service: [HTTP, ARTNET-6454]
+  action: accept
+  comments: dmxsim from VLAN10
