@@ -1,7 +1,7 @@
 ---
 title: Podman による疑似クラスタテスト
 sidebar_label: テスト
-sidebar_position: 3
+sidebar_position: 6
 ---
 
 実機に触れずに [k8s/ansible/](https://github.com/TechnoTUT/Infra/tree/main/k8s/ansible) の Playbook (`site.yml`) を検証するため、[k8s/ansible/test/](https://github.com/TechnoTUT/Infra/tree/main/k8s/ansible/test) に Podman による疑似クラスタ環境を用意しています。`becky`・`packard`・`frr` の 3 つの特権 systemd コンテナを起動し、`podman exec` 経由で Ansible を実行します。
