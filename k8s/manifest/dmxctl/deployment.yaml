@@ -1,0 +1,77 @@
+# dmxctl headless。USB-DMX (/dev/ttyUSB0) を持つ packard に固定し、1 つだけ動かす。
+# AV (VLAN 20) には VXLAN の net1 でつなぐ。remote-listen (9300) と OSC (9000) は net1 の IP で受ける。
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dmxctl
+  labels:
+    app: dmxctl
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: dmxctl
+  template:
+    metadata:
+      labels:
+        app: dmxctl
+      annotations:
+        k8s.v1.cni.cncf.io/networks: |
+          [{ "name": "vxlan", "namespace": "kube-public", "cni-args": { "vlan": 20 } }]
+    spec:
+      nodeName: packard
+      # SIGTERM で安全な値を送ってから止まるので、それを待てるようにする
+      terminationGracePeriodSeconds: 10
+      securityContext:
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        supplementalGroups: [20]   # dialout (/dev/ttyUSB0)
+      containers:
+      - name: dmxctl
+        # main を常に最新にするため、Pod の起動ごとに pull する
+        image: ghcr.io/technotut/dmxctl:main
+        imagePullPolicy: Always
+        args:
+        - headless
+        - --remote-listen
+        - 0.0.0.0
+        ports:
+        - { name: web, containerPort: 8080, protocol: TCP }
+        - { name: remote, containerPort: 9300, protocol: TCP }
+        - { name: osc, containerPort: 9000, protocol: UDP }
+        readinessProbe:
+          tcpSocket:
+            port: web
+          periodSeconds: 10
+        livenessProbe:
+          tcpSocket:
+            port: web
+          initialDelaySeconds: 15
+          periodSeconds: 30
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            memory: 512Mi
+        # デバイスを cgroup に通すため privileged にする (qlcplus と同じ)。実行ユーザーは非 root のまま
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - { name: data, mountPath: /data }
+        - { name: tmp, mountPath: /tmp }
+        - { name: usb-dmx, mountPath: /dev/ttyUSB0 }
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: dmxctl-data
+      - name: tmp
+        emptyDir: {}
+      - name: usb-dmx
+        hostPath:
+          path: /dev/ttyUSB0
+          type: CharDevice
+      restartPolicy: Always
