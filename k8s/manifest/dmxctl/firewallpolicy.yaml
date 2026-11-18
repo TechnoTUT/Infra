@@ -1,0 +1,24 @@
+# VLAN 20 (AV) の PC から、dmxctl connect のクライアントで LB IP (dmxctl-remote の 9300) に接続する。
+# 宛先の LB IP は FortiGate の Kubernetes SDN コネクタの動的アドレス k8s-svc に含まれる。
+# FortiGate の設定は fortigate-operator が反映する (https://github.com/TechnoTUT/fortigate-operator)。
+apiVersion: fortigate.technotut.net/v1alpha1
+kind: FirewallService
+metadata:
+  name: dmxctl-remote
+spec:
+  name: DMXCTL-REMOTE-9300
+  tcpPortrange: ["9300"]
+  comment: dmxctl remote
+---
+apiVersion: fortigate.technotut.net/v1alpha1
+kind: FirewallPolicy
+metadata:
+  name: al-dmxctl-remote
+spec:
+  srcintf: [sw20]
+  dstintf: [dmz]
+  srcaddr: [VLAN20 subnet]
+  dstaddr: [k8s-svc]
+  service: [DMXCTL-REMOTE-9300]
+  action: accept
+  comments: dmxctl remote from VLAN20

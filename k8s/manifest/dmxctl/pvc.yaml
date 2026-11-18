@@ -1,0 +1,11 @@
+# 設定 (~/.config/dmxctl = /data/.config/dmxctl) の置き場所。
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: dmxctl-data
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: nfs-client
+  resources:
+    requests:
+      storage: 1Gi

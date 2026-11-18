@@ -12,11 +12,9 @@ IPアドレスは`192.168.11.xxx`です。\
 xxxの部分は各LED BARごとに異なります。各基盤を参照してください。
 
 ## LED PAR・Moving Head
-LED PAR・Moving HeadはDMX信号で制御します。網内で提供しているコンテナ基盤では、Art-Net信号をDMX信号に変換するサービスを提供しています。\
-変換サービスは`dmx.svc.technotut.net`及び`10.12.240.254`にて提供しています。\
-Web-GUIで設定を行う場合は、http://dmx.svc.technotut.net/ にアクセスしてください。
-
-詳細は、[TechnoTUT/qlcplus-artnet-to-dmx-converter](https://github.com/TechnoTUT/qlcplus-artnet-to-dmx-converter)を参照してください。
+LED PAR・Moving HeadはDMX信号で制御します。網内では、[TechnoTUT/dmxctl](https://github.com/TechnoTUT/dmxctl)がUSB-DMXアダプタ経由で直接制御します。\
+操作パネルは http://dmx.svc.technotut.net/ です。\
+dmxctlはAV(VLAN20)にVXLANで接続しており、OSCを受信できます。`dmxctl connect`のクライアントやOSCは、`dmxctl.svc.technotut.net`(LoadBalancer IP `10.12.240.254`)のTCP 9300・UDP 9000に接続します。
 
 ## 照明シミュレータ
 照明機材がなくても演出を確認できるよう、Art-Netを受けて会場の灯体を3Dで点灯させるシミュレータを提供しています。\

@@ -1,0 +1,19 @@
+# 操作パネル (パスワードなし)。Cilium Ingress (共有 LB) で受ける。
+# DNS (dmx.svc.technotut.net) は ExternalDNS が登録する。
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: dmxctl
+spec:
+  ingressClassName: cilium
+  rules:
+  - host: dmx.svc.technotut.net
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: dmxctl
+            port:
+              name: http
