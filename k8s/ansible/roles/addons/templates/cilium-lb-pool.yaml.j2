@@ -1,15 +1,15 @@
-{% if dns_enabled %}
-# bind9 専用（FortiGate の DNS 転送先）。
+{% if dns_enabled and dns_keep_legacy_bind9 %}
+# 旧構成の bind9 専用 (FortiGate の DNS 転送先)。移行のあいだだけ残す (dns_keep_legacy_bind9)。
 apiVersion: cilium.io/v2
 kind: CiliumLoadBalancerIPPool
 metadata:
   name: dns
 spec:
   blocks:
-    - cidr: {{ bind9_lb_ip }}/32
+    - cidr: {{ dns_legacy_lb_ip }}/32
   serviceSelector:
     matchLabels:
-      io.kubernetes.service.namespace: {{ dns_namespace }}
+      io.kubernetes.service.namespace: {{ dns_legacy_namespace }}
       io.kubernetes.service.name: bind9
 ---
 {% endif %}

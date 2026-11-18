@@ -1,5 +1,5 @@
 ---
-# bind9 と ExternalDNS
+# ExternalDNS (FortiGate の webhook)。FortiGate がないので、webhook は Ready にならない
 - name: dns
   hosts: control_plane
   tasks:

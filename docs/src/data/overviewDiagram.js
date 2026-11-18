@@ -28,7 +28,7 @@ export const overviewDiagram = `flowchart LR
 
     subgraph SG_K8S["Kubernetes 基盤 (VLAN 100: sv)"]
         direction TB
-        BIND["bind9<br/>(内部 DNS)"]
+        EDNS["ExternalDNS<br/>(svc.technotut.net を登録)"]
         PLMUX["plmux<br/>楽曲情報 / オーバーレイ"]
         NDIDS["NDI Discovery Server<br/>ソース登録・検索"]
         RTMP["rtmp-live-server &amp;<br/>sony-camera-rtmp-relay"]
@@ -56,7 +56,7 @@ export const overviewDiagram = `flowchart LR
     end
 
     %% 基盤との接続
-    FG -- "DNS クエリ転送" --> BIND
+    EDNS -- "REST API でレコードを更新" --> FG
     FG --- SG_PA
 
     %% PRO DJ LINK & Ableton Link / OSC

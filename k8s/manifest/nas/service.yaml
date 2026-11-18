@@ -1,5 +1,5 @@
 # nas のクラスタの LoadBalancer (10.14.0.0/24)。ongeki が BGP で FortiGate (port9) に広報する。
-# drive.svc.technotut.net は main のクラスタの bind9 に固定で載せている (bind9_static_records)。
+# drive.svc.technotut.net は main のクラスタの ExternalDNS が固定で載せている (dns_static_records)。
 # externalTrafficPolicy: Local でクライアントの IP を残す。
 apiVersion: v1
 kind: Service

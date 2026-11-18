@@ -46,7 +46,7 @@ common_packages_absent:
   - docker-ce-rootless-extras
   - docker-buildx-plugin
   - docker-compose-plugin
-  - bind9                # ホストの bind9 は未使用（DNS はクラスタ内の bind9）
+  - bind9                # ホストの bind9 は使わない (DNS は FortiGate)
   - bind9-utils
   - golang
   - golang-go
@@ -119,8 +119,8 @@ argocd_network_policy: true   # コンテナでのテスト時だけ false に�
 
 # ===== クラスタ内のコンテナレジストリ =====
 # 自前でビルドしたイメージ (ndi など) を置く。外部には公開せず、固定の ClusterIP で提供する (HTTP)。
-# 名前は bind9 (svc.technotut.net) に固定のレコードとして載せる。クラスタ内の Pod は CoreDNS から
-# bind9 に問い合わせて引く。ノードは TUT の DNS を参照するので、/etc/hosts に書く (common ロール)。
+# 名前は svc.technotut.net に固定のレコードとして載せる (dns_static_records)。クラスタ内の Pod は CoreDNS から
+# FortiGate に問い合わせて引く。ノードは TUT の DNS を参照するので、/etc/hosts に書く (common ロール)。
 # ノードの containerd は Cilium の socket LB で ClusterIP に届く。
 # イメージの参照は {{ registry_host }}/<名前>:<タグ> (例: registry.svc.technotut.net/technotut/ndi-discovery-server:main)。
 registry_enabled: true
@@ -162,7 +162,6 @@ registry_images:
 
 # ===== LoadBalancer の IP プール =====
 # LoadBalancer の IP は 10.12.0.0/16（BGP で広報する）。用途ごとにプールを分ける。
-# - dns:     10.12.0.0。bind9 専用（FortiGate の DNS 転送先）
 # - default: IP を指定しない Service に自動で割り当てる
 # - static:  loadBalancerIP で IP を固定する Service 用。cilium_lb_static_label を付けた Service だけが使える。
 #            自動割り当ての Service に、固定 IP を先に取られないようにするため。
@@ -172,18 +171,42 @@ cilium_lb_static_start: "10.12.64.0"
 cilium_lb_static_stop: "10.12.255.254"
 cilium_lb_static_label: lbipam.technotut.net/static
 
-# ===== DNS (bind9 + ExternalDNS) =====
-dns_namespace: bind9
+# ===== DNS (ExternalDNS + FortiGate) =====
+# svc.technotut.net は FortiGate の DNS データベース (config system dns-database) に置く。
+# ExternalDNS が webhook (https://github.com/TechnoTUT/external-dns-fortigate-webhook) を通して
+# FortiGate の REST API でレコードを書き換える。
+# FortiGate のゾーンは webhook 専用。FortiGate に手で書いたエントリは消えるので、固定のレコードは
+# dns_static_records に書く (DNSEndpoint として ExternalDNS に渡す)。
+dns_namespace: external-dns
 dns_zone: svc.technotut.net
-bind9_lb_ip: "10.12.0.0"              # bind9 の LoadBalancer IP。FortiGate の DNS 転送先がこの IP を向いている
-bind9_image: "docker.io/internetsystemsconsortium/bind9:9.21"   # 現行と同じ（9.21 系）
-bind9_static_records:                  # ゾーンに固定で入れるレコード（他は ExternalDNS が登録する）
+dns_server: "192.168.99.129"           # CoreDNS が svc.technotut.net を問い合わせる先 (FortiGate の dmz)
+dns_static_records:                    # ゾーンに固定で入れるレコード (他は Service の annotation から登録される)
   - { name: pa, ip: "192.168.12.22" }
   - { name: registry, ip: "{{ registry_cluster_ip }}" }   # クラスタ内のレジストリ (ClusterIP。クラスタの外からは届かない)
   - { name: drive, ip: "10.14.0.128" }   # NAS の Samba (nas のクラスタの LoadBalancer。k8s/manifest/nas/service.yaml)
 externaldns_chart_version: "1.21.1"
-externaldns_tsig_keyname: externaldns-key
-# TSIG の秘密鍵は vault.yml の vault_externaldns_tsig_secret に置く。
+externaldns_release: external-dns-fortigate   # 旧 bind9 用のリリース (external-dns) と ClusterRole の名前が重ならないようにする
+externaldns_helm_wait: true            # webhook は FortiGate に届くまで Ready にならない
+externaldns_webhook_image: ghcr.io/technotut/external-dns-fortigate-webhook
+externaldns_webhook_tag: "0.1.0"
+externaldns_fortigate_url: "https://{{ dns_server }}"
+externaldns_fortigate_zone: "{{ dns_zone }}"   # FortiGate の dns-database の名前
+# 逆引きのゾーン (FortiGate の dns-database の名前)。webhook が A レコードから PTR を作る。
+# main の LoadBalancer (10.12.0.0/16) と nas の LoadBalancer (10.14.0.0/24)。
+externaldns_fortigate_reverse_zones:
+  - 12.10.in-addr.arpa
+  - 0.14.10.in-addr.arpa
+externaldns_fortigate_insecure: true   # FortiGate の証明書は自己署名
+externaldns_fortigate_token_in_query: false   # Bearer ヘッダで認証できない場合は true にする
+externaldns_fortigate_dry_run: false   # true なら FortiGate に書かず、書く内容をログに出す
+# API キーは vault.yml の vault_externaldns_fortigate_token に置く。
+
+# 旧構成 (クラスタ内の bind9) を残すか。移行が終わるまで true のままにする。
+# false なら、bind9 と旧 ExternalDNS (namespace bind9) と IP プール dns (10.12.0.0) を削除する。
+# 手順は docs/content/computing/deploy.mdx の「bind9 からの移行」。
+dns_keep_legacy_bind9: true
+dns_legacy_namespace: bind9
+dns_legacy_lb_ip: "10.12.0.0"
 
 # ===== NAS（nas グループのノード。ongeki）=====
 # /nas（md RAID0、ext4）をそのまま Samba のコンテナにマウントする（k8s/manifest/nas/ の local PV）。
@@ -196,7 +219,7 @@ nas_namespace: nas
 # ===== 機能の有無（nas のクラスタでは使わないものを止める。inventory/group_vars/nas_cluster.yml）=====
 nfs_enabled: true            # becky の NFS サーバと NFS provisioner
 argocd_enabled: true         # Argo CD (nas のクラスタは main の Argo CD が管理する)
-dns_enabled: true            # bind9 と ExternalDNS
+dns_enabled: true            # ExternalDNS (FortiGate の webhook)
 cilium_ingress_enabled: true
 fortigate_sdn_enabled: true  # FortiGate の Kubernetes SDN コネクタ用の ServiceAccount (両方のクラスタ)
 

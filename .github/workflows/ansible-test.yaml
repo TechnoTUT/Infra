@@ -79,7 +79,7 @@ jobs:
       - name: "stage2: Cilium, BGP, Multus, NFS provisioner, Argo CD"
         run: ./run.sh stage2
 
-      - name: "stage3: bind9 and ExternalDNS"
+      - name: "stage3: ExternalDNS (FortiGate webhook)"
         run: ./run.sh stage3
 
       - name: Verify cluster

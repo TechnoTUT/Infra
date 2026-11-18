@@ -17,7 +17,7 @@
 ./up.sh              # コンテナ・ネットワーク・FRR を作る
 ./run.sh stage1      # ノード準備 → kubeadm init / join
 ./run.sh stage2      # Cilium・BGP・Multus・NFS provisioner・ArgoCD
-./run.sh stage3      # bind9 と ExternalDNS
+./run.sh stage3      # ExternalDNS (FortiGate の webhook)
 ./down.sh            # 全て削除（コンテナ・ネットワーク・ボリューム・イメージ）
 ```
 同じ stage を 2 回流すと、冪等性（`changed=0`）を確認できる。
@@ -46,10 +46,10 @@ CI 固有の対処:
 Pod CIDR は 10.15.0.0/16、Service CIDR (ClusterIP) は 10.96.0.0/12、LB の IP プールは 10.12.0.0/16 で、本番と同じ。
 
 ## 検証できること
-`kubeadm init` / `join`、Pod / Service の CIDR、Cilium (kube-proxy 置き換え、Ingress、LB IP プール)、BGP (FRR での経路確認)、ArgoCD、bind9 と ExternalDNS (Service の annotation から A レコードが登録される)。
+`kubeadm init` / `join`、Pod / Service の CIDR、Cilium (kube-proxy 置き換え、Ingress、LB IP プール)、BGP (FRR での経路確認)、ArgoCD、ExternalDNS のチャートと webhook のサイドカーが入ること。
 
 ## 検証できないこと
-実機の VLAN とブリッジ、Multus の L2 通信、NFS provisioner の実動作 (NFS サーバがない)、network ロール、marie (packard と同じ設定)、Haswell でのメモリの余裕。
+実機の VLAN とブリッジ、FortiGate へのレコードの書き込み (FortiGate がないため、webhook は Ready にならない)、Multus の L2 通信、NFS provisioner の実動作 (NFS サーバがない)、network ロール、marie (packard と同じ設定)、Haswell でのメモリの余裕。
 
 ## テスト用の上書き (`vars.yml`)
 コンテナ固有の事情に対処するために、次の変数を上書きしている。本番の値は変えない。
@@ -62,8 +62,9 @@ Pod CIDR は 10.15.0.0/16、Service CIDR (ClusterIP) は 10.96.0.0/12、LB の I
 | `argocd_network_policy` | 入れ子のコンテナでは NetworkPolicy 下の probe が通らないため |
 | `node_dns_servers` | テストを動かす PC から TUT の DNS サーバに届かないため、公開 DNS を使う |
 | `argocd_root_include` | メモリ節約のため、root から作る Application は `cam1` と `dmx` だけにする |
+| `externaldns_helm_wait` | FortiGate がなく webhook が Ready にならないため、helm の完了を待たない |
 
 `up.sh` は、Cilium が `/sys/fs/bpf` を使えるように bpffs を shared でマウントする。また、kubeadm の preflight がカーネルの設定を読めるように、ホストの `/lib/modules` と `/boot` を読み取り専用でマウントする (Ubuntu では設定が `/boot/config-*` にある)。
 
 ## 注意
-- コンテナの DNS の search ドメインに podman のネットワーク由来の `dns.podman` が入る。CoreDNS の上流 (podman の DNS) が Pod から応答しないため、相対名の名前解決は遅くなる。ExternalDNS の bind9 は FQDN (末尾のドット) で指定してあるので影響しない。
+- コンテナの DNS の search ドメインに podman のネットワーク由来の `dns.podman` が入る。CoreDNS の上流 (podman の DNS) が Pod から応答しないため、相対名の名前解決は遅くなる。

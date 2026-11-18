@@ -1,31 +1,46 @@
+# FortiGate の dns-entry には TXT が置けないので、所有者の記録 (TXT registry) は使わない (registry: noop)。
+# ゾーンは webhook 専用。Kubernetes 側にないレコードは消える (policy: sync)。
 provider:
-  name: rfc2136
+  name: webhook
+  webhook:
+    image:
+      repository: {{ externaldns_webhook_image }}
+      tag: "{{ externaldns_webhook_tag }}"
+    env:
+      - { name: FORTIGATE_URL, value: "{{ externaldns_fortigate_url }}" }
+      - { name: FORTIGATE_ZONE, value: "{{ externaldns_fortigate_zone }}" }
+      - { name: FORTIGATE_REVERSE_ZONES, value: "{{ externaldns_fortigate_reverse_zones | join(',') }}" }
+      - { name: FORTIGATE_INSECURE_SKIP_VERIFY, value: "{{ externaldns_fortigate_insecure | lower }}" }
+      - { name: FORTIGATE_TOKEN_IN_QUERY, value: "{{ externaldns_fortigate_token_in_query | lower }}" }
+      - { name: DRY_RUN, value: "{{ externaldns_fortigate_dry_run | lower }}" }
+      # API キーは Secret から渡す (Deployment に平文で残さない)。
+      - name: FORTIGATE_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: external-dns-fortigate
+            key: token
+    readinessProbe:
+      httpGet:
+        path: /readyz
+        port: http-webhook
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 65532    # distroless の nonroot
+      runAsGroup: 65532
+      readOnlyRootFilesystem: true
+      allowPrivilegeEscalation: false
+      capabilities: { drop: [ALL] }
+    resources:
+      requests: { cpu: 10m, memory: 16Mi }
+      limits: { memory: 64Mi }
 sources: [service, ingress, crd]
 domainFilters:
   - {{ dns_zone }}
 policy: sync
-txtOwnerId: external-dns
-interval: 10s
+registry: noop
+managedRecordTypes: [A, AAAA, CNAME]
+interval: 1m
 logLevel: info
-extraArgs:
-  - --rfc2136-host=bind9.{{ dns_namespace }}.svc.cluster.local.
-  - --rfc2136-port=53
-  - --rfc2136-zone={{ dns_zone }}
-  - --rfc2136-tsig-keyname={{ externaldns_tsig_keyname }}
-  - --rfc2136-tsig-secret-alg=hmac-sha256
-  - --rfc2136-tsig-axfr
-  - --create-ptr
-  - --managed-record-types=A
-  - --managed-record-types=AAAA
-  - --managed-record-types=CNAME
-  - --managed-record-types=PTR
-# 秘密鍵は Secret から環境変数で渡す（Deployment に平文で残さない）。
-env:
-  - name: EXTERNAL_DNS_RFC2136_TSIG_SECRET
-    valueFrom:
-      secretKeyRef:
-        name: external-dns-tsig
-        key: secret
 rbac:
   create: true
 resources:

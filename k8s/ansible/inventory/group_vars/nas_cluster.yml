@@ -28,7 +28,7 @@ multus_enabled: false
 nfs_enabled: false
 registry_enabled: false
 arc_enabled: false
-dns_enabled: false                   # drive.svc.technotut.net は main の bind9 に固定で載せる
+dns_enabled: false                   # drive.svc.technotut.net は main の ExternalDNS が載せる (dns_static_records)
 cilium_ingress_enabled: false
 # main の Argo CD が管理する (argocd_server の becky にクラスタを登録する)。
 argocd_enabled: false

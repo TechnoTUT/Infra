@@ -28,7 +28,9 @@ cilium_bgp_peers:
   - { name: router, address: "172.31.99.129", asn: 64646 }
 
 # ダミーの鍵（テスト専用）
-vault_externaldns_tsig_secret: "dGVzdC10c2lnLXNlY3JldC1mb3ItcG9kbWFuLW9ubHk="
+vault_externaldns_fortigate_token: "dummy-token-for-podman-only"
+# FortiGate がないので webhook は Ready にならない。helm の完了 (Ready) を待たない。
+externaldns_helm_wait: false
 
 # Cluster Mesh は検証しない (相手のクラスタがない)
 cilium_clustermesh_enabled: false

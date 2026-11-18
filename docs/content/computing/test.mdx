@@ -32,7 +32,7 @@ ansible-galaxy collection install -r requirements.yml
 ./up.sh              # コンテナ・ネットワーク・FRR を作成
 ./run.sh stage1      # ノード準備 → kubeadm init / join
 ./run.sh stage2      # Cilium・BGP・Multus・NFS provisioner・Argo CD
-./run.sh stage3      # bind9 と ExternalDNS
+./run.sh stage3      # ExternalDNS (FortiGate の webhook)
 ```
 
 同じ stage を 2 回実行すると、冪等性 (`changed=0`) を確認できます。検証後は `./down.sh` でコンテナ・ネットワーク・ボリューム・イメージをすべて削除できます。
@@ -47,8 +47,8 @@ sudo podman exec frr vtysh -c 'show ip bgp'
 
 ## 検証できること・できないこと
 
-- **検証できること**: `kubeadm init` / `join`、Pod / Service の CIDR、Cilium (`kube-proxy` 置き換え、Ingress、LB IP プール)、BGP (FRR での経路確認)、Argo CD、`bind9` と ExternalDNS (Service の annotation から A レコードが登録される)
-- **検証できないこと**: 実機の VLAN とブリッジ、`network` ロール、Multus の L2 通信、NFS provisioner の実動作 (NFS サーバがない)、`marie` (`packard` と同じ設定)
+- **検証できること**: `kubeadm init` / `join`、Pod / Service の CIDR、Cilium (`kube-proxy` 置き換え、Ingress、LB IP プール)、BGP (FRR での経路確認)、Argo CD、ExternalDNS のチャートと webhook のサイドカーが入ること
+- **検証できないこと**: 実機の VLAN とブリッジ、FortiGate へのレコードの書き込み (FortiGate がないため webhook は Ready にならない)、`network` ロール、Multus の L2 通信、NFS provisioner の実動作 (NFS サーバがない)、`marie` (`packard` と同じ設定)
 
 ## テスト用の上書き
 

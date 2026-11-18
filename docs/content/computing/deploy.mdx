@@ -115,7 +115,7 @@ ansible-playbook playbooks/site.yml
 | containerd | containerd.io のインストール |
 | nfs | becky を NFS サーバにする (`/nfs`) |
 | kubeadm | kubelet・kubeadm・kubectl のインストール、`kubeadm init`、`kubeadm join` |
-| addons | Helm、Cilium、Multus と NAD、NFS provisioner、Argo CD と親の Application (`root`)、bind9 と ExternalDNS |
+| addons | Helm、Cilium、Multus と NAD、NFS provisioner、Argo CD と親の Application (`root`)、ExternalDNS (FortiGate の webhook) |
 
 `kubeadm init` は Pod CIDR を `10.15.0.0/16`、Service CIDR (ClusterIP) を `10.96.0.0/12` で作成します。kube-proxy は Cilium で置き換えるため入れません。
 
@@ -124,7 +124,6 @@ LoadBalancer の IP は、Cilium の IP プール (`10.12.0.0/16`) から割り�
 
 | プール | 範囲 | 使う Service |
 |---|---|---|
-| `dns` | `10.12.0.0` | bind9 だけ (FortiGate の DNS 転送先) |
 | `default` | `10.12.0.1` 〜 `10.12.63.255` | IP を指定しない Service |
 | `static` | `10.12.64.0` 〜 `10.12.255.254` | IP を固定する Service |
 
@@ -232,15 +231,90 @@ PRO DJ LINK や Ableton Link のネットワークと L2 で接続する場合�
 Cilium は既定で、他の CNI の設定ファイルを `*.cilium_bak` に退避します。Multus の設定 (`/etc/cni/net.d/00-multus.conflist`) も退避されて、Pod に br10・br20 のインターフェースが付かなくなります。そのため、`multus_enabled: true` のときは Cilium の `cni.exclusive` を `false` にしています。  
 構築済みのクラスタでこの設定を変えたときは、Multus を再起動して設定ファイルを作り直します (`kubectl -n kube-system rollout restart ds/kube-multus-ds`)。
 
-### DNS (bind9 と ExternalDNS)
-`svc.technotut.net` ゾーンを bind9 で提供し、ExternalDNS (RFC2136) が Service・Ingress のレコードを自動登録します。Ansible の `dns` ロールが導入します。  
-https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/rfc2136.md
+### DNS (ExternalDNS と FortiGate)
+`svc.technotut.net` ゾーンは FortiGate の DNS データベース (`config system dns-database`) に置きます。ExternalDNS が Service・Ingress・DNSEndpoint のレコードを、webhook ([TechnoTUT/external-dns-fortigate-webhook](https://github.com/TechnoTUT/external-dns-fortigate-webhook)) を通して FortiGate の REST API で書き換えます。Ansible の `dns` ロールが導入します。
 
-TSIG の鍵を作り、Ansible Vault の `inventory/group_vars/all/vault.yml` に `vault_externaldns_tsig_secret` として保存します。鍵は Git に平文で置きません。
-```bash
-tsig-keygen -a hmac-sha256 externaldns-key
-ansible-vault create inventory/group_vars/all/vault.yml
+| 項目 | 内容 |
+|---|---|
+| ゾーン | 正引きは `svc.technotut.net`。逆引きは `12.10.in-addr.arpa` (`main` の LoadBalancer) と `0.14.10.in-addr.arpa` (`nas` の LoadBalancer)。PTR は webhook が A レコードから作ります |
+| 所有者 | FortiGate の `dns-entry` には TXT が置けないため、ExternalDNS は `registry: noop` で動かします。ゾーンは webhook 専用です。FortiGate に手で書いたエントリは消えます |
+| 固定のレコード | `inventory/group_vars/all/main.yml` の `dns_static_records` に書きます。Ansible が DNSEndpoint (`external-dns` の `static-records`) にします |
+| クラスタ内の Pod | CoreDNS が `svc.technotut.net` を FortiGate (`192.168.99.129`) に問い合わせます |
+| API キー | Ansible Vault の `vault_externaldns_fortigate_token`。Git に平文で置きません |
+| イメージ | `ghcr.io/technotut/external-dns-fortigate-webhook` (`externaldns_webhook_tag`)。DNS がクラスタ内のレジストリに依存しないよう、GHCR から取得します |
+
+FortiGate の設定 (実際の設定に合わせて調整してください):
 ```
+# REST API 管理者 (ExternalDNS の webhook 用)
+config system accprofile
+    edit "externaldns"
+        set sysgrp custom
+        config sysgrp-permission
+            set cfg read-write
+        end
+    next
+end
+config system api-user
+    edit "externaldns"
+        set accprofile "externaldns"
+        set vdom "root"
+        config trusthost
+            edit 1
+                set ipv4-trusthost 192.168.99.128 255.255.255.128    # Pod の通信はノードの IP に NAT される
+            next
+        end
+    next
+end
+execute api-user generate-key externaldns    # 出力を vault_externaldns_fortigate_token に入れる
+# Pod から REST API (HTTPS) と DNS に届くようにする
+config system interface
+    edit "dmz"
+        set allowaccess ping https fabric
+    next
+end
+config system dns-server
+    edit "dmz"
+        set mode recursive    # forward-only ではローカルの DNS データベースを参照しない
+    next
+end
+# 逆引きのゾーン
+config system dns-database
+    edit "12.10.in-addr.arpa"
+        set domain "12.10.in-addr.arpa"
+        set ttl 300
+        set primary-name "ns1"
+        set contact "network.technotut.net"
+    next
+    edit "0.14.10.in-addr.arpa"
+        set domain "0.14.10.in-addr.arpa"
+        set ttl 300
+        set primary-name "ns1"
+        set contact "network.technotut.net"
+    next
+end
+```
+
+#### bind9 からの移行
+以前は `svc.technotut.net` をクラスタ内の bind9 (`10.12.0.0`) で提供し、FortiGate はゾーンを bind9 に転送 (`forwarder`) していました。次の順で、名前解決を止めずに移行します。移行が終わるまで、`dns_keep_legacy_bind9` の既定値は `true` (bind9 を残す) にしてあります。
+
+1. **FortiGate**: 上の設定を入れます。`svc.technotut.net` の `forwarder "10.12.0.0"` はまだ消しません。
+2. **Vault**: `ansible-vault edit inventory/group_vars/all/vault.yml` で `vault_externaldns_fortigate_token` を足します。`vault_externaldns_tsig_secret` は消してかまいません。
+3. **dry-run**: bind9 を残したまま、書き込まずに動かします。
+   ```bash
+   ansible-playbook playbooks/site.yml -e externaldns_fortigate_dry_run=true
+   kubectl -n external-dns logs deploy/external-dns-fortigate -c webhook
+   ```
+   `zones loaded` が出れば、REST API に届いています。`401` などで失敗する場合は `externaldns_fortigate_token_in_query: true` を試します。`dry run: not writing` のログで、書き込む内容を確認します。
+4. **書き込み**: bind9 を残したまま、dry-run を外します。
+   ```bash
+   ansible-playbook playbooks/site.yml
+   ```
+   FortiGate の `show system dns-database` でエントリを確認します。FortiGate はローカルにある名前を自分で答え、ない名前だけを bind9 に転送するので、この間も名前解決は止まりません。以前から FortiGate にあった `drive` (`192.168.98.2`) は、`10.14.0.128` に書き換わります。
+5. **転送をやめる**: FortiGate で `svc.technotut.net` の `forwarder` を消します (`config system dns-database` → `edit "svc.technotut.net"` → `unset forwarder`)。
+6. **bind9 の削除**: `ansible-playbook playbooks/site.yml -e dns_keep_legacy_bind9=false`。旧 ExternalDNS、bind9 (Namespace `bind9`)、IP プール `dns` (`10.12.0.0`) が消えます。
+7. **確認**: `dig @192.168.99.129 time.svc.technotut.net`、`dig @192.168.99.129 -x 10.12.0.5`。DNS サーバに `10.12.0.0` を直接指定しているクライアントは、FortiGate (各 VLAN のゲートウェイ。DHCP で配られるもの) に変えてください。
+
+移行が終わったら、`dns.yml` の旧構成の削除のタスク、`cilium-lb-pool.yaml.j2` の `dns` プール、`dns_keep_legacy_bind9`・`dns_legacy_*` の変数を消します。
 
 ### plmux
 PRO DJ LINK のモニター・曲履歴・Ableton Link・Clojure の式のサーバー [TechnoTUT/plmux](https://github.com/TechnoTUT/plmux) を、`main` のクラスタで動かす。使い方は [plmux](/service/plmux)。
@@ -343,10 +417,10 @@ ongeki は、ongeki だけで動く Kubernetes のクラスタ `nas` です。�
 | Ansible | `ansible-playbook -i inventory/nas.yml playbooks/site.yml`。変数は `inventory/group_vars/all` を `inventory/group_vars/nas_cluster.yml` で上書きします |
 | OS | AlmaLinux 10 (SELinux は Enforcing のまま)。Ansible のロールは Debian と RHEL 系の両方に対応しています |
 | ネットワーク | FortiGate の `port9` (`192.168.98.0/30`)。`main` のノードと L2 が別なので、Pod 間の通信は FortiGate が BGP の経路で中継します |
-| 動かすもの | Cilium (BGP、LB IPAM、Cluster Mesh) と Samba だけです。Multus、NFS、Argo CD、bind9 などは入れません |
+| 動かすもの | Cilium (BGP、LB IPAM、Cluster Mesh) と Samba だけです。Multus、NFS、Argo CD、ExternalDNS などは入れません |
 | データ | `/nas` (sda + sdb の md RAID0、ext4)。local PV でそのまま Samba にマウントします |
 | Samba | [`k8s/manifest/nas/`](https://github.com/TechnoTUT/Infra/tree/main/k8s/manifest/nas)。イメージは [TechnoTUT/samba](https://github.com/TechnoTUT/samba) (`ghcr.io/technotut/samba`) |
-| アドレス | `drive.svc.technotut.net` → `10.14.0.128` (LoadBalancer。`main` の bind9 に固定で載せます)。SMB (TCP 445) だけ |
+| アドレス | `drive.svc.technotut.net` → `10.14.0.128` (LoadBalancer。`main` の ExternalDNS が `dns_static_records` から FortiGate に載せます)。SMB (TCP 445) だけ |
 | アカウント | `vault.yml` の `vault_samba_smbpasswd` から Ansible が Secret `samba-accounts` を作ります |
 
 Cluster Mesh の構成:
@@ -381,7 +455,7 @@ Samba の設定は ConfigMap (`k8s/manifest/nas/configmap.yaml`) にあります
    - `vault_cilium_ca_crt`、`vault_cilium_ca_key`: Cluster Mesh の CA。`openssl req -x509 -newkey rsa:2048 -nodes -days 3650 -subj "/CN=Cilium CA" -keyout ca.key -out ca.crt` で作ります。
 3. **FortiGate**: BGP の相手、`main` と `nas` の間の通信、Samba への SMB を許可します (設定例は下)。DNS の `drive` はまだ消しません。
 4. **`main` にマージ**: `k8s/manifest/nas/` を Argo CD が参照できるようにします。
-5. **`main` の Ansible**: `ansible-playbook playbooks/site.yml`。Cilium が新しい設定で再起動し、bind9 に `drive` が載ります。Argo CD の Application `nas` は、手順 4 のマージで `root` が作ります (`nas` のクラスタを登録するまではエラーになります)。
+5. **`main` の Ansible**: `ansible-playbook playbooks/site.yml`。Cilium が新しい設定で再起動し、`svc.technotut.net` に `drive` が載ります。Argo CD の Application `nas` は、手順 4 のマージで `root` が作ります (`nas` のクラスタを登録するまではエラーになります)。
 6. **`main` の Pod を作り直す**: Cilium の再起動が終わってから、Deployment・DaemonSet・StatefulSet を順に再起動します。
    ```bash
    for ns in $(kubectl get ns -o jsonpath='{.items[*].metadata.name}'); do
@@ -398,7 +472,7 @@ Samba の設定は ConfigMap (`k8s/manifest/nas/configmap.yaml`) にあります
    kubectl -n kube-system exec ds/cilium -c cilium-agent -- cilium-dbg troubleshoot clustermesh
    ```
    FortiGate で `get router info bgp network 10.14.0.128/32` を実行し、次ホップが `192.168.98.2` になっていることを確認します。MGMT から `smbclient //10.14.0.128/nas -U technotut -m SMB3 -c ls` で中身が見えることを確認します。
-9. **DNS**: FortiGate の `drive` のレコードを消します。以後は bind9 が `drive.svc.technotut.net` → `10.14.0.128` を返します。`\\drive.svc.technotut.net\nas` で接続しているクライアントはそのまま使えます。`192.168.98.2` を直接指定しているクライアントは接続先を変えてください。
+9. **DNS**: FortiGate の `drive` のレコードを消します。以後は `drive.svc.technotut.net` → `10.14.0.128` を返します (現在は ExternalDNS が `dns_static_records` から書きます)。`\\drive.svc.technotut.net\nas` で接続しているクライアントはそのまま使えます。`192.168.98.2` を直接指定しているクライアントは接続先を変えてください。
 
 FortiGate の設定例 (実際の設定に合わせて調整してください):
 ```
@@ -466,7 +540,7 @@ FortiGate は、クラスタごとの Kubernetes SDN コネクタで Service の
 Cluster Mesh では、Pod から相手のクラスタのノードへの通信も NAT されません (相手のノードも Cilium のノードの一覧に入るため)。そのため、ポリシーには両方のクラスタの Pod CIDR を入れます。\
 `main` と `nas` の間で使う主な通信は、Argo CD → ongeki の API (TCP 6443)、clustermesh-apiserver (TCP 32379、両方向)、Pod 間の通信 (任意のポート) です。
 
-ホストの Samba に戻すときは、Argo CD の `nas` を止めてから、ongeki で `sudo semanage fcontext -d '/nas(/.*)?' && sudo restorecon -R /nas` でラベルを戻し、`sudo systemctl enable --now smb` で起動します。FortiGate の `drive` のレコードも戻してください。
+ホストの Samba に戻すときは、Argo CD の `nas` を止めてから、ongeki で `sudo semanage fcontext -d '/nas(/.*)?' && sudo restorecon -R /nas` でラベルを戻し、`sudo systemctl enable --now smb` で起動します。`dns_static_records` の `drive` も `192.168.98.2` に戻してください。
 
 ## 構築済みのクラスタに設定変更を反映する
 `inventory/group_vars/all/main.yml` やロールを変えたときは、構築と同じコマンドで `site.yml` を流し直します。データは消えません。
@@ -479,7 +553,7 @@ Ansible で反映するものと、Argo CD で反映するものがあります�
 
 | 変更するもの | 反映の方法 |
 |---|---|
-| Cilium、LoadBalancer の IP プール、BGP、Multus、Argo CD、bind9・ExternalDNS など (`k8s/ansible/`) | `site.yml` を流します |
+| Cilium、LoadBalancer の IP プール、BGP、Multus、Argo CD、ExternalDNS など (`k8s/ansible/`) | `site.yml` を流します |
 | Argo CD の Application の追加・削除 (`k8s/manifest/apps/`) | `main` にマージすると、Argo CD の `root` が登録します。`site.yml` は不要です |
 | 各アプリの manifest (`k8s/manifest/`) | `main` にマージすると、Argo CD が同期します。`site.yml` は不要です |
 

@@ -1,0 +1,14 @@
+# {{ dns_zone }} に固定で入れるレコード (dns_static_records)。
+# FortiGate のゾーンは ExternalDNS の webhook 専用なので、FortiGate に手で書かずにここに書く。
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: static-records
+  namespace: {{ dns_namespace }}
+spec:
+  endpoints:
+{% for r in dns_static_records %}
+    - dnsName: {{ r.name }}.{{ dns_zone }}
+      recordType: A
+      targets: ["{{ r.ip }}"]
+{% endfor %}
