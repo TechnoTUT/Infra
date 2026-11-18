@@ -123,7 +123,8 @@ def _run(job: Job, req: ChatRequest) -> None:
                 log.info("tool %s %s", fc.name, args)
                 result = call_tool(fc.name, args)
                 parts.append(types.Part.from_function_response(name=fc.name, response={"result": result}))
-            contents.append(types.Content(role="tool", parts=parts))
+            # 関数の結果は user の発言として返す (API は user と model の role しか受け付けない)
+            contents.append(types.Content(role="user", parts=parts))
         job.emit(type="error", text=f"調べる手順が {MAX_STEPS} 回を超えたので止めました。質問を絞ってみてください。")
     except errors.APIError as e:
         log.warning("gemini error: %s", e)
