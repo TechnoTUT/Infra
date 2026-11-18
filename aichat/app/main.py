@@ -26,7 +26,7 @@ from .tools import TOOLS, call_tool
 log = logging.getLogger("aichat")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
-MODEL = os.environ.get("GEMINI_MODEL", "gemini-4-hydrogen")
+MODEL = os.environ.get("GEMINI_MODEL", "gemma-4-31b-it")
 API_KEY = os.environ.get("GEMINI_API_KEY", "")
 MAX_STEPS = int(os.environ.get("MAX_TOOL_STEPS", "10"))  # 1 回の質問でツールを呼ぶ回数の上限
 MAX_HISTORY = 20       # モデルに渡す過去のやりとりの数
