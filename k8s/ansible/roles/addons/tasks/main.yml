@@ -81,6 +81,22 @@
   loop: "{{ multus_nads }}"
   when: multus_enabled
 
+# vxlan-cni: Pod の manifest で VLAN を選ぶ NAD (プラグインと DHCP デーモンは vxlan_cni ロール)。
+# 許可する VLAN がなければ NAD を置かない (プラグインは allowedVlans が空だと動かない)。
+- name: NetworkAttachmentDefinition（vxlan-cni）
+  ansible.builtin.include_tasks: apply.yml
+  vars:
+    apply_content: "{{ lookup('ansible.builtin.template', 'nad-vxlan.yaml.j2') }}"
+  when: multus_enabled and vxlan_cni_enabled and vxlan_cni_allowed_vlans | length > 0
+
+- name: 許可する VLAN がなければ vxlan-cni の NAD を消す
+  ansible.builtin.command: >
+    kubectl delete network-attachment-definitions.k8s.cni.cncf.io {{ vxlan_cni_nad_name }}
+    -n {{ vxlan_cni_nad_namespace }} --ignore-not-found
+  register: addons_vxlan_nad_delete
+  changed_when: "'deleted' in addons_vxlan_nad_delete.stdout"
+  when: multus_enabled and vxlan_cni_enabled and vxlan_cni_allowed_vlans | length == 0
+
 # ---- ストレージ ----
 - name: NFS provisioner
   ansible.builtin.include_tasks: helm.yml

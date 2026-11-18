@@ -25,6 +25,7 @@ cilium_lb_static_stop: "10.14.0.254"
 # Multus 用の VLAN 10/20 のトランクにはつながっていない。
 network_manage_vlans: false
 multus_enabled: false
+vxlan_cni_enabled: false
 nfs_enabled: false
 registry_enabled: false
 arc_enabled: false

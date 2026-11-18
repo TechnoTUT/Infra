@@ -1,5 +1,6 @@
 ---
-# ノード準備 → kubeadm init → join
+# ノード準備 → kubeadm init → join → vxlan-cni
 - { name: prep, hosts: k8s, roles: [common, containerd] }
 - { name: cp, hosts: control_plane, roles: [kubeadm] }
 - { name: workers, hosts: workers, roles: [kubeadm] }
+- { name: vxlan-cni, hosts: k8s, roles: [vxlan_cni] }

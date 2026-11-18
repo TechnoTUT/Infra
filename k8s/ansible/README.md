@@ -39,13 +39,15 @@ ansible-playbook playbooks/reset.yml         # 全消去（RESET と入力）
 | nas | ongeki | `/nas` の確認、ホストの Samba の停止、SELinux のラベル（container_file_t） |
 | nfs | becky (`nfs_enabled`) | NFS サーバ（/nfs） |
 | kubeadm | 全ノード | kubelet/kubeadm/kubectl、`kubeadm init` / `join` |
-| addons | control plane (becky / ongeki) | Helm、Cilium（LB IP プール、BGP、Cluster Mesh）、Multus と NAD、NFS provisioner、Samba の Secret、ArgoCD と親の Application（root。各アプリは `k8s/manifest/apps` から Argo CD が作る。nas は main の Argo CD に登録）、ExternalDNS (FortiGate の webhook)。nas では使わないものを `*_enabled` で止める |
+| vxlan_cni | main の全ノード (`vxlan_cni_enabled`) | [vxlan-cni](https://github.com/TechnoTUT/vxlan-cni) のプラグイン (`/opt/cni/bin/vxlan`) と DHCP デーモン (`cni-dhcp.service`) |
+| addons | control plane (becky / ongeki) | Helm、Cilium（LB IP プール、BGP、Cluster Mesh）、Multus と NAD（vxlan-cni を含む）、NFS provisioner、Samba の Secret、ArgoCD と親の Application（root。各アプリは `k8s/manifest/apps` から Argo CD が作る。nas は main の Argo CD に登録）、ExternalDNS (FortiGate の webhook)。nas では使わないものを `*_enabled` で止める |
 
 ノードに Python ライブラリは入れず、`helm` と `kubectl` のコマンドだけで操作する。
 バージョンと CIDR は `inventory/group_vars/all/main.yml` に集約している。
 
 ## 手動で行うこと
 - 管理用ネットワーク（NIC と VLAN 100 の IP・ゲートウェイ・DNS）。ongeki は port9 の 192.168.98.2/30。
+- vxlan-cni で使う VLAN の FortiGate 側の設定（VXLAN と software switch。[手順](https://network.technotut.net/computing/deploy)）。
 - Cilium BGP の相手（FortiGate）側の設定。main と nas の間のポリシーと DNS（[NAS と Cluster Mesh の手順](https://network.technotut.net/computing/deploy)）。
 
 ## テスト

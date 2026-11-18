@@ -47,6 +47,10 @@
         for i in cilium_host cilium_net cilium_vxlan; do
           ip link show "$i" >/dev/null 2>&1 && ip link delete "$i"
         done
+        # vxlan-cni の VTEP (vxbr<VLAN>, vxlan<VLAN>)
+        for p in /sys/class/net/vxbr[0-9]* /sys/class/net/vxlan[0-9]*; do
+          [ -e "$p" ] && ip link delete "${p##*/}"
+        done
         exit 0
       become: true
       changed_when: true
