@@ -1,0 +1,59 @@
+name: aichat image
+
+# aichat/ の Containerfile をビルドし、ghcr.io/technotut/aichat に push する。
+# main は :main と :sha-<commit>、PR はビルドだけ (push しない)。
+on:
+  push:
+    branches: [main]
+    paths:
+      - "aichat/**"
+      - ".github/workflows/aichat-image.yaml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "aichat/**"
+      - ".github/workflows/aichat-image.yaml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    name: Build aichat image
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/technotut/aichat
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix=sha-
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: aichat
+          file: aichat/Containerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
