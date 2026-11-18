@@ -142,6 +142,11 @@
   ansible.builtin.include_tasks: fortigate-sdn.yml
   when: fortigate_sdn_enabled
 
+# ---- fortigate-operator の API キー（コントローラ本体は Argo CD が入れる）----
+- name: fortigate-operator
+  ansible.builtin.include_tasks: fortigate-operator.yml
+  when: fortigate_operator_enabled
+
 # ---- ArgoCD ----
 - name: ArgoCD
   when: argocd_enabled

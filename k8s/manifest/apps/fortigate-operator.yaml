@@ -1,0 +1,24 @@
+# fortigate-operator: FortiGate のポリシー・アドレス・サービスを manifest で管理するコントローラ。
+# k8s/manifest/fortigate-operator を kustomize で配る (CRD、RBAC、Deployment)。
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: fortigate-operator
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/TechnoTUT/Infra.git
+    targetRevision: HEAD
+    path: k8s/manifest/fortigate-operator
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: fortigate-operator
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      # CRD は大きいので client-side apply の annotation に入らないことがある。
+      - ServerSideApply=true
