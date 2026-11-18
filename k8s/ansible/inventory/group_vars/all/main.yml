@@ -128,6 +128,9 @@ argocd_root_path: k8s/manifest/apps
 # argocd_root_include: "{cam1.yaml,dmx.yaml}"   # 一部のアプリだけにするとき (テスト用)
 
 argocd_network_policy: true   # コンテナでのテスト時だけ false にする
+# Argo CD の UI の名前。argocd-server の Service に ExternalDNS の annotation を付けて、FortiGate に登録する。
+# 空にすると annotation を付けない。
+argocd_hostname: "cd.{{ dns_zone }}"
 
 # ===== クラスタ内のコンテナレジストリ =====
 # 自前でビルドしたイメージ (ndi など) を置く。外部には公開せず、固定の ClusterIP で提供する (HTTP)。
