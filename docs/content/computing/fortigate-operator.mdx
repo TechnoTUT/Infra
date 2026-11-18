@@ -30,7 +30,7 @@ flowchart LR
 | 種類 | FortiGate の表 | 短縮名 |
 |---|---|---|
 | `FirewallPolicy` | `config firewall policy` | `fgpol` |
-| `FirewallAddress` | `config firewall address` (ipmask, iprange, fqdn) | `fgaddr` |
+| `FirewallAddress` | `config firewall address` (ipmask, iprange, fqdn、Service の LB IP) | `fgaddr` |
 | `FirewallService` | `config firewall service custom` (TCP, UDP, SCTP) | `fgsvc` |
 
 実例 (`k8s/manifest/plmux/firewallpolicy.yaml`): plmux の Pod から VLAN 20 の dmxctl への OSC (UDP 9000) を許可します。Pod の通信はノードの IP (dmz) に SNAT されて FortiGate を通ります。
@@ -58,6 +58,45 @@ spec:
   action: accept
   comments: plmux OSC to dmxctl (VLAN20)
 ```
+
+### Service の LB IP を宛先にする
+クラスタ内のアプリケーションへの通信を許可するときは、宛先を SDN コネクタの動的アドレス `k8s-svc` にしません。`k8s-svc` にはクラスタの全 Service の IP が入るため、あるアプリケーションのために開けたポートが、他のアプリケーションにも開いてしまいます。\
+代わりに `FirewallAddress` の `spec.serviceRef` で、同じ namespace の `LoadBalancer` の Service を指定します。コントローラが Service の IPv4 の LB IP を `/32` のアドレスとして作成し、LB IP が変わると FortiGate のアドレスも書換えます。ポリシーはアドレスを名前で参照するため、ポリシーは書換わりません。
+
+実例 (`k8s/manifest/cam1/firewallpolicy.yaml`):
+
+```yaml
+apiVersion: fortigate.technotut.net/v1alpha1
+kind: FirewallAddress
+metadata:
+  name: k8s-cam1-nginx
+  namespace: cam1
+spec:
+  serviceRef:
+    name: cam1-nginx-service
+  associatedInterface: dmz
+  comment: LB IP of Service cam1-nginx-service
+---
+apiVersion: fortigate.technotut.net/v1alpha1
+kind: FirewallPolicy
+metadata:
+  name: al-cam1-cam
+  namespace: cam1
+spec:
+  srcintf: [VLAN44]
+  dstintf: [dmz]
+  srcaddr: [VLAN44 address]
+  dstaddr: [k8s-cam1-nginx]
+  service: [HTTP, RTMP]
+  action: accept
+  comments: cam1 from camera VLAN44
+```
+
+- アドレスの名前は `k8s-<アプリケーション>` とします。
+- Service に LB IP がまだない場合や、Service が `LoadBalancer` でない場合、資源は `ReferenceNotFound` となり、FortiGate には何も作成しません。
+- Service を削除しても、FortiGate のアドレスは最後の IP のまま残ります。その IP が他の Service に割当てられると開放されたままになるため、`FirewallAddress` は Service と一緒に削除してください。
+- 書込んだアドレスは `kubectl get fgaddr -A` の `Address` 列で確認できます。
+- Cilium Ingress の共有 LB で受けるもの (例: dmxctl の操作パネル) は、引続き `k8s-ingress` を宛先にします。
 
 ポリシーは、インターフェース、アドレス、サービスを FortiGate 上の名前で参照します。VXLAN で接続した VLAN 10・20 は software switch (`sw10`, `sw20`) が宛先のインターフェースとなる点に注意してください ([VXLAN の実装](/computing/vxlan) を参照)。
 
@@ -98,7 +137,7 @@ FortiGate は上から順にポリシーを評価します。新規のポリシ�
 | 項目 | 内容 |
 |---|---|
 | Application | `k8s/manifest/apps/fortigate-operator.yaml`。`syncPolicy` は `automated` (`prune: false`、`selfHeal: true`)、`ServerSideApply=true` |
-| 本体 | `k8s/manifest/fortigate-operator` の kustomization が、リポジトリ `TechnoTUT/fortigate-operator` の `config/default` を取込む。環境変数のみ上書き |
+| 本体 | `k8s/manifest/fortigate-operator` の kustomization が、リポジトリ `TechnoTUT/fortigate-operator` の `config/default` をリリース (`ref=v0.1.0`) で取込む。イメージのタグも同じリリース (`0.1.0`) に固定し、環境変数のみ上書き |
 | API キー | Ansible の `fortigate-operator.yml` が Secret `fortigate-operator` を作成。Ansible Vault の `vault_fortigate_operator_token` に保管 |
 | namespace | `fortigate-operator` (`fortigate_operator_namespace`) |
 

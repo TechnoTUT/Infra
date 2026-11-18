@@ -1,6 +1,17 @@
 # speedtest: 部内の誰でも使えるので、VLAN10 (DJ) と VLAN20 (AV) から HTTP/HTTPS を許可する。
 # FortiGate の設定は fortigate-operator が反映する (https://github.com/TechnoTUT/fortigate-operator)。
-# 宛先の LB IP は FortiGate の Kubernetes SDN コネクタの動的アドレス k8s-svc に含まれる。
+# 宛先は Service speedtest-service の LB IP だけ。FirewallAddress k8s-speedtest が serviceRef で LB IP に追従する。
+apiVersion: fortigate.technotut.net/v1alpha1
+kind: FirewallAddress
+metadata:
+  name: k8s-speedtest
+  namespace: speedtest
+spec:
+  serviceRef:
+    name: speedtest-service
+  associatedInterface: dmz
+  comment: LB IP of Service speedtest-service
+---
 apiVersion: fortigate.technotut.net/v1alpha1
 kind: FirewallPolicy
 metadata:
@@ -10,7 +21,7 @@ spec:
   srcintf: [sw10]
   dstintf: [dmz]
   srcaddr: [VLAN10 subnet]
-  dstaddr: [k8s-svc]
+  dstaddr: [k8s-speedtest]
   service: [HTTP, HTTPS]
   action: accept
   comments: speedtest from VLAN10
@@ -24,7 +35,7 @@ spec:
   srcintf: [sw20]
   dstintf: [dmz]
   srcaddr: [VLAN20 subnet]
-  dstaddr: [k8s-svc]
+  dstaddr: [k8s-speedtest]
   service: [HTTP, HTTPS]
   action: accept
   comments: speedtest from VLAN20

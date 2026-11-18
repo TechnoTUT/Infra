@@ -3,8 +3,13 @@
 # API キーの Secret (fortigate-operator) は Ansible が作る (roles/addons/tasks/fortigate-operator.yml)。
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+# 版を上げるときは、ref とイメージのタグを同じリリースに揃える (CRD とコントローラの版を一致させるため)。
 resources:
-  - https://github.com/TechnoTUT/fortigate-operator//config/default?ref=main
+  - https://github.com/TechnoTUT/fortigate-operator//config/default?ref=v0.1.0
+
+images:
+  - name: ghcr.io/technotut/fortigate-operator
+    newTag: "0.1.0"
 
 patches:
   - target: { kind: Deployment, name: fortigate-operator }
