@@ -1,0 +1,21 @@
+# RTMP ダッシュボード。Cilium Ingress (共有 LB) で受ける。
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: rtmp-dashboard
+  namespace: live
+  labels:
+    app: rtmp-dashboard
+spec:
+  ingressClassName: cilium
+  rules:
+  - host: dash.live.svc.technotut.net
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: rtmp-dashboard
+            port:
+              name: http
