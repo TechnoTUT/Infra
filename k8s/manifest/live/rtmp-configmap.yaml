@@ -7,7 +7,9 @@ metadata:
     app: rtmp-live-server
 data:
   nginx.conf: |
-    worker_processes  auto;
+    load_module /usr/lib/nginx/modules/ngx_rtmp_module.so;
+
+    worker_processes  1;
     #error_log  logs/error.log;
 
     events {
@@ -19,12 +21,7 @@ data:
         server {
             listen 1935; # Listen on standard RTMP port
             listen [::]:1935 ipv6only=on;
-            chunk_size 4000;
-
-            application live {
-                live on;
-                drop_idle_publisher 10s;
-            }
+            chunk_size 1024;
 
             application external {
                 live on;
@@ -32,6 +29,29 @@ data:
                 allow publish all;
                 allow play all;
                 push rtmp://10.88.0.1:1935/live/technotut;
+            }
+
+            application live {
+                live on;
+                record off; # Disable recording
+
+                # Ultra low-latency settings (sub-second target for VLC/ffplay)
+                sync 5ms;                 # Aggressively drop drifting frames to keep latency minimal
+                wait_key off;             # Send frames immediately without waiting for keyframe boundary
+                wait_video off;           # Do not wait for video stream to start audio
+                drop_idle_publisher 10s;  # Drop publisher after 10s of inactivity
+                interleave off;           # Transmit audio and video independently without interleaving wait
+                play_restart on;          # Send reset on play to restart client buffers
+
+                # HLS for Web live hover preview
+                hls on;
+                hls_path /tmp/hls;
+                hls_fragment 1s;
+                # Hardware-accelerated thumbnail snapshot generator with software fallback (24fps, 320x180)
+                exec_push /usr/local/bin/generate-thumbnail.sh $app $name;
+
+                # Clean up residual thumbnail when stream publishing stops
+                exec_publish_done /usr/local/bin/cleanup-stream.sh $name;
             }
         }
     }
@@ -49,12 +69,30 @@ data:
                     # This URL provides RTMP statistics in XML
                     location /stat {
                             rtmp_stat all;
-                            rtmp_stat_stylesheet stat.xsl; # Use stat.xsl stylesheet
+                            rtmp_stat_stylesheet /stat.xsl; # Use stat.xsl stylesheet
                     }
 
                     location /stat.xsl {
                             # XML stylesheet to view RTMP stats.
-                            root /usr/local/nginx/html;
+                            root /var/www/html/rtmp;
+                    }
+
+                    # JPEG thumbnails endpoint for zero-overhead previews
+                    location /thumbnails {
+                            root /tmp;
+                            add_header Cache-Control "no-cache, no-store, must-revalidate";
+                            add_header Access-Control-Allow-Origin *;
+                    }
+
+                    # HLS fragments for preview player
+                    location /hls {
+                            types {
+                                    application/vnd.apple.mpegurl m3u8;
+                                    video/mp2t ts;
+                            }
+                            root /tmp;
+                            add_header Cache-Control no-cache;
+                            add_header Access-Control-Allow-Origin *;
                     }
 
             }
