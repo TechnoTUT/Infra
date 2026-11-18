@@ -1,0 +1,40 @@
+# Ingress のバックエンド (操作パネル)。外には出さない ClusterIP。
+apiVersion: v1
+kind: Service
+metadata:
+  name: dmxctl
+  labels:
+    app: dmxctl
+spec:
+  selector:
+    app: dmxctl
+  ports:
+  - name: http
+    port: 80
+    targetPort: web
+---
+# dmxctl connect のクライアント (9300) と OSC (9000) の入口。
+# 静的な LB IP は旧 qlcplus の Service が使っていたもの。旧 Service を消してから適用する。
+apiVersion: v1
+kind: Service
+metadata:
+  name: dmxctl-remote
+  labels:
+    app: dmxctl
+    lbipam.technotut.net/static: "true"
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: dmxctl.svc.technotut.net
+spec:
+  selector:
+    app: dmxctl
+  type: LoadBalancer
+  loadBalancerIP: 10.12.240.254
+  ports:
+  - name: remote
+    protocol: TCP
+    port: 9300
+    targetPort: remote
+  - name: osc
+    protocol: UDP
+    port: 9000
+    targetPort: osc
