@@ -258,39 +258,59 @@ flowchart LR
 
 | 項目 | 内容 |
 |---|---|
-| NAD | `kube-public/vxlan` の 1 つだけ。VLAN は Pod の `cni-args` の `vlan` で選ぶ |
-| 選べる VLAN | `vxlan_cni_allowed_vlans` に入れた VLAN だけ。それ以外はプラグインが拒否する。空のときは NAD を置かない |
+| NAD | `kube-public/vxlan` の 1 つだけ (main と nas の両方のクラスタ)。VLAN は Pod の `cni-args` の `vlan` で選ぶ |
+| 選べる VLAN | VLAN 10 (DJ) と 20 (AV) (`vxlan_cni_allowed_vlans`)。それ以外はプラグインが拒否する |
 | アドレス | `dhcp` IPAM で、その VLAN の DHCP サーバ (FortiGate) から受け取る。DHCP の経路にあるデフォルトルートは捨てる (デフォルトルートは Cilium の `eth0`) |
 | VTEP | Pod を作ったノードに、`vxlan<VLAN>` とブリッジ `vxbr<VLAN>` をプラグインが作る。その VLAN の Pod がいなくなると消す |
-| MTU | 1450 (`dmz` の 1500 から VXLAN の 50 を引いた値) |
-| ノード間 | FortiGate は VXLAN の相手どうしを中継しないため、NAD の `peers` に全ノードの IP (`node_ip`) を入れている |
+| MTU | 1450 (`dmz`・`port9` の 1500 から VXLAN の 50 を引いた値) |
+| ノード間 | FortiGate は同じ VXLAN インターフェースの相手どうしを中継しないため、main の NAD の `peers` に main の全ノードの IP (`node_ip`) を入れている |
 
-Ansible の `vxlan_cni` ロールがプラグインと DHCP デーモン (`cni-dhcp.service`) を全ノードに入れ、`addons` ロールが NAD を作ります。
+Ansible の `vxlan_cni` ロールがプラグインと DHCP デーモン (`cni-dhcp.service`) を全ノードに入れ、`addons` ロールが NAD を作ります。既存の `vlan10-bridge`・`vlan20-bridge` (トランクと br10・br20) もそのまま使えます。
+
+#### FortiGate の設定
+VLAN 10・20 は、VLAN インターフェースと VXLAN インターフェースを software switch (`sw10`, `sw20`) にまとめています。ゲートウェイの IP アドレス、DHCP サーバ、DNS サーバ、ポリシーは software switch に付いています (VLAN 10 のキャプティブポータルも `sw10` にあります)。
+
+| software switch | メンバー | VXLAN の相手 |
+|---|---|---|
+| `sw10` (DJ, `10.10.0.1/20`) | `VLAN10`、`vxlan10` (`dmz`, VNI 10)、`vxlan10-nas` (`port9`, VNI 10010) | main の全ノード、ongeki |
+| `sw20` (AV, `10.10.16.1/20`) | `VLAN20`、`vxlan20` (`dmz`, VNI 20)、`vxlan20-nas` (`port9`, VNI 10020) | main の全ノード、ongeki |
+
+- FortiGate は VNI ごとに VXLAN インターフェースを 1 つしか作れず、VXLAN インターフェースは紐づけたインターフェースからしか送信しません。そのため `port9` の先の ongeki には別の VNI を使い、nas の NAD に `vniOffset: 10000` を入れています (`vxlan_cni_vni_offset`)。main と nas の Pod の間は、software switch がメンバーの間を中継します。
+- ポリシーのアドレスは `VLAN10 subnet`・`VLAN20 subnet` (ipmask) です。
 
 #### VLAN を追加する手順
-1. FortiGate に、VLAN ごとに VXLAN と software switch を作ります。VLAN の IP アドレス、DHCP サーバ、ポリシーは software switch に移します。software switch のメンバーにした VLAN インターフェースには IP アドレスを付けられません。
+VLAN 10・20 の移行と同じ手順です。FortiOS は手順を拒否すると途中で止まるので、先に FortiGate VM などで試してください。
+
+1. 影響のない準備: VXLAN インターフェース (`dmz` と `port9` に 1 つずつ)、メンバーが VXLAN だけの software switch、ポリシー用の ipmask のアドレスを作ります。
    ```
    config system vxlan
-       edit "vxlan20"
+       edit "vxlan30"
            set interface "dmz"
-           set vni 20
+           set vni 30
            set remote-ip "192.168.99.200" "192.168.99.201" "192.168.99.202"
+       next
+       edit "vxlan30-nas"
+           set interface "port9"
+           set vni 10030
+           set remote-ip "192.168.98.2"
        next
    end
    config system switch-interface
-       edit "sw20"
+       edit "sw30"
            set vdom "root"
-           set member "VLAN20" "vxlan20"
+           set member "vxlan30" "vxlan30-nas"
            set intra-switch-policy implicit
        next
    end
    ```
-2. `vxlan_cni_allowed_vlans` に VLAN の番号を足して `site.yml` を流します。
+2. 切り替え (数秒止まる): ポリシーのインターフェースとアドレスを software switch と新しいアドレスに変え、古い `VLAN30 address` を消します。DHCP サーバと DNS サーバを software switch に移し、VLAN インターフェースの IP アドレスを外してから software switch のメンバーに加え、software switch に IP アドレスを付けます。
+3. ゲートウェイの MAC アドレスが変わる (software switch はメンバーのうち最も小さい MAC を使う) ので、FortiGate から VLAN の未使用のアドレスに ping して ARP をブロードキャストし、端末の ARP キャッシュを更新します。FortiOS は IP アドレスを付けても Gratuitous ARP を送りません。
+4. `vxlan_cni_allowed_vlans` に VLAN の番号を足して `site.yml` を流します (main と nas の両方)。
 
-- ノードを追加したときは、FortiGate の `remote-ip` にも追加します。NAD の `peers` は `site.yml` で更新されます。
-- VXLAN のカプセル化と software switch の転送は、FortiGate 100D では CPU で処理されます。流量の多い VLAN で使う前に、FortiGate の CPU 使用率を確認してください。
-- software switch にアドレスを付けると、そのサブネットは BGP (connected の再配布) で広報されます。
-- FortiGate 100D (FortiOS 6.2.16) での動作確認の結果は [vxlan-cni の test/fortigate](https://github.com/TechnoTUT/vxlan-cni/tree/main/test/fortigate) にあります。
+- 使用中の (software switch のメンバーの) VXLAN インターフェースの `remote-ip` は変えられません。ノードを追加するときは、VXLAN インターフェースを一度 software switch から外し、`remote-ip` を変えて戻します。その間、VXLAN の Pod の通信が止まり、ゲートウェイの MAC が変わることがあります。
+- ポリシーが参照しているアドレスは型を変えられないため、新しいアドレスを作って付け替えます。
+- VXLAN のカプセル化と software switch の転送は、FortiGate 100D では CPU で処理されます。流量の多い VLAN で使うときは、FortiGate の CPU 使用率を確認してください。
+- 動作確認の結果は [vxlan-cni の test/fortigate](https://github.com/TechnoTUT/vxlan-cni/tree/main/test/fortigate) にあります。
 
 ### DNS (ExternalDNS と FortiGate)
 `svc.technotut.net` ゾーンは FortiGate の DNS データベース (`config system dns-database`) に置きます。ExternalDNS が Service・Ingress・DNSEndpoint のレコードを、webhook ([TechnoTUT/external-dns-fortigate-webhook](https://github.com/TechnoTUT/external-dns-fortigate-webhook)) を通して FortiGate の REST API で書き換えます。Ansible の `dns` ロールが導入します。
@@ -459,7 +479,7 @@ ongeki は、ongeki だけで動く Kubernetes のクラスタ `nas` です。�
 | Ansible | `ansible-playbook -i inventory/nas.yml playbooks/site.yml`。変数は `inventory/group_vars/all` を `inventory/group_vars/nas_cluster.yml` で上書きします |
 | OS | AlmaLinux 10 (SELinux は Enforcing のまま)。Ansible のロールは Debian と RHEL 系の両方に対応しています |
 | ネットワーク | FortiGate の `port9` (`192.168.98.0/30`)。`main` のノードと L2 が別なので、Pod 間の通信は FortiGate が BGP の経路で中継します |
-| 動かすもの | Cilium (BGP、LB IPAM、Cluster Mesh) と Samba だけです。Multus、NFS、Argo CD、ExternalDNS などは入れません |
+| 動かすもの | Cilium (BGP、LB IPAM、Cluster Mesh)、Samba、Multus と vxlan-cni (VLAN 10・20 は VXLAN でつなぐ) です。NFS、Argo CD、ExternalDNS などは入れません |
 | データ | `/nas` (sda + sdb の md RAID0、ext4)。local PV でそのまま Samba にマウントします |
 | Samba | [`k8s/manifest/nas/`](https://github.com/TechnoTUT/Infra/tree/main/k8s/manifest/nas)。イメージは [TechnoTUT/samba](https://github.com/TechnoTUT/samba) (`ghcr.io/technotut/samba`) |
 | アドレス | `drive.svc.technotut.net` → `10.14.0.128` (LoadBalancer。`main` の ExternalDNS が `dns_static_records` から FortiGate に載せます)。SMB (TCP 445) だけ |

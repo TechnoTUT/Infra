@@ -33,6 +33,16 @@ config system accprofile
         end
     next
 end
+config system switch-interface
+    edit "sw20"
+        set vdom "root"
+        set member "VLAN20" "vxlan20" "vxlan20-nas"
+    next
+    edit "sw10"
+        set vdom "root"
+        set member "VLAN10" "vxlan10" "vxlan10-nas"
+    next
+end
 config system interface
     edit "wan1"
         set vdom "root"
@@ -185,13 +195,7 @@ config system interface
     next
     edit "VLAN10"
         set vdom "root"
-        set ip 10.10.0.1 255.255.240.0
-        set allowaccess ping
         set alias "DJ"
-        set security-mode captive-portal
-        set security-redirect-url "http://technotut.net"
-        set security-groups "DJ-MEMBER"
-        set device-identification enable
         set role lan
         set snmp-index 19
         set interface "po1"
@@ -199,10 +203,7 @@ config system interface
     next
     edit "VLAN20"
         set vdom "root"
-        set ip 10.10.16.1 255.255.240.0
-        set allowaccess ping
         set alias "AV"
-        set device-identification enable
         set role lan
         set snmp-index 20
         set interface "po1"
@@ -273,6 +274,55 @@ config system interface
         set snmp-index 28
         set interface "po1"
         set vlanid 45
+    next
+    edit "vxlan20"
+        set vdom "root"
+        set type vxlan
+        set snmp-index 31
+        set interface "dmz"
+    next
+    edit "sw20"
+        set vdom "root"
+        set ip 10.10.16.1 255.255.240.0
+        set allowaccess ping
+        set type switch
+        set alias "AV"
+        set device-identification enable
+        set lldp-transmission enable
+        set role lan
+        set snmp-index 32
+    next
+    edit "vxlan20-nas"
+        set vdom "root"
+        set type vxlan
+        set snmp-index 33
+        set interface "port9"
+    next
+    edit "vxlan10"
+        set vdom "root"
+        set type vxlan
+        set snmp-index 34
+        set interface "dmz"
+    next
+    edit "vxlan10-nas"
+        set vdom "root"
+        set type vxlan
+        set snmp-index 35
+        set interface "port9"
+    next
+    edit "sw10"
+        set vdom "root"
+        set ip 10.10.0.1 255.255.240.0
+        set allowaccess ping
+        set type switch
+        set alias "DJ"
+        set security-mode captive-portal
+        set security-redirect-url "http://technotut.net"
+        set security-groups "DJ-MEMBER"
+        set device-identification enable
+        set lldp-transmission enable
+        set role lan
+        set snmp-index 36
     next
 end
 config system physical-switch
@@ -2498,7 +2548,7 @@ config system dhcp server
         set dns-service local
         set default-gateway 10.10.16.1
         set netmask 255.255.240.0
-        set interface "VLAN20"
+        set interface "sw20"
         config ip-range
             edit 1
                 set start-ip 10.10.20.1
@@ -2510,7 +2560,7 @@ config system dhcp server
         set dns-service local
         set default-gateway 10.10.0.1
         set netmask 255.255.240.0
-        set interface "VLAN10"
+        set interface "sw10"
         config ip-range
             edit 1
                 set start-ip 10.10.10.1
@@ -2647,18 +2697,6 @@ config firewall address
         set uuid 07bd0c00-8570-51f1-1a04-0b355d27ccf5
         set type interface-subnet
         set interface "po1"
-    next
-    edit "VLAN10 address"
-        set uuid 3884d894-8571-51f1-f93c-039a03d05304
-        set type interface-subnet
-        set subnet 10.10.0.1 255.255.240.0
-        set interface "VLAN10"
-    next
-    edit "VLAN20 address"
-        set uuid df1a38d4-8571-51f1-9f0a-5e23482bbd0a
-        set type interface-subnet
-        set subnet 10.10.16.1 255.255.240.0
-        set interface "VLAN20"
     next
     edit "VLAN30 address"
         set uuid 3252ea96-8572-51f1-8ffd-5cc73131f500
@@ -2942,6 +2980,14 @@ config firewall address
         set sdn "nas"
         set associated-interface "port9"
         set filter "K8S_Label.cilium.io/ingress=true"
+    next
+    edit "VLAN20 subnet"
+        set uuid 9b9b92b4-e328-51f1-d377-b2fe036f2fad
+        set subnet 10.10.16.0 255.255.240.0
+    next
+    edit "VLAN10 subnet"
+        set uuid 2f101fa0-e32a-51f1-b3f9-fb9cc9c8c0a9
+        set subnet 10.10.0.0 255.255.240.0
     next
 end
 config firewall multicast-address
@@ -4699,6 +4745,28 @@ config dnsfilter profile
         set block-botnet enable
     next
 end
+config system vxlan
+    edit "vxlan20"
+        set interface "dmz"
+        set vni 20
+        set remote-ip "192.168.99.200" "192.168.99.201" "192.168.99.202"
+    next
+    edit "vxlan20-nas"
+        set interface "port9"
+        set vni 10020
+        set remote-ip "192.168.98.2"
+    next
+    edit "vxlan10"
+        set interface "dmz"
+        set vni 10
+        set remote-ip "192.168.99.200" "192.168.99.201" "192.168.99.202"
+    next
+    edit "vxlan10-nas"
+        set interface "port9"
+        set vni 10010
+        set remote-ip "192.168.98.2"
+    next
+end
 config system dns-database
     edit "svc.technotut.net"
         set domain "svc.technotut.net"
@@ -4824,8 +4892,6 @@ config system dns-database
     next
 end
 config system dns-server
-    edit "VLAN10"
-    next
     edit "mgmt"
     next
     edit "dmz"
@@ -4838,10 +4904,12 @@ config system dns-server
     next
     edit "VLAN30"
     next
-    edit "VLAN20"
-    next
     edit "port9"
         set mode forward-only
+    next
+    edit "sw20"
+    next
+    edit "sw10"
     next
 end
 config antivirus settings
@@ -6624,9 +6692,9 @@ config firewall policy
     edit 5
         set name "al-dj-sv"
         set uuid 38fba88a-8679-51f1-fb27-b191ce3e4b89
-        set srcintf "VLAN10"
+        set srcintf "sw10"
         set dstintf "dmz"
-        set srcaddr "VLAN10 address"
+        set srcaddr "VLAN10 subnet"
         set dstaddr "k8s-ingress" "k8s-svc"
         set action accept
         set schedule "always"
@@ -6657,9 +6725,9 @@ config firewall policy
     edit 8
         set name "al-av-sv"
         set uuid bfdef83c-868f-51f1-4190-f19590273f88
-        set srcintf "VLAN20"
+        set srcintf "sw20"
         set dstintf "dmz"
-        set srcaddr "VLAN20 address"
+        set srcaddr "VLAN20 subnet"
         set dstaddr "k8s-ingress" "k8s-svc"
         set action accept
         set schedule "always"
@@ -6679,9 +6747,9 @@ config firewall policy
     edit 10
         set name "al-dj-nas"
         set uuid f6ab9eea-8722-51f1-983b-6ceddb77c9d1
-        set srcintf "VLAN10"
+        set srcintf "sw10"
         set dstintf "port9"
-        set srcaddr "VLAN10 address"
+        set srcaddr "VLAN10 subnet"
         set dstaddr "all"
         set action accept
         set schedule "always"
@@ -6701,9 +6769,9 @@ config firewall policy
     edit 12
         set name "al-dj-technotut.net"
         set uuid 65571436-8724-51f1-aa2f-72fbc9c9239c
-        set srcintf "VLAN10"
+        set srcintf "sw10"
         set dstintf "wan1"
-        set srcaddr "VLAN10 address"
+        set srcaddr "VLAN10 subnet"
         set dstaddr "technotut.net"
         set action accept
         set schedule "always"
@@ -6712,9 +6780,9 @@ config firewall policy
     edit 13
         set name "al-dj-conn-test"
         set uuid c5947e9c-8724-51f1-aa40-f30fe49e3471
-        set srcintf "VLAN10"
+        set srcintf "sw10"
         set dstintf "wan1"
-        set srcaddr "VLAN10 address"
+        set srcaddr "VLAN10 subnet"
         set dstaddr "www.msftconnecttest.com"
         set action accept
         set schedule "always"
@@ -6723,9 +6791,9 @@ config firewall policy
     edit 14
         set name "al-dj-et"
         set uuid 5da4087e-c384-51f1-8923-6f6e73136e8d
-        set srcintf "VLAN10"
+        set srcintf "sw10"
         set dstintf "VLAN42"
-        set srcaddr "VLAN10 address"
+        set srcaddr "VLAN10 subnet"
         set dstaddr "VLAN42 address"
         set action accept
         set schedule "always"
@@ -6735,9 +6803,9 @@ config firewall policy
         set name "al-pa-av-ctrl"
         set uuid 2da78538-c393-51f1-46a3-9291a72e073e
         set srcintf "VLAN40"
-        set dstintf "VLAN20"
+        set dstintf "sw20"
         set srcaddr "VLAN40 address"
-        set dstaddr "VLAN20 address"
+        set dstaddr "VLAN20 subnet"
         set action accept
         set schedule "always"
         set service "ALL"
@@ -6745,10 +6813,10 @@ config firewall policy
     edit 16
         set name "al-dj-av-ctrl"
         set uuid 7ae46744-c393-51f1-7b84-37636ebcb725
-        set srcintf "VLAN10"
-        set dstintf "VLAN20"
-        set srcaddr "VLAN10 address"
-        set dstaddr "VLAN20 address"
+        set srcintf "sw10"
+        set dstintf "sw20"
+        set srcaddr "VLAN10 subnet"
+        set dstaddr "VLAN20 subnet"
         set action accept
         set schedule "always"
         set service "ALL"
@@ -6756,9 +6824,9 @@ config firewall policy
     edit 17
         set name "al-av-ledd"
         set uuid 7bb6ccc0-c398-51f1-87ec-0f21fffdb124
-        set srcintf "VLAN20"
+        set srcintf "sw20"
         set dstintf "VLAN43"
-        set srcaddr "VLAN20 address"
+        set srcaddr "VLAN20 subnet"
         set dstaddr "VLAN43 address"
         set action accept
         set schedule "always"
@@ -6767,9 +6835,9 @@ config firewall policy
     edit 18
         set name "al-av-lbar"
         set uuid a715ed60-c39d-51f1-6a87-da716b787b41
-        set srcintf "VLAN20"
+        set srcintf "sw20"
         set dstintf "VLAN30"
-        set srcaddr "VLAN20 address"
+        set srcaddr "VLAN20 subnet"
         set dstaddr "VLAN30 address"
         set action accept
         set schedule "always"
@@ -6778,9 +6846,9 @@ config firewall policy
     edit 19
         set name "al-vj-gh"
         set uuid 1df43ad0-c43a-51f1-5d53-723de6efac72
-        set srcintf "VLAN20"
+        set srcintf "sw20"
         set dstintf "wan1"
-        set srcaddr "VLAN20 address"
+        set srcaddr "VLAN20 subnet"
         set dstaddr "all"
         set action accept
         set schedule "always"
@@ -6855,9 +6923,9 @@ config firewall policy
     edit 26
         set name "al-dj-internet"
         set uuid d5fc9b6e-e171-51f1-81d7-fbe0ca53428c
-        set srcintf "VLAN10"
+        set srcintf "sw10"
         set dstintf "wan1"
-        set srcaddr "VLAN10 address"
+        set srcaddr "VLAN10 subnet"
         set dstaddr "all"
         set action accept
         set schedule "always"

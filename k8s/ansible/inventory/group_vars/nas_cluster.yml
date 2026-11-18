@@ -21,11 +21,17 @@ cilium_lb_pool_stop: "10.14.0.127"
 cilium_lb_static_start: "10.14.0.128"
 cilium_lb_static_stop: "10.14.0.254"
 
-# ===== 使わないもの =====
-# Multus 用の VLAN 10/20 のトランクにはつながっていない。
+# ===== Multus と vxlan-cni =====
+# VLAN 10/20 のトランクにはつながっていないので、VLAN には vxlan-cni (VXLAN) だけでつなぐ。
+# FortiGate は VNI ごとに VXLAN インターフェースを 1 つしか作れないため、port9 側は別の VNI
+# (vxlan10-nas = 10010, vxlan20-nas = 10020) を使い、dmz 側 (vxlan10, vxlan20) と同じ software switch に入れている。
 network_manage_vlans: false
-multus_enabled: false
-vxlan_cni_enabled: false
+multus_enabled: true
+multus_nads: []                      # br10・br20 (トランク) はない
+vxlan_cni_remote: "192.168.98.1"     # FortiGate の port9
+vxlan_cni_vni_offset: 10000
+
+# ===== 使わないもの =====
 nfs_enabled: false
 registry_enabled: false
 arc_enabled: false
