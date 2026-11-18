@@ -22,3 +22,30 @@ spec:
   service: [OSC-9000]
   action: accept
   comments: plmux OSC to dmxctl (VLAN20)
+---
+# plmux の画面は、DJ (VLAN10) からの閲覧と、演出側 (VLAN20) の OBS のオーバーレイで使う。
+apiVersion: fortigate.technotut.net/v1alpha1
+kind: FirewallPolicy
+metadata:
+  name: al-plmux-dj
+spec:
+  srcintf: [sw10]
+  dstintf: [dmz]
+  srcaddr: [VLAN10 subnet]
+  dstaddr: [k8s-svc]
+  service: [HTTP]
+  action: accept
+  comments: plmux from VLAN10
+---
+apiVersion: fortigate.technotut.net/v1alpha1
+kind: FirewallPolicy
+metadata:
+  name: al-plmux-av
+spec:
+  srcintf: [sw20]
+  dstintf: [dmz]
+  srcaddr: [VLAN20 subnet]
+  dstaddr: [k8s-svc]
+  service: [HTTP]
+  action: accept
+  comments: plmux from VLAN20
