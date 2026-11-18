@@ -11,6 +11,7 @@ resources:
   - carabiner-deployment.yaml
   - carabiner-service.yaml
   - networkpolicy.yaml
+  - firewallpolicy.yaml
 
 # Clojure の式。イメージには同梱しないので、ここから ConfigMap を作って /config にマウントする。
 # 名前にハッシュを付けないので、更新すると Pod を作り直さずに plmux が数十秒で読み込み直す。

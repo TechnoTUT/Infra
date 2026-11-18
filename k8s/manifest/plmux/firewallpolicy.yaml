@@ -1,0 +1,24 @@
+# plmux の Pod から VLAN 20 の dmxctl への OSC (UDP 9000)。
+# Pod の通信はノードの IP (dmz) に SNAT されて FortiGate を通る。
+# FortiGate の設定は fortigate-operator が反映する (https://github.com/TechnoTUT/fortigate-operator)。
+apiVersion: fortigate.technotut.net/v1alpha1
+kind: FirewallService
+metadata:
+  name: plmux-osc
+spec:
+  name: OSC-9000
+  udpPortrange: ["9000"]
+  comment: dmxctl OSC
+---
+apiVersion: fortigate.technotut.net/v1alpha1
+kind: FirewallPolicy
+metadata:
+  name: al-plmux-osc
+spec:
+  srcintf: [dmz]
+  dstintf: [sw20]
+  srcaddr: [dmz]
+  dstaddr: [VLAN20 subnet]
+  service: [OSC-9000]
+  action: accept
+  comments: plmux OSC to dmxctl (VLAN20)
