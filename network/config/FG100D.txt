@@ -1,5 +1,5 @@
 #config-version=FG100D-6.2.16-FW-build1392-240129:opmode=0:vdom=0:user=admin
-#conf_file_ver=163599599310026
+#conf_file_ver=170931108486005
 #buildno=1392
 #global_vdom=1
 config system global
@@ -26,6 +26,12 @@ config system accprofile
         set wanoptgrp read-write
         set wifi read-write
     next
+    edit "externaldns"
+        set sysgrp custom
+        config sysgrp-permission
+            set cfg read-write
+        end
+    next
 end
 config system interface
     edit "wan1"
@@ -40,7 +46,7 @@ config system interface
     edit "dmz"
         set vdom "root"
         set ip 192.168.99.129 255.255.255.128
-        set allowaccess ping fabric
+        set allowaccess ping https fabric
         set type physical
         set alias "SV"
         set role dmz
@@ -131,7 +137,7 @@ config system interface
     edit "port9"
         set vdom "root"
         set ip 192.168.98.1 255.255.255.252
-        set allowaccess ping
+        set allowaccess ping fabric
         set type physical
         set alias "NAS"
         set role dmz
@@ -319,6 +325,7 @@ config system admin
     edit "admin"
         set accprofile "super_admin"
         set vdom "root"
+        set ssh-public-key1 "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFJ5TP9NYNSgWj8QS0u8eLYSU36YV8O76MwpanhbNdRu"
         config gui-dashboard
             edit 1
                 set name "Status"
@@ -482,6 +489,18 @@ config system admin
         set password ENC xxxxxxxx
     next
 end
+config system api-user
+    edit "externaldns"
+        set api-key ENC xxxxxxxx
+        set accprofile "externaldns"
+        set vdom "root"
+        config trusthost
+            edit 2
+                set ipv4-trusthost 192.168.99.128 255.255.255.128
+            next
+        end
+    next
+end
 config system sso-admin
 end
 config system ha
@@ -505,17 +524,23 @@ end
 config system replacemsg-image
     edit "logo_fnet"
         set image-type gif
+        set image-base64 ''
     next
     edit "logo_fguard_wf"
         set image-type gif
+        set image-base64 ''
     next
     edit "logo_fw_auth"
+        set image-base64 ''
     next
     edit "logo_v2_fnet"
+        set image-base64 ''
     next
     edit "logo_v2_fguard_wf"
+        set image-base64 ''
     next
     edit "logo_v2_fguard_app"
+        set image-base64 ''
     next
 end
 config system replacemsg mail "email-av-fail"
@@ -781,6 +806,11 @@ config system sdn-connector
     edit "kubernetes"
         set type kubernetes
         set server "192.168.99.200"
+        set secret-token ENC xxxxxxxx
+    next
+    edit "nas"
+        set type kubernetes
+        set server "192.168.98.2"
         set secret-token ENC xxxxxxxx
     next
 end
@@ -2674,7 +2704,6 @@ config firewall address
     next
     edit "k8s-cl"
         set uuid 0535e840-8678-51f1-e9ca-cf0c7f2ec123
-        set associated-interface "dmz"
         set subnet 10.11.0.0 255.255.0.0
     next
     edit "k8s-svc"
@@ -2685,107 +2714,67 @@ config firewall address
         set filter "K8S_Namespace=* & K8S_ServiceName=*"
         set sdn-addr-type all
         config list
-            edit "10.100.17.12"
+            edit "10.100.17.27"
                 set obj-id "kubernetes"
                 set net-id "kubernetes"
             next
-            edit "10.100.173.250"
+            edit "10.100.42.165"
                 set obj-id "kubernetes"
                 set net-id "kubernetes"
             next
-            edit "10.100.218.135"
+            edit "10.101.101.224"
                 set obj-id "kubernetes"
                 set net-id "kubernetes"
             next
-            edit "10.100.255.190"
+            edit "10.102.126.149"
                 set obj-id "kubernetes"
                 set net-id "kubernetes"
             next
-            edit "10.100.81.253"
+            edit "10.102.196.225"
                 set obj-id "kubernetes"
                 set net-id "kubernetes"
             next
-            edit "10.102.173.82"
+            edit "10.102.27.230"
                 set obj-id "kubernetes"
                 set net-id "kubernetes"
             next
-            edit "10.102.57.87"
+            edit "10.103.180.227"
                 set obj-id "kubernetes"
                 set net-id "kubernetes"
             next
-            edit "10.103.158.108"
+            edit "10.103.235.192"
                 set obj-id "kubernetes"
                 set net-id "kubernetes"
             next
-            edit "10.103.175.19"
+            edit "10.104.231.89"
                 set obj-id "kubernetes"
                 set net-id "kubernetes"
             next
-            edit "10.104.237.234"
+            edit "10.104.31.176"
                 set obj-id "kubernetes"
                 set net-id "kubernetes"
             next
-            edit "10.104.64.1"
+            edit "10.106.200.93"
                 set obj-id "kubernetes"
                 set net-id "kubernetes"
             next
-            edit "10.105.166.13"
+            edit "10.107.254.242"
                 set obj-id "kubernetes"
                 set net-id "kubernetes"
             next
-            edit "10.105.30.92"
+            edit "10.108.198.248"
                 set obj-id "kubernetes"
                 set net-id "kubernetes"
             next
-            edit "10.106.23.10"
+            edit "10.110.85.103"
                 set obj-id "kubernetes"
                 set net-id "kubernetes"
             next
-            edit "10.107.36.12"
+            edit "10.111.255.63"
                 set obj-id "kubernetes"
                 set net-id "kubernetes"
             next
-            edit "10.108.156.196"
-                set obj-id "kubernetes"
-                set net-id "kubernetes"
-            next
-            edit "10.109.176.55"
-                set obj-id "kubernetes"
-                set net-id "kubernetes"
-            next
-            edit "10.109.78.216"
-                set obj-id "kubernetes"
-                set net-id "kubernetes"
-            next
-            edit "10.109.83.75"
-                set obj-id "kubernetes"
-                set net-id "kubernetes"
-            next
-            edit "10.109.89.188"
-                set obj-id "kubernetes"
-                set net-id "kubernetes"
-            next
-            edit "10.110.199.189"
-                set obj-id "kubernetes"
-                set net-id "kubernetes"
-            next
-            edit "10.110.5.137"
-                set obj-id "kubernetes"
-                set net-id "kubernetes"
-            next
-            edit "10.110.66.3"
-                set obj-id "kubernetes"
-                set net-id "kubernetes"
-            next
-            edit "10.111.180.203"
-                set obj-id "kubernetes"
-                set net-id "kubernetes"
-            next
-            edit "10.111.204.50"
-                set obj-id "kubernetes"
-                set net-id "kubernetes"
-            next
-            edit "10.12.0.0"
+            edit "10.111.32.155"
                 set obj-id "kubernetes"
                 set net-id "kubernetes"
             next
@@ -2794,14 +2783,6 @@ config firewall address
                 set net-id "kubernetes"
             next
             edit "10.12.0.2"
-                set obj-id "kubernetes"
-                set net-id "kubernetes"
-            next
-            edit "10.12.0.3"
-                set obj-id "kubernetes"
-                set net-id "kubernetes"
-            next
-            edit "10.12.0.4"
                 set obj-id "kubernetes"
                 set net-id "kubernetes"
             next
@@ -2817,11 +2798,19 @@ config firewall address
                 set obj-id "kubernetes"
                 set net-id "kubernetes"
             next
-            edit "10.12.210.254"
+            edit "10.12.0.8"
+                set obj-id "kubernetes"
+                set net-id "kubernetes"
+            next
+            edit "10.12.230.254"
                 set obj-id "kubernetes"
                 set net-id "kubernetes"
             next
             edit "10.12.240.254"
+                set obj-id "kubernetes"
+                set net-id "kubernetes"
+            next
+            edit "10.12.241.254"
                 set obj-id "kubernetes"
                 set net-id "kubernetes"
             next
@@ -2849,31 +2838,19 @@ config firewall address
                 set obj-id "kubernetes"
                 set net-id "kubernetes"
             next
-            edit "10.96.93.127"
+            edit "10.96.0.100"
                 set obj-id "kubernetes"
                 set net-id "kubernetes"
             next
-            edit "10.97.197.227"
+            edit "10.97.183.77"
                 set obj-id "kubernetes"
                 set net-id "kubernetes"
             next
-            edit "10.97.45.7"
+            edit "10.98.20.198"
                 set obj-id "kubernetes"
                 set net-id "kubernetes"
             next
-            edit "10.98.125.234"
-                set obj-id "kubernetes"
-                set net-id "kubernetes"
-            next
-            edit "10.98.232.66"
-                set obj-id "kubernetes"
-                set net-id "kubernetes"
-            next
-            edit "10.98.41.63"
-                set obj-id "kubernetes"
-                set net-id "kubernetes"
-            next
-            edit "10.99.175.153"
+            edit "10.99.0.194"
                 set obj-id "kubernetes"
                 set net-id "kubernetes"
             next
@@ -2891,11 +2868,11 @@ config firewall address
         set filter "K8S_Label.cilium.io/ingress=true"
         set sdn-addr-type all
         config list
-            edit "10.103.175.19"
+            edit "10.103.180.227"
                 set obj-id "kubernetes"
                 set net-id "kubernetes"
             next
-            edit "10.12.0.2"
+            edit "10.12.0.1"
                 set obj-id "kubernetes"
                 set net-id "kubernetes"
             next
@@ -2924,6 +2901,47 @@ config firewall address
         set type fqdn
         set associated-interface "wan1"
         set fqdn "*.github.com"
+    next
+    edit "k8s-cl2"
+        set uuid d7ccafbe-df56-51f1-b797-a51ab8bca2ef
+        set associated-interface "port9"
+        set subnet 10.13.0.0 255.255.0.0
+    next
+    edit "k8s-svc-nas"
+        set uuid 22884c40-df5a-51f1-abb9-5696e401fdf1
+        set type dynamic
+        set sdn "nas"
+        set associated-interface "port9"
+        set filter "K8S_Namespace=* & K8S_ServiceName=*"
+        config list
+            edit "10.108.31.238"
+                set obj-id "kubernetes"
+                set net-id "kubernetes"
+            next
+            edit "10.96.0.1"
+                set obj-id "kubernetes"
+                set net-id "kubernetes"
+            next
+            edit "10.96.0.10"
+                set obj-id "kubernetes"
+                set net-id "kubernetes"
+            next
+            edit "10.98.240.31"
+                set obj-id "kubernetes"
+                set net-id "kubernetes"
+            next
+            edit "None"
+                set obj-id "kubernetes"
+                set net-id "kubernetes"
+            next
+        end
+    next
+    edit "k8s-ingress-nas"
+        set uuid 0ea3bbdc-df5b-51f1-4d70-d1e392a546e5
+        set type dynamic
+        set sdn "nas"
+        set associated-interface "port9"
+        set filter "K8S_Label.cilium.io/ingress=true"
     next
 end
 config firewall multicast-address
@@ -3513,10 +3531,6 @@ config firewall service custom
     edit "RTMP"
         set category "VoIP, Messaging & Other Applications"
         set tcp-portrange 1935
-    next
-    edit "NDI-Discovery"
-        set category "VoIP, Messaging & Other Applications"
-        set tcp-portrange 5959
     next
 end
 config firewall service group
@@ -4689,11 +4703,120 @@ config system dns-database
     edit "svc.technotut.net"
         set domain "svc.technotut.net"
         set ttl 300
-        set forwarder "10.12.0.0" 
         config dns-entry
             edit 1
+                set hostname "cam1"
+                set ip 10.12.77.252
+            next
+            edit 2
+                set hostname "cam2"
+                set ip 10.12.77.251
+            next
+            edit 3
+                set hostname "dmx"
+                set ip 10.12.240.254
+            next
+            edit 4
+                set hostname "dmxsim"
+                set ip 10.12.241.254
+            next
+            edit 5
                 set hostname "drive"
-                set ip 192.168.98.2
+                set ip 10.14.0.128
+            next
+            edit 6
+                set hostname "live"
+                set ip 10.12.0.6
+            next
+            edit 7
+                set hostname "ndi"
+                set ip 10.12.230.254
+            next
+            edit 8
+                set hostname "pa"
+                set ip 192.168.12.22
+            next
+            edit 9
+                set hostname "plmux"
+                set ip 10.12.0.8
+            next
+            edit 10
+                set hostname "registry"
+                set ip 10.96.0.100
+            next
+            edit 11
+                set hostname "spdtest"
+                set ip 10.12.0.7
+            next
+            edit 12
+                set hostname "time"
+                set ip 10.12.0.5
+            next
+        end
+        set primary-name "ns1"
+        set contact "network.technotut.net"
+    next
+    edit "12.10.in-addr.arpa"
+        set domain "12.10.in-addr.arpa"
+        set ttl 300
+        config dns-entry
+            edit 1
+                set type PTR
+                set hostname "cam1.svc.technotut.net."
+                set ip 10.12.77.252
+            next
+            edit 2
+                set type PTR
+                set hostname "cam2.svc.technotut.net."
+                set ip 10.12.77.251
+            next
+            edit 3
+                set type PTR
+                set hostname "dmx.svc.technotut.net."
+                set ip 10.12.240.254
+            next
+            edit 4
+                set type PTR
+                set hostname "dmxsim.svc.technotut.net."
+                set ip 10.12.241.254
+            next
+            edit 5
+                set type PTR
+                set hostname "live.svc.technotut.net."
+                set ip 10.12.0.6
+            next
+            edit 6
+                set type PTR
+                set hostname "ndi.svc.technotut.net."
+                set ip 10.12.230.254
+            next
+            edit 7
+                set type PTR
+                set hostname "plmux.svc.technotut.net."
+                set ip 10.12.0.8
+            next
+            edit 8
+                set type PTR
+                set hostname "spdtest.svc.technotut.net."
+                set ip 10.12.0.7
+            next
+            edit 9
+                set type PTR
+                set hostname "time.svc.technotut.net."
+                set ip 10.12.0.5
+            next
+        end
+        set primary-name "ns1"
+        set contact "network.technotut.net"
+    next
+    edit "0.14.10.in-addr.arpa"
+        set domain "0.14.10.in-addr.arpa"
+        set ttl 300
+        config dns-entry
+            edit 1
+                set type PTR
+                set hostname "drive.svc.technotut.net."
+                set ip 10.14.0.128
             next
         end
         set primary-name "ns1"
@@ -4706,7 +4829,6 @@ config system dns-server
     edit "mgmt"
     next
     edit "dmz"
-        set mode forward-only
     next
     edit "VLAN43"
     next
@@ -6541,14 +6663,14 @@ config firewall policy
         set dstaddr "k8s-ingress" "k8s-svc"
         set action accept
         set schedule "always"
-        set service "HTTP" "HTTPS" "RTMP" "RDP" "VNC" "NDI-Discovery"
+        set service "HTTP" "HTTPS" "RTMP" "RDP" "VNC"
     next
     edit 9
         set name "al-nas"
         set uuid 73f8432c-8722-51f1-eafc-05bcf5b0fdb0
         set srcintf "port9"
         set dstintf "wan1"
-        set srcaddr "port9 address"
+        set srcaddr "port9 address" "k8s-cl2"
         set dstaddr "all"
         set action accept
         set schedule "always"
@@ -6560,7 +6682,7 @@ config firewall policy
         set srcintf "VLAN10"
         set dstintf "port9"
         set srcaddr "VLAN10 address"
-        set dstaddr "port9 address"
+        set dstaddr "all"
         set action accept
         set schedule "always"
         set service "SMB" "HTTP"
@@ -6571,7 +6693,7 @@ config firewall policy
         set srcintf "mgmt"
         set dstintf "port9"
         set srcaddr "mgmt address"
-        set dstaddr "port9 address"
+        set dstaddr "all"
         set action accept
         set schedule "always"
         set service "HTTP" "HTTPS" "SMB" "SSH"
@@ -6682,6 +6804,72 @@ config firewall policy
         set dstintf "dmz"
         set srcaddr "all"
         set dstaddr "dmz"
+        set action accept
+        set schedule "always"
+        set service "SSH"
+    next
+    edit 22
+        set name "al-nas-sv"
+        set uuid 133b4260-df50-51f1-178b-a2cd4263b613
+        set srcintf "port9"
+        set dstintf "dmz"
+        set srcaddr "all"
+        set dstaddr "all"
+        set action accept
+        set schedule "always"
+        set service "ALL"
+    next
+    edit 23
+        set name "al-sv-nas"
+        set uuid 28baccbe-df50-51f1-dd34-1d7c13e5c90f
+        set srcintf "dmz"
+        set dstintf "port9"
+        set srcaddr "all"
+        set dstaddr "all"
+        set action accept
+        set schedule "always"
+        set service "ALL"
+    next
+    edit 24
+        set name "al-mgmt-pa"
+        set uuid 9bfb508e-df5c-51f1-2ae4-67193e0317a3
+        set srcintf "mgmt"
+        set dstintf "VLAN40"
+        set srcaddr "mgmt address"
+        set dstaddr "VLAN40 address"
+        set action accept
+        set schedule "always"
+        set service "ALL"
+    next
+    edit 25
+        set name "al-rt-pa"
+        set uuid e36ff1ac-df5e-51f1-41aa-8105aa1c0e8f
+        set srcintf "wan1"
+        set dstintf "VLAN40"
+        set srcaddr "all"
+        set dstaddr "VLAN40 address"
+        set action accept
+        set schedule "always"
+        set service "ALL"
+    next
+    edit 26
+        set name "al-dj-internet"
+        set uuid d5fc9b6e-e171-51f1-81d7-fbe0ca53428c
+        set srcintf "VLAN10"
+        set dstintf "wan1"
+        set srcaddr "VLAN10 address"
+        set dstaddr "all"
+        set action accept
+        set schedule "always"
+        set service "HTTPS"
+    next
+    edit 27
+        set name "al-ssh-mgmt"
+        set uuid 2e3b2eca-e321-51f1-716a-fb1438310912
+        set srcintf "wan1"
+        set dstintf "mgmt"
+        set srcaddr "all"
+        set dstaddr "mgmt address"
         set action accept
         set schedule "always"
         set service "SSH"
@@ -7731,6 +7919,9 @@ config router bgp
         edit "192.168.99.202"
             set remote-as 64646
             set route-reflector-client enable
+        next
+        edit "192.168.98.2"
+            set remote-as 64646
         next
     end
     config redistribute "connected"
