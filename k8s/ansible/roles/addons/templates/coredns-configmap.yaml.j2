@@ -1,4 +1,4 @@
-# kubeadm の既定の Corefile に、{{ dns_zone }} を bind9 に問い合わせる設定を足したもの。
+# kubeadm の既定の Corefile に、{{ dns_zone }} を FortiGate ({{ dns_server }}) に問い合わせる設定を足したもの。
 # Pod から {{ dns_zone }} の名前 (クラスタ内のレジストリなど) を引けるようにする。
 # kubeadm upgrade で既定に戻ったときは、site.yml を流し直す。
 apiVersion: v1
@@ -10,7 +10,7 @@ data:
   Corefile: |
     {{ dns_zone }}:53 {
         errors
-        forward . {{ bind9_lb_ip }}
+        forward . {{ dns_server }}
         cache 30
     }
     .:53 {

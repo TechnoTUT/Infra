@@ -50,7 +50,7 @@ Control-Plane ノードは、API サーバ・スケジューラ・コントロ�
 | CNI / BGP / Ingress | Cilium | `1.20.4` | `kube-proxy` 置き換え、Native Routing、iBGP による LoadBalancer IP / Pod CIDR 広報、Ingress、Cluster Mesh |
 | L2 マルチホーム | Multus | `v4.3.1` | `br10` / `br20` 経由で Pod を VLAN 10 (PRO DJ LINK)・VLAN 20 (Ableton Link) へ直結 |
 | ストレージ | NFS / Local PV | `nfs-subdir-external-provisioner` (`4.0.18`) | `becky` の `/nfs` を動的プロビジョニング、`ongeki` は `/nas` を Local PV として利用 |
-| 内部 DNS | `bind9` + ExternalDNS | - | `svc.technotut.net` ゾーンを管理し、FortiGate からの DNS 転送を受信 (`10.12.0.0`) |
+| 内部 DNS | ExternalDNS + [FortiGate の webhook](https://github.com/TechnoTUT/external-dns-fortigate-webhook) | Helm Chart `1.21.1` | `svc.technotut.net` のレコードを FortiGate の DNS データベースに REST API で登録 |
 | GitOps | Argo CD | Helm Chart `10.12.1` | `main` ブランチの `k8s/manifest/` を自動同期 (`root` Application で各アプリを管理) |
 | CI Runner | Actions Runner Controller | `0.15.1` | GitHub Actions の self-hosted runner をジョブ実行時のみ Pod として起動 |
 
@@ -69,7 +69,7 @@ Control-Plane ノードは、API サーバ・スケジューラ・コントロ�
 | `nas` | `ongeki` | `/nas` の確認、ホスト Samba 停止、SELinux コンテキスト設定 |
 | `nfs` | `becky` | NFS サーバ (`/nfs`) の構築 |
 | `kubeadm` | 全ノード | `kubelet` / `kubeadm` / `kubectl` 導入、`kubeadm init` / `join` |
-| `addons` | Control-Plane | Helm、Cilium、Multus、NFS Provisioner、Argo CD、`bind9` / ExternalDNS の導入 |
+| `addons` | Control-Plane | Helm、Cilium、Multus、NFS Provisioner、Argo CD、ExternalDNS の導入 |
 
 詳細な手順は [Kubernetes (k8s) 構築方法](/computing/deploy) を参照してください。実機を使わずに Podman 上で Playbook を検証するテスト手順は [Podman による疑似クラスタテスト](/computing/test) にまとめています。
 

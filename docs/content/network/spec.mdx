@@ -93,7 +93,7 @@ VLAN 99・100 は `po1` ではなく、それぞれ専用のポート (`mgmt`, `
 
 - 各 VLAN の DHCP の範囲は [VLAN・IPアドレス設計](/network/vlan) を参照してください。DHCP で配る DNS サーバは FortiGate 自身です (CAM2 だけは FortiGate の上流 DNS サーバを直接配ります)。
 - FortiGate の上流 DNS サーバは `133.15.64.100`, `133.15.64.102` です。
-- `svc.technotut.net` のゾーンは Kubernetes 上の bind9 (`10.12.0.0`) に転送します。`drive.svc.technotut.net` (NAS, `192.168.98.2`) だけは FortiGate が直接答えます。
+- `svc.technotut.net` のゾーンと、逆引きの `12.10.in-addr.arpa`・`0.14.10.in-addr.arpa` は FortiGate が答えます。レコードは Kubernetes の ExternalDNS が REST API で書き換えます ([DNS (ExternalDNS と FortiGate)](/computing/deploy))。ゾーンに手でエントリを書くと消えます。
 - NTP は公開 NTP サーバに同期し、`mgmt` と `dmz` に NTP サーバとして時刻を配ります。
 
 ### 通信制御

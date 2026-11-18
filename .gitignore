@@ -18,3 +18,5 @@
 /docs/npm-debug.log*
 /docs/yarn-debug.log*
 /docs/yarn-error.log*
+
+*.zip

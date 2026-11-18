@@ -97,11 +97,10 @@ flowchart LR
     end
     subgraph SV["Kubernetes (SV, VLAN 100)"]
         DS["NDI Discovery Server<br/>ndi.svc.technotut.net"]
-        DNS["bind9<br/>*.svc.technotut.net"]
         PLMUX["plmux<br/>(Ableton Link / OSC)"]
         DMXSVC["dmx / dmxsim<br/>(Art-Net)"]
     end
-    FG["FortiGate<br/>ゲートウェイ / DHCP / DNS"]
+    FG["FortiGate<br/>ゲートウェイ / DHCP / DNS<br/>*.svc.technotut.net"]
 
     TX -- "NDI (mDNS + マルチキャスト)" --> RX
     VJ -- NDI --> BTH
@@ -110,13 +109,13 @@ flowchart LR
     TX -. "NDI 登録 (TCP 5959)" .-> DS
     PLMUX -- "Ableton Link / OSC (UDP 9000)" --> DMX
     DMX -- "Art-Net (UDP 6454)" --> FG --> DMXSVC
-    AV -. DHCP / DNS .-> FG -. "svc.technotut.net を転送" .-> DNS
+    AV -. DHCP / DNS .-> FG
 ```
 
 | 機能 | 接続する VLAN | 使う網内サービス・設定 | 通信 |
 | :--- | :--- | :--- | :--- |
 | IP アドレスの取得 | AV (VLAN 20) | FortiGate の DHCP (`10.10.20.1` 〜 `10.10.31.254`) | DHCP |
-| 名前解決 | AV (VLAN 20) | FortiGate の DNS。`svc.technotut.net` は Kubernetes 上の bind9 (`10.12.0.0`) に転送される | DNS |
+| 名前解決 | AV (VLAN 20) | FortiGate の DNS。`svc.technotut.net` のレコードは Kubernetes の ExternalDNS が FortiGate に登録する | DNS |
 | NDI 送受信 | AV (VLAN 20) | mDNS による機器検出。マルチキャスト送信のため N-1 が IGMP Snooping Querier | mDNS (UDP 5353)、NDI (TCP/UDP 5959〜)、マルチキャスト `239.255.0.0/16` |
 | NDI ソースの登録・検索 | AV (VLAN 20) | [NDI Discovery Server](/service/ndi#ndi-discovery-server) (設定済み)。現在は VLAN をまたいだ NDI はできない | TCP 5959 |
 | フライヤー表示 (サイネージ Web GUI) | ENT (VLAN 42) | DHCP (`192.168.12.34` 〜 `192.168.12.46`)。DJ (VLAN 10) からもアクセス可能 | HTTP (TCP 8000) |

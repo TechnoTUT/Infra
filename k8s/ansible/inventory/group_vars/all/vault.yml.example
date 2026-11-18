@@ -1,8 +1,9 @@
 ---
 # 実際の vault.yml は次で作る（暗号化して Git に入れてよい）:
 #   ansible-vault create inventory/group_vars/all/vault.yml
-# 例: ExternalDNS (RFC2136) 用の TSIG キー
-vault_externaldns_tsig_secret: "CHANGE_ME"
+# 例: ExternalDNS の webhook が使う FortiGate の REST API 管理者の API キー
+#     FortiGate で execute api-user generate-key externaldns を実行した出力
+vault_externaldns_fortigate_token: "CHANGE_ME"
 # 例: GitHub Actions の self-hosted runner (ARC) が使う GitHub App
 #     TechnoTUT の org に App を作ってインストールし、次の 3 つを入れる
 vault_arc_github_app_id: "CHANGE_ME"                 # App ID (または Client ID)

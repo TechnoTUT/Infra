@@ -32,7 +32,7 @@
   hosts: control_plane
   roles: [addons]
 
-- name: DNS (bind9 と ExternalDNS) の導入
+- name: DNS (ExternalDNS と FortiGate の webhook) の導入
   hosts: control_plane
   tasks:
     - name: DNS

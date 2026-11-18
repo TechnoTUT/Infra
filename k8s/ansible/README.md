@@ -39,7 +39,7 @@ ansible-playbook playbooks/reset.yml         # 全消去（RESET と入力）
 | nas | ongeki | `/nas` の確認、ホストの Samba の停止、SELinux のラベル（container_file_t） |
 | nfs | becky (`nfs_enabled`) | NFS サーバ（/nfs） |
 | kubeadm | 全ノード | kubelet/kubeadm/kubectl、`kubeadm init` / `join` |
-| addons | control plane (becky / ongeki) | Helm、Cilium（LB IP プール、BGP、Cluster Mesh）、Multus と NAD、NFS provisioner、Samba の Secret、ArgoCD と親の Application（root。各アプリは `k8s/manifest/apps` から Argo CD が作る。nas は main の Argo CD に登録）、bind9 と ExternalDNS。nas では使わないものを `*_enabled` で止める |
+| addons | control plane (becky / ongeki) | Helm、Cilium（LB IP プール、BGP、Cluster Mesh）、Multus と NAD、NFS provisioner、Samba の Secret、ArgoCD と親の Application（root。各アプリは `k8s/manifest/apps` から Argo CD が作る。nas は main の Argo CD に登録）、ExternalDNS (FortiGate の webhook)。nas では使わないものを `*_enabled` で止める |
 
 ノードに Python ライブラリは入れず、`helm` と `kubectl` のコマンドだけで操作する。
 バージョンと CIDR は `inventory/group_vars/all/main.yml` に集約している。
