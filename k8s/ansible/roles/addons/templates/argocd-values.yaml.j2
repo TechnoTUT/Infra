@@ -22,6 +22,10 @@ server:
     limits: { memory: 256Mi }
   service:
     type: LoadBalancer
+{% if argocd_hostname | default('') | length > 0 %}
+    annotations:
+      external-dns.alpha.kubernetes.io/hostname: {{ argocd_hostname }}
+{% endif %}
 redis:
   resources:
     requests: { cpu: 10m, memory: 32Mi }
