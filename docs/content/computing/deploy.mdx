@@ -297,7 +297,7 @@ end
 #### bind9 からの移行
 以前は `svc.technotut.net` をクラスタ内の bind9 (`10.12.0.0`) で提供し、FortiGate はゾーンを bind9 に転送 (`forwarder`) していました。次の順で、名前解決を止めずに移行します。移行が終わるまで、`dns_keep_legacy_bind9` の既定値は `true` (bind9 を残す) にしてあります。
 
-1. **FortiGate**: 上の設定を入れます。`svc.technotut.net` の `forwarder "10.12.0.0"` はまだ消しません。
+1. **FortiGate**: 上の設定を入れます。`svc.technotut.net` の `forwarder "10.12.0.0"` はまだ消しません。移行のあいだは、`svc.technotut.net` を `set authoritative disable` にします。`enable` (既定値) では、ゾーンにない名前に FortiGate が NXDOMAIN を返し、bind9 に転送しません (FortiFirewall-VM 7.6.8 で確認)。
 2. **Vault**: `ansible-vault edit inventory/group_vars/all/vault.yml` で `vault_externaldns_fortigate_token` を足します。`vault_externaldns_tsig_secret` は消してかまいません。
 3. **dry-run**: bind9 を残したまま、書き込まずに動かします。
    ```bash
@@ -310,7 +310,7 @@ end
    ansible-playbook playbooks/site.yml
    ```
    FortiGate の `show system dns-database` でエントリを確認します。FortiGate はローカルにある名前を自分で答え、ない名前だけを bind9 に転送するので、この間も名前解決は止まりません。以前から FortiGate にあった `drive` (`192.168.98.2`) は、`10.14.0.128` に書き換わります。
-5. **転送をやめる**: FortiGate で `svc.technotut.net` の `forwarder` を消します (`config system dns-database` → `edit "svc.technotut.net"` → `unset forwarder`)。
+5. **転送をやめる**: FortiGate で `svc.technotut.net` の `forwarder` を消し、`authoritative` を `enable` に戻します (`config system dns-database` → `edit "svc.technotut.net"` → `unset forwarder` → `set authoritative enable`)。
 6. **bind9 の削除**: `ansible-playbook playbooks/site.yml -e dns_keep_legacy_bind9=false`。旧 ExternalDNS、bind9 (Namespace `bind9`)、IP プール `dns` (`10.12.0.0`) が消えます。
 7. **確認**: `dig @192.168.99.129 time.svc.technotut.net`、`dig @192.168.99.129 -x 10.12.0.5`。DNS サーバに `10.12.0.0` を直接指定しているクライアントは、FortiGate (各 VLAN のゲートウェイ。DHCP で配られるもの) に変えてください。
 

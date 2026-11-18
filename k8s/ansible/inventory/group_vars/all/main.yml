@@ -188,7 +188,7 @@ externaldns_chart_version: "1.21.1"
 externaldns_release: external-dns-fortigate   # 旧 bind9 用のリリース (external-dns) と ClusterRole の名前が重ならないようにする
 externaldns_helm_wait: true            # webhook は FortiGate に届くまで Ready にならない
 externaldns_webhook_image: ghcr.io/technotut/external-dns-fortigate-webhook
-externaldns_webhook_tag: "0.1.0"
+externaldns_webhook_tag: "0.1.1"
 externaldns_fortigate_url: "https://{{ dns_server }}"
 externaldns_fortigate_zone: "{{ dns_zone }}"   # FortiGate の dns-database の名前
 # 逆引きのゾーン (FortiGate の dns-database の名前)。webhook が A レコードから PTR を作る。
