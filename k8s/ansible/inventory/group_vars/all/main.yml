@@ -217,6 +217,13 @@ externaldns_fortigate_token_in_query: false   # Bearer ヘッダで認証でき�
 externaldns_fortigate_dry_run: false   # true なら FortiGate に書かず、書く内容をログに出す
 # API キーは vault.yml の vault_externaldns_fortigate_token に置く。
 
+# ===== FortiGate のポリシー (fortigate-operator) =====
+# FirewallPolicy / FirewallAddress / FirewallService の manifest を FortiGate に反映するコントローラ
+# (https://github.com/TechnoTUT/fortigate-operator)。本体は Argo CD (k8s/manifest/fortigate-operator) が入れ、
+# Ansible は API キーの Secret だけを作る。API キーは vault.yml の vault_fortigate_operator_token に置く。
+# FortiGate 側は accprofile と api-user の fortigate-operator (firewall の policy / address / service を read-write)。
+fortigate_operator_namespace: fortigate-operator
+
 # ===== NAS（nas グループのノード。ongeki）=====
 # /nas（md RAID0、ext4）をそのまま Samba のコンテナにマウントする（k8s/manifest/nas/ の local PV）。
 # SELinux のラベルを container_file_t にし、ホストの Samba (smb, nmb) は止める。
@@ -231,6 +238,7 @@ argocd_enabled: true         # Argo CD (nas のクラスタは main の Argo CD 
 dns_enabled: true            # ExternalDNS (FortiGate の webhook)
 cilium_ingress_enabled: true
 fortigate_sdn_enabled: true  # FortiGate の Kubernetes SDN コネクタ用の ServiceAccount (両方のクラスタ)
+fortigate_operator_enabled: true  # fortigate-operator の API キーの Secret (main のクラスタだけ)
 
 # ===== RHEL 系のノード（ongeki: AlmaLinux 10）=====
 # containerd の CRI で SELinux を使うか。true にすると Pod が container_t で動くが、kubeadm の

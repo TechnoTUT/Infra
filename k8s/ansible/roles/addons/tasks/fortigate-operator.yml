@@ -1,0 +1,28 @@
+---
+# fortigate-operator (https://github.com/TechnoTUT/fortigate-operator) の API キーの Secret。
+# Deployment や CRD は Argo CD の Application `fortigate-operator` が入れる (k8s/manifest/fortigate-operator)。
+- name: fortigate-operator の API キーが Vault にあることを確認する
+  ansible.builtin.assert:
+    that: vault_fortigate_operator_token is defined
+    fail_msg: >
+      inventory/group_vars/all/vault.yml に vault_fortigate_operator_token がない。
+      vault.yml.example を参照して ansible-vault edit で足す。
+
+- name: Namespace と FortiGate の API キーの Secret
+  ansible.builtin.include_tasks: apply.yml
+  vars:
+    apply_content: |
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: {{ fortigate_operator_namespace }}
+      ---
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: fortigate-operator
+        namespace: {{ fortigate_operator_namespace }}
+      type: Opaque
+      stringData:
+        token: "{{ vault_fortigate_operator_token }}"
+    apply_no_log: true

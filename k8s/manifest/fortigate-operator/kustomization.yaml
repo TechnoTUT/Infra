@@ -1,0 +1,21 @@
+# fortigate-operator (https://github.com/TechnoTUT/fortigate-operator): FirewallPolicy などの manifest を
+# FortiGate の REST API で反映するコントローラ。Argo CD の Application `fortigate-operator` がデプロイする。
+# API キーの Secret (fortigate-operator) は Ansible が作る (roles/addons/tasks/fortigate-operator.yml)。
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - https://github.com/TechnoTUT/fortigate-operator//config/default?ref=main
+
+patches:
+  - target: { kind: Deployment, name: fortigate-operator }
+    patch: |
+      - op: replace
+        path: /spec/template/spec/containers/0/env
+        value:
+          - { name: FORTIGATE_URL, value: "https://192.168.99.129" }   # FortiGate の dmz
+          - { name: FORTIGATE_INSECURE_SKIP_VERIFY, value: "true" }    # 証明書は自己署名
+          # true の間は FortiGate に書かず、書く内容をログとリソースの status に出す。
+          - { name: DRY_RUN, value: "true" }
+          - name: FORTIGATE_TOKEN
+            valueFrom:
+              secretKeyRef: { name: fortigate-operator, key: token }

@@ -29,6 +29,7 @@ cilium_bgp_peers:
 
 # ダミーの鍵（テスト専用）
 vault_externaldns_fortigate_token: "dummy-token-for-podman-only"
+vault_fortigate_operator_token: "dummy-token-for-podman-only"
 # FortiGate がないので webhook は Ready にならない。helm の完了 (Ready) を待たない。
 externaldns_helm_wait: false
 
