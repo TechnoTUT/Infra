@@ -10,7 +10,7 @@
 ;; (dmxctl の PC を VJ/AV の VLAN20 につなぐ。plmux の Link は VLAN20 に広報している)。
 ;;
 ;; OSC は plmux の Pod から送る。Pod の通信はノードの IP (dmz) に SNAT されて FortiGate を通るので、
-;; FortiGate に dmz から dmxctl の PC への UDP 9000 を許可するポリシーが必要。
+;; FortiGate の許可ポリシーは firewallpolicy.yaml (fortigate-operator) で管理している。
 
 (def dmxctl-host "10.10.20.16")   ; dmxctl を動かしている PC の IP アドレス (VLAN 20)
 (def dmxctl-port 9000)             ; dmxctl の OSC 受信ポート (UDP)
