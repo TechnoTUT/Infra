@@ -3,81 +3,179 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TechnoTUT AI チャット</title>
+<title>The Utopia Tone | AIOps</title>
+<link rel="icon" type="image/svg+xml" href="static/favicon.svg">
 <style>
+  /* 配色は booth-display のライトモード (Tailwind の slate とブランド色 #C7000A) に合わせる */
   :root {
-    --bg: #f6f7f9; --panel: #fff; --text: #1d2330; --muted: #667085; --border: #e3e6eb;
-    --accent: #3a5bd9; --accent-text: #fff; --user: #e8edff; --code: #f0f2f5; --warn: #b42318;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #12151b; --panel: #1a1e26; --text: #e6e8ec; --muted: #98a2b3; --border: #2b313c;
-      --accent: #7090ff; --accent-text: #0d1020; --user: #26304d; --code: #0f1217; --warn: #ff8a80;
-    }
+    --brand: #c7000a; --brand-hover: #b00009; --brand-shadow: rgba(199, 0, 10, 0.2);
+    --page: #f8fafc; --card: #ffffff; --header: rgba(255, 255, 255, 0.9);
+    --text: #1e293b; --strong: #0f172a; --muted: #64748b; --faint: #94a3b8;
+    --border: #e2e8f0; --divider: #cbd5e1; --soft: #f1f5f9; --input: #f8fafc;
+    --ok-bg: #ecfdf5; --ok-border: #a7f3d0; --ok-text: #059669; --ok-dot: #10b981;
+    --ng-bg: #fff1f2; --ng-border: #fecdd3; --ng-text: #e11d48; --ng-dot: #f43f5e;
+    --code: #f1f5f9;
   }
   * { box-sizing: border-box; }
   html, body { height: 100%; margin: 0; }
   body {
-    background: var(--bg); color: var(--text); display: flex; flex-direction: column;
-    font: 15px/1.7 system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
+    background: var(--page); color: var(--text); display: flex; flex-direction: column;
+    font: 15px/1.7 ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Noto Sans JP", sans-serif;
+    transition: background-color 0.2s, color 0.2s;
   }
+  button { font: inherit; cursor: pointer; }
+  svg.i { width: 16px; height: 16px; flex: none; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+  /* ---- ヘッダー ---- */
   header {
-    padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--panel);
-    display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+    position: sticky; top: 0; z-index: 30; background: var(--header); backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    padding: 14px 24px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
   }
-  header h1 { font-size: 16px; margin: 0; }
-  header .meta { color: var(--muted); font-size: 12px; }
-  header button { margin-left: auto; }
-  main { flex: 1; overflow-y: auto; padding: 16px; }
-  .wrap { max-width: 820px; margin: 0 auto; }
-  .msg { margin: 0 0 16px; padding: 10px 14px; border-radius: 10px; background: var(--panel);
-         border: 1px solid var(--border); overflow-wrap: anywhere; }
-  .msg.user { background: var(--user); border-color: transparent; margin-left: 15%; white-space: pre-wrap; }
-  .msg.error { color: var(--warn); }
-  .tool { color: var(--muted); font-size: 12px; font-family: ui-monospace, monospace; margin: 2px 0; }
-  .thinking { color: var(--muted); font-size: 13px; }
-  .msg pre { background: var(--code); padding: 10px; border-radius: 6px; overflow-x: auto; font-size: 13px; line-height: 1.5; }
-  .msg code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.92em; }
-  .msg :not(pre) > code { background: var(--code); padding: 1px 4px; border-radius: 4px; }
-  .msg h2, .msg h3, .msg h4 { font-size: 15px; margin: 12px 0 4px; }
-  .msg p { margin: 6px 0; }
-  .msg ul, .msg ol { margin: 6px 0; padding-left: 22px; }
-  .msg a { color: var(--accent); }
-  .intro h2 { font-size: 18px; margin: 4px 0 8px; }
-  .intro p { color: var(--muted); margin: 4px 0 12px; }
-  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
-  .chip { border: 1px solid var(--border); background: var(--panel); color: var(--text); border-radius: 999px;
-          padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer; text-align: left; }
-  .chip:hover { border-color: var(--accent); }
-  form { border-top: 1px solid var(--border); background: var(--panel); padding: 10px 16px; }
+  .brand { display: flex; align-items: center; gap: 16px; text-decoration: none; padding: 2px 0; }
+  .brand img { height: 46px; width: auto; max-width: 180px; object-fit: contain; }
+  .vr { width: 1px; height: 40px; background: var(--border); }
+  .brand h1 { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; color: var(--strong); line-height: 1.3; }
+  .brand p { margin: 2px 0 0; font-size: 12px; color: var(--muted); line-height: 1.3; }
+  .tools-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+  .stats {
+    display: flex; align-items: center; gap: 10px; background: var(--soft); border: 1px solid var(--border);
+    border-radius: 12px; padding: 6px 12px; font-size: 12px; user-select: none;
+  }
+  .stats .k { color: var(--faint); font-weight: 600; font-size: 10px; text-transform: uppercase; }
+  .stats .v { font-weight: 700; color: var(--text); }
+  .stats .sep { width: 1px; height: 12px; background: var(--divider); }
+  .badge {
+    display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 12px; border: 1px solid;
+    font-size: 12px; font-weight: 600; background: var(--ok-bg); border-color: var(--ok-border); color: var(--ok-text);
+  }
+  .badge .dot { width: 8px; height: 8px; border-radius: 999px; background: var(--ok-dot); animation: pulse 2s infinite; }
+  .badge.ng { background: var(--ng-bg); border-color: var(--ng-border); color: var(--ng-text); }
+  .badge.ng .dot { background: var(--ng-dot); animation: none; }
+  .icon-btn {
+    display: flex; align-items: center; gap: 6px; padding: 8px; border-radius: 12px; border: 1px solid var(--border);
+    background: transparent; color: var(--muted); transition: background-color 0.15s, color 0.15s;
+  }
+  .icon-btn:hover { background: var(--soft); color: var(--strong); }
+  .icon-btn .label { font-size: 12px; font-weight: 600; padding-right: 4px; }
+  @keyframes pulse { 50% { opacity: 0.5; } }
+  @media (max-width: 767px) {
+    .stats { display: none; }
+    .icon-btn .label { display: none; }
+    header { padding: 12px 16px; }
+    .brand img { height: 38px; }
+    .brand h1 { font-size: 16px; }
+  }
+
+  /* ---- 会話 ---- */
+  main { flex: 1; overflow-y: auto; padding: 24px 16px; }
+  .wrap { max-width: 860px; margin: 0 auto; }
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); margin: 0 0 16px; overflow-wrap: anywhere;
+  }
+  .eyebrow { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 4px; }
+  .intro h2 { margin: 0 0 6px; font-size: 18px; color: var(--strong); }
+  .intro p { margin: 0 0 16px; color: var(--muted); font-size: 14px; }
+  .chips { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; }
+  .chip {
+    text-align: left; padding: 10px 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--soft);
+    color: var(--text); font-size: 13px; font-weight: 500; transition: border-color 0.15s, background-color 0.15s;
+  }
+  .chip:hover { border-color: var(--brand); }
+  .user-row { display: flex; justify-content: flex-end; margin: 0 0 16px; }
+  .user {
+    max-width: 85%; background: var(--brand); color: #fff; border-radius: 16px 16px 4px 16px; padding: 10px 16px;
+    white-space: pre-wrap; overflow-wrap: anywhere; box-shadow: 0 4px 6px -1px var(--brand-shadow);
+  }
+  .bot .who { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; }
+  .bot .who .eyebrow { margin: 0; }
+  .calls { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
+  .calls:empty { display: none; }
+  .call {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 11px; padding: 3px 8px; border-radius: 8px;
+    background: var(--soft); border: 1px solid var(--border); color: var(--muted); max-width: 100%;
+  }
+  .call svg.i { width: 12px; height: 12px; }
+  .call span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .thinking { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; }
+  .thinking .dot { width: 8px; height: 8px; border-radius: 999px; background: var(--brand); animation: pulse 1.2s infinite; }
+  .alert {
+    display: flex; align-items: flex-start; gap: 10px; padding: 14px; border-radius: 12px; font-size: 14px; font-weight: 500;
+    background: var(--ng-bg); border: 1px solid var(--ng-border); color: var(--ng-text);
+  }
+  .answer h2, .answer h3, .answer h4 { font-size: 15px; margin: 14px 0 4px; color: var(--strong); }
+  .answer p { margin: 6px 0; }
+  .answer ul, .answer ol { margin: 6px 0; padding-left: 22px; }
+  .answer a { color: var(--brand); }
+  .answer pre {
+    background: var(--code); border: 1px solid var(--border); padding: 12px; border-radius: 12px;
+    overflow-x: auto; font-size: 13px; line-height: 1.5;
+  }
+  .answer code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; }
+  .answer :not(pre) > code { background: var(--soft); border: 1px solid var(--border); padding: 1px 5px; border-radius: 6px; }
+  .answer > :first-child { margin-top: 0; }
+  .answer > :last-child { margin-bottom: 0; }
+
+  /* ---- 入力欄 ---- */
+  form { border-top: 1px solid var(--border); background: var(--header); backdrop-filter: blur(8px); padding: 12px 16px; }
   form .wrap { display: flex; gap: 8px; align-items: flex-end; }
-  textarea { flex: 1; resize: none; min-height: 44px; max-height: 200px; padding: 10px; border-radius: 8px;
-             border: 1px solid var(--border); background: var(--bg); color: var(--text); font: inherit; }
-  button { border: 0; border-radius: 8px; padding: 10px 16px; font: inherit; cursor: pointer;
-           background: var(--accent); color: var(--accent-text); }
-  button.ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); padding: 4px 10px; font-size: 13px; }
-  button:disabled { opacity: 0.5; cursor: default; }
-  .note { color: var(--muted); font-size: 11px; margin-top: 6px; text-align: center; }
+  textarea {
+    flex: 1; resize: none; min-height: 46px; max-height: 200px; padding: 11px 14px; border-radius: 12px;
+    border: 1px solid var(--border); background: var(--input); color: var(--text); font: inherit; font-size: 14px;
+  }
+  textarea:focus { outline: none; box-shadow: 0 0 0 1px var(--brand); border-color: var(--brand); }
+  .primary {
+    display: flex; align-items: center; gap: 8px; border: 0; border-radius: 12px; padding: 12px 20px; font-size: 14px;
+    font-weight: 600; background: var(--brand); color: #fff; box-shadow: 0 4px 6px -1px var(--brand-shadow);
+    transition: background-color 0.15s;
+  }
+  .primary:hover { background: var(--brand-hover); }
+  .primary:disabled { opacity: 0.5; cursor: default; }
+  .note { color: var(--faint); font-size: 11px; margin: 8px auto 0; text-align: center; max-width: 860px; }
 </style>
 </head>
 <body>
 <header>
-  <h1>TechnoTUT AI チャット</h1>
-  <span class="meta" id="meta">クラスタは読み取りのみ</span>
-  <button class="ghost" id="reset" type="button">新しい会話</button>
+  <a class="brand" href="./">
+    <img src="static/logo.svg" alt="TechnoTUT">
+    <div class="vr"></div>
+    <div>
+      <h1>AI Chat</h1>
+      <p>The Utopia Tone AIOps</p>
+    </div>
+  </a>
+  <div class="tools-right">
+    <div class="stats mono">
+      <span class="k">Model</span><span class="v" id="model">-</span>
+      <span class="sep"></span>
+      <span class="k">Access</span><span class="v">READ-ONLY</span>
+    </div>
+    <div class="badge ng" id="status"><span class="dot"></span><span id="status-text">Offline</span></div>
+    <button class="icon-btn" id="reset" type="button" title="新しい会話">
+      <svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+      <span class="label">新しい会話</span>
+    </button>
+  </div>
 </header>
 <main id="log"><div class="wrap" id="msgs"></div></main>
 <form id="form">
   <div class="wrap">
     <textarea id="input" rows="1" placeholder="クラスタやネットワークについて質問 (Enter で送信、Shift+Enter で改行)"></textarea>
-    <button id="send" type="submit">送信</button>
+    <button class="primary" id="send" type="submit">
+      <svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></svg>
+      <span>送信</span>
+    </button>
   </div>
-  <div class="note">AI はクラスタを読むだけで変更はしません。回答は間違えることがあるので、大事な作業の前は管理者に確認してください。入力は Gemini API の無料枠に送られます。パスワードなどは書かないでください。</div>
+  <div class="note">AI はクラスタを読むだけで変更はしません。回答は間違えることがあるので、大事な作業は十分に注意して行うこと。<br>入力は Gemini API の無料枠に送られます。パスワードなどは書かないでください。</div>
 </form>
 <script>
 "use strict";
 const $ = (id) => document.getElementById(id);
 const msgs = $("msgs"), input = $("input"), send = $("send");
+const ICON_WRENCH = '<svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>';
+const ICON_ALERT = '<svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>';
 const EXAMPLES = [
   "クラスタの調子はどう？",
   "動いていない Pod はある？原因も調べて",
@@ -109,8 +207,7 @@ function md(src) {
   const flushList = () => { if (list) { out.push(`</${list}>`); list = null; } };
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    const fence = line.match(/^\s*```/);
-    if (fence) {
+    if (/^\s*```/.test(line)) {
       flushPara(); flushList();
       const code = [];
       for (i++; i < lines.length && !/^\s*```/.test(lines[i]); i++) code.push(lines[i]);
@@ -139,19 +236,21 @@ function md(src) {
 }
 
 function scroll() { $("log").scrollTop = $("log").scrollHeight; }
-function add(cls, html) {
-  const d = document.createElement("div");
-  d.className = "msg " + cls;
-  d.innerHTML = html;
-  msgs.appendChild(d);
+function el(html) {
+  const t = document.createElement("template");
+  t.innerHTML = html.trim();
+  const node = t.content.firstChild;
+  msgs.appendChild(node);
   scroll();
-  return d;
+  return node;
 }
 function intro() {
   msgs.innerHTML = "";
-  const d = add("intro", `<h2>なんでも聞いてください</h2>
+  const d = el(`<div class="card intro">
+    <p class="eyebrow">Infra Assistant</p>
+    <h2>なんでも聞いてください</h2>
     <p>TechnoTUT の Kubernetes クラスタの状態を調べたり、リポジトリのドキュメントやマニフェストを読んで、使い方や構成を説明します。</p>
-    <div class="chips"></div>`);
+    <div class="chips"></div></div>`);
   const chips = d.querySelector(".chips");
   for (const q of EXAMPLES) {
     const b = document.createElement("button");
@@ -163,7 +262,10 @@ function intro() {
 function describeTool(ev) {
   const a = Object.entries(ev.args || {}).filter(([, v]) => v !== "" && v !== null)
     .map(([k, v]) => `${k}=${typeof v === "string" ? v : JSON.stringify(v)}`).join(" ");
-  return `> ${ev.name}${a ? " " + a : ""}`;
+  return ev.name + (a ? " " + a : "");
+}
+function showError(box, text) {
+  box.querySelector(".body").innerHTML = `<div class="alert">${ICON_ALERT}<span>${esc(text)}</span></div>`;
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -171,11 +273,14 @@ async function ask(text) {
   text = text.trim();
   if (!text || busy) return;
   busy = true; send.disabled = true;
-  const intro = msgs.querySelector(".intro");
-  if (intro) intro.remove();
-  add("user", esc(text));
-  const box = add("bot", '<div class="tools"></div><div class="thinking">調べています…</div>');
-  const tools = box.querySelector(".tools"), thinking = box.querySelector(".thinking");
+  const introCard = msgs.querySelector(".intro");
+  if (introCard) introCard.remove();
+  el(`<div class="user-row"><div class="user">${esc(text)}</div></div>`);
+  const box = el(`<div class="card bot">
+    <div class="who"><p class="eyebrow">Assistant</p></div>
+    <div class="calls"></div>
+    <div class="body"><div class="thinking"><span class="dot"></span>調べています…</div></div></div>`);
+  const calls = box.querySelector(".calls");
   try {
     const r = await fetch("api/chat", {
       method: "POST", headers: { "Content-Type": "application/json" },
@@ -199,15 +304,17 @@ async function ask(text) {
       next = j.next;
       for (const ev of j.events) {
         if (ev.type === "tool") {
-          const t = document.createElement("div");
-          t.className = "tool"; t.textContent = describeTool(ev);
-          tools.appendChild(t); scroll();
+          const c = document.createElement("span");
+          c.className = "call mono";
+          c.innerHTML = ICON_WRENCH + "<span></span>";
+          c.lastChild.textContent = describeTool(ev);
+          c.title = describeTool(ev);
+          calls.appendChild(c); scroll();
         } else if (ev.type === "answer") {
           answer = ev.text;
-          thinking.outerHTML = md(ev.text);
+          box.querySelector(".body").innerHTML = `<div class="answer">${md(ev.text)}</div>`;
         } else if (ev.type === "error") {
-          box.classList.add("error");
-          thinking.textContent = ev.text;
+          showError(box, ev.text);
         }
       }
       if (j.done) break;
@@ -217,10 +324,23 @@ async function ask(text) {
       history = history.slice(-20);
     }
   } catch (e) {
-    box.classList.add("error");
-    thinking.textContent = "エラー: " + e.message;
+    showError(box, "エラー: " + e.message);
   } finally {
     busy = false; send.disabled = false; scroll(); input.focus();
+  }
+}
+
+function setStatus(ok, text) {
+  $("status").classList.toggle("ng", !ok);
+  $("status-text").textContent = text;
+}
+async function refreshInfo() {
+  try {
+    const i = await (await fetch("api/info")).json();
+    $("model").textContent = i.model;
+    setStatus(i.ready, i.ready ? "Online" : "No API key");
+  } catch (e) {
+    setStatus(false, "Offline");
   }
 }
 
@@ -231,9 +351,8 @@ input.addEventListener("keydown", (e) => {
 function resize() { input.style.height = "auto"; input.style.height = Math.min(input.scrollHeight, 200) + "px"; }
 input.addEventListener("input", resize);
 $("reset").onclick = () => { if (!busy) { history = []; intro(); input.focus(); } };
-fetch("api/info").then((r) => r.json()).then((i) => {
-  $("meta").textContent = `${i.model} / クラスタは読み取りのみ` + (i.ready ? "" : " / API キー未設定");
-}).catch(() => {});
+refreshInfo();
+setInterval(refreshInfo, 30000);
 intro();
 </script>
 </body>
