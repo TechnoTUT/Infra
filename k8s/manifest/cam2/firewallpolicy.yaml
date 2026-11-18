@@ -1,0 +1,17 @@
+# cam2: カメラ用の VLAN45 のカメラからの配信のため、RTMP と HTTP を許可する。
+# FortiGate の設定は fortigate-operator が反映する (https://github.com/TechnoTUT/fortigate-operator)。
+# 宛先の LB IP は FortiGate の Kubernetes SDN コネクタの動的アドレス k8s-svc に含まれる。
+# カメラは、HTTP で Ustream の API のエミュレーションを呼び、RTMP で配信する。
+apiVersion: fortigate.technotut.net/v1alpha1
+kind: FirewallPolicy
+metadata:
+  name: al-cam2-cam
+  namespace: cam2
+spec:
+  srcintf: [VLAN45]
+  dstintf: [dmz]
+  srcaddr: [VLAN45 address]
+  dstaddr: [k8s-svc]
+  service: [HTTP, RTMP]
+  action: accept
+  comments: cam2 from camera VLAN45
