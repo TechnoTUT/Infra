@@ -65,14 +65,15 @@ multus_nads:
 # vxlan-cni: Pod の manifest (cni-args の vlan) で VLAN を選んでつなぐ。VLAN は FortiGate との間の VXLAN で運ぶ。
 # ノードのトランクや VLAN の設定は要らない。vxlan_cni ロールがプラグインと DHCP デーモンを、addons ロールが NAD を入れる。
 vxlan_cni_enabled: true
-vxlan_cni_version: "v0.1.0"
-vxlan_cni_sha256: "33dd0e91966b053b39f335204a0f1efdb6ce8177286bf05853e9d09a84114e1a"  # vxlan-linux-amd64 (リリースの SHA256SUMS)
+vxlan_cni_version: "v0.2.0"
+vxlan_cni_sha256: "123c36d582bb37a2dec99a0aaf2108ea0249b7b067e164fe0f9203aeced4f1b1"  # vxlan-linux-amd64 (リリースの SHA256SUMS)
 vxlan_cni_remote: "192.168.99.129"   # FortiGate の dmz。VXLAN の相手 (VTEP)
+vxlan_cni_vni_offset: 0              # VNI = VLAN ID + これ。FortiGate の VXLAN インターフェース (vxlan10, vxlan20) の VNI と合わせる
 vxlan_cni_nad_name: vxlan
 vxlan_cni_nad_namespace: kube-public
-# Pod が選べる VLAN。FortiGate に VXLAN (VNI = VLAN ID) と software switch を作った VLAN だけを入れる。
+# Pod が選べる VLAN。FortiGate に VXLAN と software switch (sw10, sw20) を作った VLAN だけを入れる。
 # 空のときは NAD を置かない。peers (ノード間の通信) は k8s グループの node_ip から作る。
-vxlan_cni_allowed_vlans: []
+vxlan_cni_allowed_vlans: [10, 20]
 
 # ===== Cilium BGP（必須）=====
 # 全体で AS 64646 を使う（iBGP）。ピアは FortiGate の 192.168.99.129。

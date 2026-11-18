@@ -13,6 +13,7 @@ spec:
       "name": "{{ vxlan_cni_nad_name }}",
       "type": "vxlan",
       "remote": "{{ vxlan_cni_remote }}",
+      "vniOffset": {{ vxlan_cni_vni_offset }},
       "peers": {{ groups['k8s'] | map('extract', hostvars, 'node_ip') | list | to_json }},
       "allowedVlans": {{ vxlan_cni_allowed_vlans | to_json }},
       "ipam": { "type": "dhcp" }
