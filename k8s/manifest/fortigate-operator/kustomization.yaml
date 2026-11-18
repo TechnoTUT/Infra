@@ -14,8 +14,8 @@ patches:
         value:
           - { name: FORTIGATE_URL, value: "https://192.168.99.129" }   # FortiGate の dmz
           - { name: FORTIGATE_INSECURE_SKIP_VERIFY, value: "true" }    # 証明書は自己署名
-          # true の間は FortiGate に書かず、書く内容をログとリソースの status に出す。
-          - { name: DRY_RUN, value: "true" }
+          # true にすると FortiGate に書かず、書く内容をログとリソースの status に出す。
+          - { name: DRY_RUN, value: "false" }
           - name: FORTIGATE_TOKEN
             valueFrom:
               secretKeyRef: { name: fortigate-operator, key: token }
