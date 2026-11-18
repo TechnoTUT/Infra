@@ -1,0 +1,63 @@
+---
+title: AI チャットの実装
+sidebar_label: AI チャット
+sidebar_position: 6
+---
+
+## 概要
+[AI チャット](/service/aichat) (aichat) は、Gemini の function calling で、クラスタとリポジトリを読んで答える Web チャットです。
+
+| 項目 | 内容 |
+|---|---|
+| ソース | [`aichat/`](https://github.com/TechnoTUT/Infra/tree/main/aichat) (Python、FastAPI、google-genai。依存は uv で管理) |
+| イメージ | `ghcr.io/technotut/aichat:main` (GitHub Actions の `aichat image` がビルド) |
+| マニフェスト | [`k8s/manifest/aichat/`](https://github.com/TechnoTUT/Infra/tree/main/k8s/manifest/aichat) (Argo CD の Application `aichat`) |
+| モデル | `gemini-4-hydrogen` (Gemini API の無料枠)。Deployment の環境変数 `GEMINI_MODEL` で変える |
+| URL | http://ai.svc.technotut.net (Cilium Ingress。VLAN 10・20 から HTTP を許可) |
+| API キー | Ansible の `aichat.yml` が Secret `aichat` を作成。Ansible Vault の `vault_gemini_api_key` に保管 |
+
+## 仕組み
+1. ブラウザが質問と、それまでのやりとりを `POST /api/chat` に送ります。サーバーはジョブを作って ID を返します。
+2. サーバーは Gemini に質問とツールの一覧を渡します。Gemini がツールを呼ぶと、サーバーが実行して結果を返します。これを答えが出るまで (最大 10 回) 繰り返します。
+3. ブラウザは `GET /api/jobs/<ID>` を 1 秒ごとに読み、ツールの呼び出しと答えを表示します。
+
+ジョブとポーリングにしているのは、Cilium Ingress (Envoy) のルートが 15 秒で切れるためです。ツールを何回も呼ぶ質問は 15 秒を超えます。\
+ジョブはメモリに持つので、レプリカは 1 つです。会話の履歴はブラウザが持ち、サーバーには残りません。
+
+### ツール
+| ツール | 内容 |
+|---|---|
+| `cluster_overview` | ノード、問題のある Pod、Argo CD のアプリの状態 |
+| `list_resources` / `get_resource` | `kubectl get` / `kubectl get -o yaml` 相当 |
+| `get_pod_logs` | `kubectl logs` 相当 (最大 300 行) |
+| `get_events` | `kubectl get events` 相当 |
+| `list_repo_files` / `read_repo_file` / `search_repo` | git-sync が取り込んだリポジトリを読む |
+
+リポジトリは、サイドカーの git-sync が TechnoTUT/Infra の main を 5 分ごとに取り込みます。
+
+## 安全のための制限
+- ServiceAccount `aichat` の ClusterRole `aichat-readonly` は、種類を列挙した `get` / `list` / `watch` だけです。Secret、`pods/exec`、書き込みの verb は含みません。
+- アプリでも、読める種類を `app/tools.py` の `KINDS` に限っています。種類を足すときは、ClusterRole と `KINDS` の両方に足します。
+- リポジトリの `vault.yml`、`.git`、鍵らしいファイル (`*.key`、`*.pem`) は読みません。
+- Gemini API の無料枠のため、送った内容は Google のサービス改善に使われることがあります。Secret を読めないようにしているのはこのためでもあります。ただし Pod のログはそのまま送るので、ログに秘密を出すアプリには注意します。
+- 画面にログインはありません。VLAN 10・20 の誰でも使えます。同時に動かす質問は 2 つまで (`MAX_CONCURRENT`) です。
+
+## 導入
+1. [Google AI Studio](https://aistudio.google.com/apikey) で API キーを発行します (無料枠)。
+2. Ansible Vault に入れて、Secret を作ります。
+   ```bash
+   cd k8s/ansible
+   ansible-vault edit inventory/group_vars/all/vault.yml   # vault_gemini_api_key: "<キー>" を足す
+   ansible becky -m ansible.builtin.include_role -a "name=addons tasks_from=aichat"   # main のクラスタだけ
+   ```
+3. main にマージすると、Argo CD がアプリをデプロイします。Secret を後から作ったときは、Pod を作り直します (`kubectl -n aichat rollout restart deploy/aichat`)。
+
+ghcr.io のパッケージ `aichat` が非公開だと、イメージを pull できません。初回のビルド後、パッケージの設定で公開 (Public) にします。
+
+## 手元で動かす
+```bash
+cd aichat
+uv sync
+GEMINI_API_KEY=<キー> REPO_DIR=.. uv run uvicorn app.main:app --reload
+```
+クラスタには手元の kubeconfig で接続します。http://localhost:8000 を開きます。

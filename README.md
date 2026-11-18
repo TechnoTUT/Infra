@@ -41,6 +41,7 @@ DJ 機器の PRO DJ LINK、映像伝送の NDI・RTMP、テンポ同期の Ablet
 | [`docs/`](./docs/) | ドキュメントサイト（React + Vite + MDX） |
 | [`k8s/ansible/`](./k8s/ansible/) | Kubernetes クラスタを構築する Ansible。Podman による疑似クラスタ [`k8s/ansible/test/`](./k8s/ansible/test/) |
 | [`k8s/manifest/`](./k8s/manifest/) | Argo CD がデプロイするマニフェスト。ディレクトリごとに 1 つの Application |
+| [`aichat/`](./aichat/) | AI チャット (Gemini でクラスタとドキュメントについて答える Web アプリ) のソース |
 | [`network/`](./network/) | スイッチの設定（`config/`）、トポロジ図・配線図 |
 | [`media/`](./media/) | 図などの素材 |
 | `.devcontainer/` | ドキュメント編集用の Dev Container |
@@ -57,6 +58,7 @@ Argo CD に登録するアプリケーションは [`k8s/manifest/apps/`](./k8s/
 | ドキュメントを書く・プレビューする | [`docs/README.md`](./docs/README.md) |
 | クラスタを構築・再構築する | [`k8s/ansible/README.md`](./k8s/ansible/README.md) |
 | 実機に触れずに Ansible を試す | [`k8s/ansible/test/README.md`](./k8s/ansible/test/README.md) |
+| AI にクラスタの状態や使い方を聞く | http://ai.svc.technotut.net ([使い方](./docs/content/service/aichat.mdx)) |
 | アプリケーションを追加する | `k8s/manifest/<name>/` にマニフェストを置き、`k8s/manifest/apps/<name>.yaml` に Application を追加 |
 
 push すると、ドキュメントは GitHub Actions で自動的にビルドされ、Cloudflare Pages にデプロイされます。

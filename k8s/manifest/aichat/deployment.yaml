@@ -1,0 +1,90 @@
+# aichat: Gemini (無料枠の gemini-4-hydrogen) で、クラスタの状態とリポジトリを読んで答える Web チャット。
+# git-sync が TechnoTUT/Infra の main を 5 分ごとに取り込み、チャットはそれを読む (ドキュメントとマニフェスト)。
+# Gemini の API キーの Secret (aichat) は Ansible が作る (roles/addons/tasks/aichat.yml)。
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aichat
+  labels:
+    app: aichat
+spec:
+  # 実行中の質問をメモリに持つので 1 つだけ
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: aichat
+  template:
+    metadata:
+      labels:
+        app: aichat
+    spec:
+      serviceAccountName: aichat
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65533
+        runAsGroup: 65533
+        fsGroup: 65533
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: aichat
+        # main を常に最新にするため、Pod の起動ごとに pull する
+        image: ghcr.io/technotut/aichat:main
+        imagePullPolicy: Always
+        env:
+        - { name: GEMINI_MODEL, value: gemini-4-hydrogen }
+        - { name: REPO_DIR, value: /repo/current }
+        - { name: MAX_CONCURRENT, value: "2" }   # 無料枠のレート制限に合わせて同時に動かす質問を絞る
+        - name: GEMINI_API_KEY
+          valueFrom:
+            # Secret がなくても起動し、画面に「API キー未設定」と出す
+            secretKeyRef: { name: aichat, key: gemini-api-key, optional: true }
+        ports:
+        - { name: http, containerPort: 8000, protocol: TCP }
+        readinessProbe:
+          httpGet: { path: /healthz, port: http }
+          periodSeconds: 10
+        livenessProbe:
+          httpGet: { path: /healthz, port: http }
+          initialDelaySeconds: 10
+          periodSeconds: 30
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            memory: 512Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities: { drop: [ALL] }
+        volumeMounts:
+        - { name: repo, mountPath: /repo, readOnly: true }
+        - { name: tmp, mountPath: /tmp }
+      - name: git-sync
+        image: registry.k8s.io/git-sync/git-sync:v4.8.0
+        args:
+        - --repo=https://github.com/TechnoTUT/Infra.git
+        - --ref=main
+        - --root=/repo
+        - --link=current
+        - --depth=1
+        - --period=300s
+        resources:
+          requests:
+            cpu: 10m
+            memory: 64Mi
+          limits:
+            memory: 256Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: { drop: [ALL] }
+        volumeMounts:
+        - { name: repo, mountPath: /repo }
+      volumes:
+      - name: repo
+        emptyDir: {}
+      - name: tmp
+        emptyDir: {}

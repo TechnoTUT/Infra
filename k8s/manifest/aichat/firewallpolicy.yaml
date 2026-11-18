@@ -1,0 +1,28 @@
+# aichat: 部員なら誰でも使えるように、VLAN10 (DJ) と VLAN20 (AV) から HTTP を許可する。
+# 画面 (ai.svc.technotut.net) は Cilium Ingress の共有 LB で受けるので、宛先は k8s-ingress。
+# FortiGate の設定は fortigate-operator が反映する (https://github.com/TechnoTUT/fortigate-operator)。
+apiVersion: fortigate.technotut.net/v1alpha1
+kind: FirewallPolicy
+metadata:
+  name: al-aichat-dj
+spec:
+  srcintf: [sw10]
+  dstintf: [dmz]
+  srcaddr: [VLAN10 subnet]
+  dstaddr: [k8s-ingress]
+  service: [HTTP]
+  action: accept
+  comments: aichat from VLAN10
+---
+apiVersion: fortigate.technotut.net/v1alpha1
+kind: FirewallPolicy
+metadata:
+  name: al-aichat-av
+spec:
+  srcintf: [sw20]
+  dstintf: [dmz]
+  srcaddr: [VLAN20 subnet]
+  dstaddr: [k8s-ingress]
+  service: [HTTP]
+  action: accept
+  comments: aichat from VLAN20

@@ -20,3 +20,8 @@
 /docs/yarn-error.log*
 
 *.zip
+
+# Python
+__pycache__/
+*.pyc
+.venv/

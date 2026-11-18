@@ -1,0 +1,20 @@
+# チャットの画面 (ログインなし)。Cilium Ingress (共有 LB) で受ける。
+# DNS (ai.svc.technotut.net) は ExternalDNS が登録する。
+# Envoy のルートは 15 秒で切れるので、アプリはジョブを作ってポーリングする作りにしている。
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aichat
+spec:
+  ingressClassName: cilium
+  rules:
+  - host: ai.svc.technotut.net
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aichat
+            port:
+              name: http
