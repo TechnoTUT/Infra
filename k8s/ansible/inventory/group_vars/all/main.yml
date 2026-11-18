@@ -197,7 +197,7 @@ dns_static_records:                    # ゾーンに固定で入れるレコー
   - { name: registry, ip: "{{ registry_cluster_ip }}" }   # クラスタ内のレジストリ (ClusterIP。クラスタの外からは届かない)
   - { name: drive, ip: "10.14.0.128" }   # NAS の Samba (nas のクラスタの LoadBalancer。k8s/manifest/nas/service.yaml)
 externaldns_chart_version: "1.21.1"
-externaldns_release: external-dns-fortigate   # 旧 bind9 用のリリース (external-dns) と ClusterRole の名前が重ならないようにする
+externaldns_release: external-dns-fortigate
 externaldns_helm_wait: true            # webhook は FortiGate に届くまで Ready にならない
 externaldns_webhook_image: ghcr.io/technotut/external-dns-fortigate-webhook
 externaldns_webhook_tag: "0.1.1"
@@ -212,13 +212,6 @@ externaldns_fortigate_insecure: true   # FortiGate の証明書は自己署名
 externaldns_fortigate_token_in_query: false   # Bearer ヘッダで認証できない場合は true にする
 externaldns_fortigate_dry_run: false   # true なら FortiGate に書かず、書く内容をログに出す
 # API キーは vault.yml の vault_externaldns_fortigate_token に置く。
-
-# 旧構成 (クラスタ内の bind9) を残すか。移行が終わるまで true のままにする。
-# false なら、bind9 と旧 ExternalDNS (namespace bind9) と IP プール dns (10.12.0.0) を削除する。
-# 手順は docs/content/computing/deploy.mdx の「bind9 からの移行」。
-dns_keep_legacy_bind9: true
-dns_legacy_namespace: bind9
-dns_legacy_lb_ip: "10.12.0.0"
 
 # ===== NAS（nas グループのノード。ongeki）=====
 # /nas（md RAID0、ext4）をそのまま Samba のコンテナにマウントする（k8s/manifest/nas/ の local PV）。

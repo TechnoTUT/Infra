@@ -54,19 +54,3 @@
   ansible.builtin.include_tasks: apply.yml
   vars:
     apply_content: "{{ lookup('ansible.builtin.template', 'dns-static-records.yaml.j2') }}"
-
-# ===== 旧構成 (クラスタ内の bind9) の削除 =====
-# 移行が終わったら、このブロックと dns_keep_legacy_bind9 などの変数を消す。
-- name: 旧 ExternalDNS (bind9 用) をアンインストールする
-  ansible.builtin.command: helm uninstall external-dns -n {{ dns_legacy_namespace }} --ignore-not-found
-  register: addons_dns_legacy_helm
-  changed_when: "'uninstalled' in addons_dns_legacy_helm.stdout"
-  when: not dns_keep_legacy_bind9
-
-- name: 旧 bind9 の Namespace と IP プールを削除する
-  ansible.builtin.command: >-
-    kubectl delete --ignore-not-found --wait=false
-    namespace/{{ dns_legacy_namespace }} ciliumloadbalancerippool/dns
-  register: addons_dns_legacy_delete
-  changed_when: "'deleted' in addons_dns_legacy_delete.stdout"
-  when: not dns_keep_legacy_bind9
