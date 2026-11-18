@@ -1,0 +1,53 @@
+# aichat が使う読み取り専用の権限。Secret は含めない (ワイルドカードを使わず、読める種類を列挙する)。
+# exec / port-forward / 書き込みの verb は与えない。種類を足すときは app/tools.py の KINDS も足す。
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: aichat
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: aichat-readonly
+rules:
+- apiGroups: [""]
+  resources: [nodes, namespaces, pods, pods/log, services, endpoints, configmaps,
+              persistentvolumeclaims, persistentvolumes, serviceaccounts, events]
+  verbs: [get, list, watch]
+- apiGroups: [apps]
+  resources: [deployments, statefulsets, daemonsets, replicasets]
+  verbs: [get, list, watch]
+- apiGroups: [batch]
+  resources: [jobs, cronjobs]
+  verbs: [get, list, watch]
+- apiGroups: [networking.k8s.io]
+  resources: [ingresses, ingressclasses, networkpolicies]
+  verbs: [get, list, watch]
+- apiGroups: [storage.k8s.io]
+  resources: [storageclasses]
+  verbs: [get, list, watch]
+- apiGroups: [argoproj.io]
+  resources: [applications, appprojects]
+  verbs: [get, list, watch]
+- apiGroups: [fortigate.technotut.net]
+  resources: [firewallpolicies, firewalladdresses, firewallservices]
+  verbs: [get, list, watch]
+- apiGroups: [cilium.io]
+  resources: [ciliumloadbalancerippools]
+  verbs: [get, list, watch]
+- apiGroups: [k8s.cni.cncf.io]
+  resources: [network-attachment-definitions]
+  verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: aichat-readonly
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: aichat-readonly
+subjects:
+- kind: ServiceAccount
+  name: aichat
+  namespace: aichat
