@@ -1,7 +1,18 @@
 # cam1: カメラ用の VLAN44 のカメラからの配信のため、RTMP と HTTP を許可する。
 # FortiGate の設定は fortigate-operator が反映する (https://github.com/TechnoTUT/fortigate-operator)。
-# 宛先の LB IP は FortiGate の Kubernetes SDN コネクタの動的アドレス k8s-svc に含まれる。
+# 宛先は Service cam1-nginx-service の LB IP だけ。FirewallAddress k8s-cam1-nginx が serviceRef で LB IP に追従する。
 # カメラは、HTTP で Ustream の API のエミュレーションを呼び、RTMP で配信する。
+apiVersion: fortigate.technotut.net/v1alpha1
+kind: FirewallAddress
+metadata:
+  name: k8s-cam1-nginx
+  namespace: cam1
+spec:
+  serviceRef:
+    name: cam1-nginx-service
+  associatedInterface: dmz
+  comment: LB IP of Service cam1-nginx-service
+---
 apiVersion: fortigate.technotut.net/v1alpha1
 kind: FirewallPolicy
 metadata:
@@ -11,7 +22,7 @@ spec:
   srcintf: [VLAN44]
   dstintf: [dmz]
   srcaddr: [VLAN44 address]
-  dstaddr: [k8s-svc]
+  dstaddr: [k8s-cam1-nginx]
   service: [HTTP, RTMP]
   action: accept
   comments: cam1 from camera VLAN44

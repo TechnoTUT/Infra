@@ -175,7 +175,8 @@ end
 ```
 
 ### FortiGate の Kubernetes SDN コネクタ
-FortiGate は Kubernetes の API から Service の IP を取得し、動的アドレス (`k8s-svc`、`k8s-ingress`、`k8s-nas-svc`) としてポリシーに使います。コネクタはクラスタごとに作ります。
+FortiGate は Kubernetes の API から Service の IP を取得し、動的アドレス (`k8s-svc`、`k8s-ingress`、`k8s-nas-svc`) としてポリシーに使います。コネクタはクラスタごとに作ります。\
+`k8s-svc` には全 Service の IP が入るため、アプリケーションごとのポリシーの宛先には使いません。アプリケーションごとのポリシーでは、fortigate-operator の `FirewallAddress` (`serviceRef`) で、その Service の LB IP だけを宛先にします ([fortigate-operator の実装](/computing/fortigate-operator) を参照)。
 
 | コネクタ | クラスタ | API |
 |---|---|---|
@@ -402,7 +403,7 @@ Pod は 2 つに分けています。
 - VLAN 10・20 のアドレスは NAD の host-local で、ノードごとに `10.10.0.2`・`10.10.16.2` から払い出します。別のノードの Pod と同じアドレスになることがあります。そのときは Pod を作り直してください。
 - Link のテンポを流すのは 1 つだけにしてください。個人の PC の BLT などでも Link に追従させていると、テンポの元が 2 つになります。
 - 式から dmxctl などへ送る OSC は、ノードの IP (`dmz`) に SNAT されて FortiGate を通ります。FortiGate に `dmz` から送り先への UDP (dmxctl は 9000) を許可するポリシーが必要です。
-- クライアントからは、FortiGate が `k8s-svc` への HTTP を許可している VLAN (DJ、AV など) と管理用 VLAN から届きます。
+- クライアントからは、FortiGate が plmux の LB IP (アドレス `k8s-plmux`) への HTTP を許可している VLAN (DJ、AV) と管理用 VLAN から届きます。
 
 ```bash
 kubectl -n plmux get pods -o wide
