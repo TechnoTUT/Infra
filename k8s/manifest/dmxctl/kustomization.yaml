@@ -1,0 +1,11 @@
+# dmxctl (https://github.com/TechnoTUT/dmxctl): DMX 照明コントローラー。USB-DMX で灯体へ出力する。
+# Argo CD の Application `dmxctl` が、このディレクトリを kustomize でデプロイする。
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: dmxctl
+resources:
+  - pvc.yaml
+  - deployment.yaml
+  - service.yaml
+  - ingress.yaml
+  - firewallpolicy.yaml
