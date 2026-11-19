@@ -41,7 +41,6 @@ DJ 機器の PRO DJ LINK、映像伝送の NDI・RTMP、テンポ同期の Ablet
 | [`docs/`](./docs/) | ドキュメントサイト（React + Vite + MDX） |
 | [`k8s/ansible/`](./k8s/ansible/) | Kubernetes クラスタを構築する Ansible。Podman による疑似クラスタ [`k8s/ansible/test/`](./k8s/ansible/test/) |
 | [`k8s/manifest/`](./k8s/manifest/) | Argo CD がデプロイするマニフェスト。ディレクトリごとに 1 つの Application |
-| [`aichat/`](./aichat/) | AI チャット (Gemini でクラスタとドキュメントについて答える Web アプリ) のソース |
 | [`network/`](./network/) | スイッチの設定（`config/`）、トポロジ図・配線図 |
 | [`media/`](./media/) | 図などの素材 |
 | `.devcontainer/` | ドキュメント編集用の Dev Container |
