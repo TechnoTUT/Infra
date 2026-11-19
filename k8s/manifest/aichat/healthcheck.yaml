@@ -90,7 +90,7 @@ spec:
           - name: healthcheck
             # WAN の不調のときにも動かしたい (それを検出するため) ので、コミットのタグに固定して、ノードにあるイメージを使う。
             # healthcheck を更新するときは、infra-assistant の main のコミット (sha-<7 桁>) に変える
-            image: ghcr.io/technotut/infra-assistant:sha-8a7f28f
+            image: ghcr.io/technotut/infra-assistant:sha-dcd2a8e
             imagePullPolicy: IfNotPresent
             command: [python, -m, app.healthcheck]
             env:
