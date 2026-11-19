@@ -55,6 +55,8 @@ sidebar_position: 6
 | Pod | CrashLoopBackOff や ImagePullBackOff など (5 分)、Pending や Ready にならない (5 分)、Failed |
 | PVC / Service | PVC が Pending (5 分)、LoadBalancer に IP が付かない (5 分) |
 | Argo CD | Degraded や、その他の異常 (10 分)、OutOfSync (10 分) |
+| CronJob | `healthcheck`、`fgtsnapshot` の直近の実行が失敗している (次の実行が成功すれば解消) |
+| FortiGate | API に届かない (2 分)、CPU・メモリが 90% 以上 (5 分) |
 | ノードの設定 | `/etc/resolv.conf` の nameserver が `192.168.99.129` でない (2 分)、`packard` に `/dev/ttyUSB0` がない (5 分)、ディスクの空きが 10% 未満 (5 分)。DaemonSet `nodecheck` (ホストの `/etc` と `/dev` を読み取り専用で見る) が事実を返し、healthcheck が判定する |
 | ネットワーク | Pod から外部の名前 (`github.com`) と `ai.svc.technotut.net` が引けない (2 分)、`https://github.com` に届かない (2 分) |
 
