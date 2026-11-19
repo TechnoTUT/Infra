@@ -579,7 +579,7 @@ a.repo-card:hover { border-color: var(--primary); background: var(--hover); }
 .about-section { max-width: 1100px; margin: 0 auto; padding: 5rem clamp(1.25rem, 5vw, 4.5rem) 0; }
 .about-repo { max-width: 34rem; }
 .about-h { margin: 0 0 2rem; font-size: clamp(1.5rem, 3vw, 2.1rem); font-weight: 300; letter-spacing: .06em; }
-.about-intro { max-width: 46rem; margin: 0 0 1.5rem; color: rgba(255, 255, 255, .75); line-height: 1.9; }
+.about-intro { max-width: 46rem; margin: 0 0 1.5rem; color: rgba(255, 255, 255, .75); line-height: 1.9; word-break: auto-phrase; line-break: strict; text-wrap: balance; }
 .about-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: rgba(255, 255, 255, .15); border: 1px solid rgba(255, 255, 255, .15); }
 .about-card { background: #050505; padding: 2rem clamp(1.25rem, 3vw, 2.25rem) 2.25rem; transition: background .3s; }
 .about-card:hover { background: #0c0c0c; }
@@ -591,7 +591,7 @@ a.repo-card:hover { border-color: var(--primary); background: var(--hover); }
 .about-list { margin: 0; padding: 0; list-style: none; border-top: 1px solid rgba(255, 255, 255, .15); }
 .about-list li { display: grid; grid-template-columns: minmax(0, 18rem) minmax(0, 1fr); gap: 1rem 3rem; padding: 1.5rem 0; border-bottom: 1px solid rgba(255, 255, 255, .15); }
 .about-list h3 { margin: 0 0 .6rem; font-size: 1.1rem; font-weight: 500; }
-.about-list p { margin: 0; color: rgba(255, 255, 255, .72); line-height: 1.9; font-size: .95rem; }
+.about-list p { word-break: auto-phrase; line-break: strict; text-wrap: pretty; margin: 0; color: rgba(255, 255, 255, .72); line-height: 1.9; font-size: .95rem; }
 .about-list code { background: rgba(255, 255, 255, .08); padding: .1rem .35rem; border-radius: 4px; font-size: 90%; }
 .about-tags { display: flex; flex-wrap: wrap; gap: .4rem; }
 .about-tag { padding: .15rem .7rem; border: 1px solid rgba(255, 255, 255, .3); border-radius: 999px; color: #fff; font-size: .8rem; letter-spacing: .04em; text-decoration: none; transition: border-color .2s, color .2s; }
@@ -632,6 +632,6 @@ a.repo-card:hover { border-color: var(--primary); background: var(--hover); }
 .mission-body { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows .18s ease-out, opacity .18s ease-out; }
 .mission-list li.is-active .mission-body { grid-template-rows: 1fr; opacity: 1; }
 .mission-body > div { overflow: hidden; }
-.mission-body p { margin: 0 0 .7rem; padding-left: calc(1.1rem + 1.6em); color: rgba(255, 255, 255, .75); font-size: .95rem; line-height: 1.95; }
+.mission-body p { word-break: auto-phrase; line-break: strict; text-wrap: pretty; margin: 0 0 .7rem; padding-left: calc(1.1rem + 1.6em); color: rgba(255, 255, 255, .75); font-size: .95rem; line-height: 1.95; }
 .mission-body p:last-child { margin-bottom: 1rem; }
 @media (prefers-reduced-motion: reduce) { .mission-body { transition: none; } }
