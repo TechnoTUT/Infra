@@ -1,4 +1,4 @@
-# 定期のヘルスチェック。LLM は使わず、5 分ごとに状態を見て、問題が続いたら Discord に知らせる
+# 定期のヘルスチェック。LLM は使わず、5 分ごとに状態を見て、問題が続いたら Discord に知らせる (復旧するまで再通知しない)
 # (ソースは TechnoTUT/infra-assistant の app/healthcheck.py)。Webhook の URL は aichat と同じ Secret (aichat) から読む。
 # 状態 (いつから悪いか、通知したか) は ConfigMap healthcheck-state に、healthcheck 自身が作って書く。
 apiVersion: v1
@@ -90,7 +90,7 @@ spec:
           - name: healthcheck
             # WAN の不調のときにも動かしたい (それを検出するため) ので、コミットのタグに固定して、ノードにあるイメージを使う。
             # healthcheck を更新するときは、infra-assistant の main のコミット (sha-<7 桁>) に変える
-            image: ghcr.io/technotut/infra-assistant:sha-ac7b2a1
+            image: ghcr.io/technotut/infra-assistant:sha-dfe20ac
             imagePullPolicy: IfNotPresent
             command: [python, -m, app.healthcheck]
             env:
@@ -99,6 +99,9 @@ spec:
             - name: DISCORD_WEBHOOK_URL
               valueFrom:
                 secretKeyRef: { name: aichat, key: discord-webhook-url, optional: true }
+            # nodecheck が返すノードの事実の期待値。resolv.conf は FortiGate (dmz)、dmxctl の USB-DMX は packard
+            - { name: EXPECT_NODE_DNS, value: "192.168.99.129" }
+            - { name: EXPECT_NODE_DEVICES, value: "packard=/dev/ttyUSB0" }
             resources:
               requests: { cpu: 20m, memory: 64Mi }
               limits: { memory: 192Mi }
