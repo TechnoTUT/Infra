@@ -4,10 +4,9 @@ import { sectionStart } from '../content.js';
 import { site } from '../site.config.js';
 import Logo from './Logo.jsx';
 import Search from './Search.jsx';
-import ThemeToggle from './ThemeToggle.jsx';
 
 // ナビ(リンク / ハンバーガー / ドロワー)は technotut.net の HeaderNav に合わせる。
-// active: 現在のタブ(section id)。home: ランディング用(hero に重ねる透過ヘッダー)
+// 全ページ共通のヘッダー(暗色固定)。active: 現在のタブ(section id)。home: ランディング用(hero に重ねる・検索なし)
 export default function SiteHeader({ active, home = false }) {
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
@@ -29,7 +28,7 @@ export default function SiteHeader({ active, home = false }) {
   const items = site.sections.map((s) => ({ ...s, to: s.href ?? sectionStart(s.id) }));
 
   return (
-    <header className={'navbar' + (home ? ' navbar-home' : '') + (open ? ' is-open' : '')}>
+    <header className={'navbar navbar-top' + (home ? ' is-overlay' : '') + (open ? ' is-open' : '')}>
       <Link to="/" className="brand" aria-label="TechnoTUT Home" onClick={close}>
         <Logo />
       </Link>
@@ -43,7 +42,6 @@ export default function SiteHeader({ active, home = false }) {
       <div className="nav-right">
         {!home && <div className="nav-tools"><Search /></div>}
         <a href={site.github} className="nav-gh">GitHub</a>
-        {!home && <div className="nav-tools"><ThemeToggle /></div>}
         <button
           type="button"
           className={'hamburger-btn' + (open ? ' is-active' : '')}
@@ -71,7 +69,6 @@ export default function SiteHeader({ active, home = false }) {
           </nav>
           <div className="mobile-tools">
             {!home && <Search />}
-            {!home && <ThemeToggle />}
             <a href={site.github} className="mobile-gh">GitHub</a>
           </div>
         </div>

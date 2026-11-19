@@ -6,7 +6,7 @@
   --muted: #606770;
   --border: #dadde1;
   --code-bg: #f6f7f8;
-  --nav-h: 60px;
+  --nav-h: 88px;
   --footer-bg: #fff;
   --hover: var(--bg-alt);
   --logo-fg: #3a3a3a;
@@ -86,19 +86,6 @@ a { color: var(--link); }
 .nav-links a:hover, .nav-links a:focus-visible, .nav-gh:hover { opacity: .75; letter-spacing: .06em; }
 .nav-links a.active { color: var(--primary); }
 .nav-right { display: flex; align-items: center; gap: .5rem; margin-left: auto; }
-.theme-switch {
-  position: relative; width: 48px; height: 26px; padding: 0; border: 1px solid var(--border);
-  border-radius: 999px; background: var(--bg-alt); cursor: pointer; flex: none;
-}
-.theme-switch:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-.ts-icon { position: absolute; top: 0; height: 100%; width: 24px; display: flex; align-items: center; justify-content: center; color: var(--muted); }
-.ts-sun { left: 0; }
-.ts-moon { right: 0; }
-.ts-knob {
-  position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 50%;
-  background: var(--primary); transition: transform .2s;
-}
-[data-theme='dark'] .ts-knob { transform: translateX(22px); }
 
 .search { position: relative; }
 .search input {
@@ -499,17 +486,20 @@ a.repo-card:hover { border-color: var(--primary); background: var(--hover); }
 
 /* Landing hero: technotut.net に合わせたモノクロ・細字。光ファイバの光だけが色を持つ。テーマに関わらず暗色固定 */
 .brand-logo { height: 40px; width: auto; display: block; }
-.navbar-home {
-  position: absolute; left: 0; right: 0; height: auto; min-height: 88px; padding: 16px 24px; border-bottom: 0; color: #fff;
+.navbar-top {
+  position: sticky; top: 0; height: auto; min-height: var(--nav-h); padding: 16px 24px; border-bottom: 0; color: #fff;
   background: linear-gradient(180deg, #050505 0, #050505e6 28%, #05050500);
   --logo-fg: #fff; --fg: #fff; --hover: rgba(255, 255, 255, .1); --muted: rgba(255, 255, 255, .6);
   --border: rgba(255, 255, 255, .25); --bg-alt: rgba(255, 255, 255, .08); --bg: #0c0c0c;
 }
+/* ランディングでは hero に重ねる */
+.navbar-top.is-overlay { position: absolute; left: 0; right: 0; }
+.navbar-top:not(.is-overlay) { background: #050505; }
 /* ロゴ・ヘッダー余白は technotut.net に合わせる(h-10 / sm:h-12 / md:h-14) */
-@media (min-width: 640px) { .navbar-home .brand-logo { height: 48px; } }
-@media (min-width: 768px) { .navbar-home { min-height: 104px; padding: 20px 40px; } .navbar-home .brand-logo { height: 56px; } }
-@media (min-width: 1024px) { .navbar-home { padding-inline: 64px; } }
-@media (min-width: 1280px) { .navbar-home { padding-inline: 5rem; } }
+@media (min-width: 640px) { .navbar-top .brand-logo { height: 48px; } }
+@media (min-width: 768px) { :root { --nav-h: 104px; } .navbar-top { padding: 20px 40px; } .navbar-top .brand-logo { height: 56px; } }
+@media (min-width: 1024px) { .navbar-top { padding-inline: 64px; } }
+@media (min-width: 1280px) { .navbar-top { padding-inline: 5rem; } }
 .hero {
   position: relative; overflow: hidden; isolation: isolate; color: #fff; background: #050505;
   min-height: max(32rem, 100svh); display: flex; align-items: flex-end;

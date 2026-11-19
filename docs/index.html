@@ -9,13 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400&display=swap" />
     <!--head-->
-    <script>
-      try {
-        var t = localStorage.getItem('theme');
-        if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-        document.documentElement.dataset.theme = t;
-      } catch (e) {}
-    </script>
+    <script>document.documentElement.dataset.theme = 'dark';</script>
   </head>
   <body>
     <div id="root"><!--app--></div>
