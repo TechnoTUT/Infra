@@ -54,10 +54,16 @@ sidebar_position: 6
 | Pod | CrashLoopBackOff や ImagePullBackOff など (5 分)、Pending や Ready にならない (5 分)、Failed |
 | PVC / Service | PVC が Pending (5 分)、LoadBalancer に IP が付かない (5 分) |
 | Argo CD | Degraded や、その他の異常 (10 分)、OutOfSync (10 分) |
+| ノードの設定 | `/etc/resolv.conf` の nameserver が `192.168.99.129` でない (2 分)、`packard` に `/dev/ttyUSB0` がない (5 分)、ディスクの空きが 10% 未満 (5 分)。DaemonSet `nodecheck` (ホストの `/etc` と `/dev` を読み取り専用で見る) が事実を返し、healthcheck が判定する |
 | ネットワーク | Pod から外部の名前 (`github.com`) と `ai.svc.technotut.net` が引けない (2 分)、`https://github.com` に届かない (2 分) |
 
-- 新しい問題、続いている問題の再通知 (6 時間おき)、復旧を、1 回の実行につき 1 つのメッセージにまとめます。状態は ConfigMap に持ち、一時的な状態では通知しません。
+- 新しい問題と復旧を、1 回の実行につき 1 つのメッセージにまとめます。**同じアラームは、復旧するまで再通知しません。** 状態は ConfigMap に持ち、一時的な状態では通知しません。
 - 手元で試すには `DRY_RUN=1 python -m app.healthcheck` (通知も状態の保存もしません)。
+
+## 操作の承認の記録と制限
+- 承認ボタンの承認と却下は、Discord に記録されます (操作、結果、送信元の IP、時刻)。ログインがないので、誰かは分かりません。送信元の IP が手がかりです。
+- 環境変数 `APPROVER_CIDRS` (カンマ区切りの CIDR) を設定すると、その送信元からしか承認できなくなります。空なら制限しません。送信元は、Cilium Ingress (Envoy) が `X-Forwarded-For` の末尾に足す値を使います。
+- ノードの `cordon` / `uncordon` (becky、packard、marie だけ) も、承認ボタンの後に実行できます。`drain` は影響が大きいので、チャットからはできません。
 
 ## 安全のための制限
 - ServiceAccount `aichat` の ClusterRole `aichat-readonly` は、種類を列挙した `get` / `list` / `watch` だけです。Secret、`pods/exec`、書き込みの verb は含みません (書き込みは次の項目)。
