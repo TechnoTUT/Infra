@@ -14,6 +14,7 @@ sidebar_position: 6
 | マニフェスト | [`k8s/manifest/aichat/`](https://github.com/TechnoTUT/Infra/tree/main/k8s/manifest/aichat) (Argo CD の Application `aichat`) |
 | モデル | `gemini-3.8-flash` (Gemini API)。Deployment の環境変数 `GEMINI_MODEL` で変える。1 問でツールを呼ぶたびに 1 リクエストを使うので、RPD の少ないモデルは避ける |
 | URL | http://ai.svc.technotut.net (Cilium Ingress。VLAN 10・20 から HTTP を許可) |
+| 問題の報告 | 調べて問題が見つかると、ツール `report_issue` が Discord の Webhook に送る。URL は Ansible Vault の `vault_discord_webhook_url` (任意) に保管し、Secret `aichat` のキー `discord-webhook-url` に入れる |
 | API キー | Ansible の `aichat.yml` が Secret `aichat` を作成。Ansible Vault の `vault_gemini_api_key` に保管 |
 
 ## 仕組み
@@ -41,6 +42,7 @@ sidebar_position: 6
 - アプリでも、読める種類を `app/tools.py` の `KINDS` に限っています。種類を足すときは、ClusterRole と `KINDS` の両方に足します。
 - リポジトリの `vault.yml`、`.git`、鍵らしいファイル (`*.key`、`*.pem`) は読みません。
 - Gemini API の無料枠のため、送った内容は Google のサービス改善に使われることがあります。Secret を読めないようにしているのはこのためでもあります。ただし Pod のログはそのまま送るので、ログに秘密を出すアプリには注意します。
+- Discord への報告は、10 分に 5 件まで、同じ題名は 30 分は再送せず、メンションは無効、秘密らしい文字列は伏せて送ります。画面にログインがないので、誰かの質問で報告が送られることがあります。
 - 画面にログインはありません。VLAN 10・20 の誰でも使えます。同時に動かす質問は 2 つまで (`MAX_CONCURRENT`) です。
 
 ## 導入
