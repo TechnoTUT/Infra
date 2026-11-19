@@ -19,9 +19,9 @@ metadata:
   name: al-cam2-cam
   namespace: cam2
 spec:
-  srcintf: [VLAN45]
+  srcintf: [sw45]
   dstintf: [dmz]
-  srcaddr: [VLAN45 address]
+  srcaddr: [VLAN45 subnet]
   dstaddr: [k8s-cam2-nginx]
   service: [HTTP, RTMP]
   action: accept

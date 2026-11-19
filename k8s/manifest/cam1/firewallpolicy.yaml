@@ -19,9 +19,9 @@ metadata:
   name: al-cam1-cam
   namespace: cam1
 spec:
-  srcintf: [VLAN44]
+  srcintf: [sw44]
   dstintf: [dmz]
-  srcaddr: [VLAN44 address]
+  srcaddr: [VLAN44 subnet]
   dstaddr: [k8s-cam1-nginx]
   service: [HTTP, RTMP]
   action: accept
