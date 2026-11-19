@@ -18,7 +18,5 @@
       type: Opaque
       stringData:
         gemini-api-key: "{{ vault_gemini_api_key }}"
-{% if vault_discord_webhook_url is defined %}
-        discord-webhook-url: "{{ vault_discord_webhook_url }}"
-{% endif %}
+        discord-webhook-url: "{{ vault_discord_webhook_url | default('') }}"
     apply_no_log: true
