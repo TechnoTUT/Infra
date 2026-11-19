@@ -112,28 +112,6 @@ flowchart LR
     AV -. DHCP / DNS .-> FG
 ```
 
-| 機能 | 接続する VLAN | 使う網内サービス・設定 | 通信 |
-| :--- | :--- | :--- | :--- |
-| IP アドレスの取得 | AV (VLAN 20) | FortiGate の DHCP (`10.10.20.1` 〜 `10.10.31.254`) | DHCP |
-| 名前解決 | AV (VLAN 20) | FortiGate の DNS。`svc.technotut.net` のレコードは Kubernetes の ExternalDNS が FortiGate に登録する | DNS |
-| NDI 送受信 | AV (VLAN 20) | mDNS による機器検出。マルチキャスト送信のため N-1 が IGMP Snooping Querier | mDNS (UDP 5353)、NDI (TCP/UDP 5959〜)、マルチキャスト `239.255.0.0/16` |
-| NDI ソースの登録・検索 | AV (VLAN 20) | [NDI Discovery Server](/service/ndi#ndi-discovery-server) (設定済み)。現在は VLAN をまたいだ NDI はできない | TCP 5959 |
-| フライヤー表示 (サイネージ Web GUI) | ENT (VLAN 42) | DHCP (`192.168.12.34` 〜 `192.168.12.46`)。DJ (VLAN 10) からもアクセス可能 | HTTP (TCP 8000) |
-| ブースディスプレイへの配信 | AV (VLAN 20) → LDISP (VLAN 43) | AV から LDISP へストリーム送出 | UDP 8554〜 (ディスプレイごとに 1 ポート) |
-| booth-display Web GUI | AV (VLAN 20) | — | HTTP (TCP 8080)、WebSocket |
-| 照明制御 (`dmxctl`) | AV (VLAN 20) | NDI からの色取得、[plmux](/service/plmux) / VJ との Ableton Link・OSC 連携、Art-Net で `dmx` / `dmxsim` へ送信 | NDI、Ableton Link、OSC (UDP 9000)、Art-Net (UDP 6454) |
-| リモート操作 | AV (VLAN 20) | — | SSH (TCP 22) |
-
-VLAN とサブネットは [VLAN 一覧](/network/l2#vlan-一覧)、VLAN 間の通信制御は [FW](/network/fw) を参照してください。
-
-<Admonition type="info">
-
-- NDI を扱う utone-linux の端末は **AV (VLAN 20)** のポートに接続します。NDI は mDNS で機器を検出するため、送信側と受信側は同じ VLAN に置きます。入口のフライヤー表示だけに使う端末は **ENT (VLAN 42)** に接続します。
-- AV からインターネットへは HTTP/HTTPS だけが通ります。Kubernetes の Service・Ingress へは HTTP, HTTPS, RTMP, RDP, VNC が通ります。
-- DJ (VLAN 10) の DJ ブースや PA (VLAN 40) の PA 卓の PC からも Web UI を操作できます。
-
-</Admonition>
-
 ## 準備
 
 1. [Releases](https://github.com/TechnoTUT/utone-linux/releases) から ISO イメージをダウンロードします。
