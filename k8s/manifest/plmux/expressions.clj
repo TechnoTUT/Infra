@@ -9,10 +9,9 @@
 ;; dmxctl 側: 「MIDI/OSC」タブで OSC を受信、「オート」タブでオートを ON。テンポの元は Ableton Link
 ;; (dmxctl の PC を VJ/AV の VLAN20 につなぐ。plmux の Link は VLAN20 に広報している)。
 ;;
-;; OSC は plmux の Pod から送る。Pod の通信はノードの IP (dmz) に SNAT されて FortiGate を通るので、
-;; FortiGate の許可ポリシーは firewallpolicy.yaml (fortigate-operator) で管理している。
+;; OSC は plmux の Pod から、クラスタ内の Service dmxctl-remote (UDP 9000) へ送る。FortiGate は通らない。
 
-(def dmxctl-host "10.10.20.16")   ; dmxctl を動かしている PC の IP アドレス (VLAN 20)
+(def dmxctl-host "dmxctl-remote.dmxctl.svc.cluster.local")   ; クラスタ内の dmxctl (Service dmxctl-remote)
 (def dmxctl-port 9000)             ; dmxctl の OSC 受信ポート (UDP)
 
 (global-setup
