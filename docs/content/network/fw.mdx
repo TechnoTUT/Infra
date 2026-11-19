@@ -8,7 +8,7 @@ sidebar_position: 5
 
 ## DHCP・DNS
 
-- 各 VLAN の DHCP の範囲は [VLAN・IPアドレス設計](/network/vlan) を参照してください。DHCP で配る DNS サーバは、多くの VLAN では FortiGate 自身です。
+- 各 VLAN の DHCP の範囲は [VLAN 一覧](/network/l2#vlan-一覧) を参照してください。DHCP で配る DNS サーバは、多くの VLAN では FortiGate 自身です。
 **VLAN 44 (CAM1) と VLAN 45 (CAM2) だけは、それぞれのカメラ用 CoreDNS の LoadBalancer IP (`10.12.77.253`、`10.12.77.254`) を配ります**。カメラが `api.ustream.tv` を中継用の Nginx に向けるためです ([ライブ配信](/service/live))。
 - Kubernetes のノードは、FortiGate を DNS サーバにしています。
 外部の名前は FortiGate が上流に転送し、`svc.technotut.net` は FortiGate が答えます。
