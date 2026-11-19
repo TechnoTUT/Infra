@@ -36,7 +36,8 @@ sidebar_position: 6
 リポジトリは、サイドカーの git-sync が TechnoTUT/Infra の main を 5 分ごとに取り込みます。
 
 ## 安全のための制限
-- ServiceAccount `aichat` の ClusterRole `aichat-readonly` は、種類を列挙した `get` / `list` / `watch` だけです。Secret、`pods/exec`、書き込みの verb は含みません。
+- ServiceAccount `aichat` の ClusterRole `aichat-readonly` は、種類を列挙した `get` / `list` / `watch` だけです。Secret、`pods/exec`、書き込みの verb は含みません (書き込みは次の項目)。
+- 書き込みは、画面の確認ボタンで承認した操作だけです。ClusterRole `aichat-operator` (Pod の `delete`、Deployment・StatefulSet・DaemonSet の `patch`、Job の `create`) と、argocd の Role (Application の `patch`) を、アプリの namespace (cam1、cam2、dmxctl、dmxsim、live、ndi、plmux、speedtest、time) にだけ RoleBinding で与えます。kube-system、argocd のほかのリソース、cilium、arc-*、external-dns、registry、fortigate-operator、aichat 自身は対象外です。マニフェストは [`k8s/manifest/aichat-rbac/`](https://github.com/TechnoTUT/Infra/tree/main/k8s/manifest/aichat-rbac) (Argo CD の Application `aichat-rbac`) にあります。
 - アプリでも、読める種類を `app/tools.py` の `KINDS` に限っています。種類を足すときは、ClusterRole と `KINDS` の両方に足します。
 - リポジトリの `vault.yml`、`.git`、鍵らしいファイル (`*.key`、`*.pem`) は読みません。
 - Gemini API の無料枠のため、送った内容は Google のサービス改善に使われることがあります。Secret を読めないようにしているのはこのためでもあります。ただし Pod のログはそのまま送るので、ログに秘密を出すアプリには注意します。
