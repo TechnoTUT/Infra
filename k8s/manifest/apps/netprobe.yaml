@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: netprobe
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/TechnoTUT/Infra.git
+    targetRevision: HEAD
+    path: k8s/manifest/netprobe
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: netprobe
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true

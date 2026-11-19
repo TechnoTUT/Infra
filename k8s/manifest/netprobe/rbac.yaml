@@ -1,0 +1,25 @@
+# aichat が netprobe の Pod を作って消すための権限。この namespace の Pod だけ。
+# update / patch / exec / 他の種類は与えない。Pod の中身 (NET_RAW と NET_ADMIN) は aichat のコードで固定。
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: aichat-netprobe
+  namespace: netprobe
+rules:
+- apiGroups: [""]
+  resources: [pods]
+  verbs: [get, list, create, delete]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: aichat-netprobe
+  namespace: netprobe
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: aichat-netprobe
+subjects:
+- kind: ServiceAccount
+  name: aichat
+  namespace: aichat
