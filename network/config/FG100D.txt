@@ -42,6 +42,36 @@ config system switch-interface
         set vdom "root"
         set member "VLAN10" "vxlan10" "vxlan10-nas"
     next
+    edit "sw30"
+        set vdom "root"
+        set member "vxlan30" "vxlan30-nas"
+        set intra-switch-policy implicit
+    next
+    edit "sw40"
+        set vdom "root"
+        set member "vxlan40" "vxlan40-nas"
+        set intra-switch-policy implicit
+    next
+    edit "sw42"
+        set vdom "root"
+        set member "vxlan42" "vxlan42-nas"
+        set intra-switch-policy implicit
+    next
+    edit "sw43"
+        set vdom "root"
+        set member "vxlan43" "vxlan43-nas"
+        set intra-switch-policy implicit
+    next
+    edit "sw44"
+        set vdom "root"
+        set member "vxlan44" "vxlan44-nas"
+        set intra-switch-policy implicit
+    next
+    edit "sw45"
+        set vdom "root"
+        set member "vxlan45" "vxlan45-nas"
+        set intra-switch-policy implicit
+    next
 end
 config system interface
     edit "wan1"
@@ -291,6 +321,108 @@ config system interface
         set lldp-transmission enable
         set role lan
         set snmp-index 32
+    next
+    edit "sw30"
+        set vdom "root"
+        set type switch
+        set snmp-index 49
+    next
+    edit "vxlan30"
+        set vdom "root"
+        set type vxlan
+        set snmp-index 37
+        set interface "dmz"
+    next
+    edit "vxlan30-nas"
+        set vdom "root"
+        set type vxlan
+        set snmp-index 38
+        set interface "port9"
+    next
+    edit "sw40"
+        set vdom "root"
+        set type switch
+        set snmp-index 50
+    next
+    edit "vxlan40"
+        set vdom "root"
+        set type vxlan
+        set snmp-index 39
+        set interface "dmz"
+    next
+    edit "vxlan40-nas"
+        set vdom "root"
+        set type vxlan
+        set snmp-index 40
+        set interface "port9"
+    next
+    edit "sw42"
+        set vdom "root"
+        set type switch
+        set snmp-index 51
+    next
+    edit "vxlan42"
+        set vdom "root"
+        set type vxlan
+        set snmp-index 41
+        set interface "dmz"
+    next
+    edit "vxlan42-nas"
+        set vdom "root"
+        set type vxlan
+        set snmp-index 42
+        set interface "port9"
+    next
+    edit "sw43"
+        set vdom "root"
+        set type switch
+        set snmp-index 52
+    next
+    edit "vxlan43"
+        set vdom "root"
+        set type vxlan
+        set snmp-index 43
+        set interface "dmz"
+    next
+    edit "vxlan43-nas"
+        set vdom "root"
+        set type vxlan
+        set snmp-index 44
+        set interface "port9"
+    next
+    edit "sw44"
+        set vdom "root"
+        set type switch
+        set snmp-index 53
+    next
+    edit "vxlan44"
+        set vdom "root"
+        set type vxlan
+        set snmp-index 45
+        set interface "dmz"
+    next
+    edit "vxlan44-nas"
+        set vdom "root"
+        set type vxlan
+        set snmp-index 46
+        set interface "port9"
+    next
+    edit "sw45"
+        set vdom "root"
+        set type switch
+        set snmp-index 54
+    next
+    edit "vxlan45"
+        set vdom "root"
+        set type vxlan
+        set snmp-index 47
+        set interface "dmz"
+    next
+    edit "vxlan45-nas"
+        set vdom "root"
+        set type vxlan
+        set snmp-index 48
+        set interface "port9"
     next
     edit "vxlan20-nas"
         set vdom "root"
@@ -4764,6 +4896,66 @@ config system vxlan
     edit "vxlan10-nas"
         set interface "port9"
         set vni 10010
+        set remote-ip "192.168.98.2"
+    next
+    edit "vxlan30"
+        set interface "dmz"
+        set vni 30
+        set remote-ip "192.168.99.200" "192.168.99.201" "192.168.99.202"
+    next
+    edit "vxlan30-nas"
+        set interface "port9"
+        set vni 10030
+        set remote-ip "192.168.98.2"
+    next
+    edit "vxlan40"
+        set interface "dmz"
+        set vni 40
+        set remote-ip "192.168.99.200" "192.168.99.201" "192.168.99.202"
+    next
+    edit "vxlan40-nas"
+        set interface "port9"
+        set vni 10040
+        set remote-ip "192.168.98.2"
+    next
+    edit "vxlan42"
+        set interface "dmz"
+        set vni 42
+        set remote-ip "192.168.99.200" "192.168.99.201" "192.168.99.202"
+    next
+    edit "vxlan42-nas"
+        set interface "port9"
+        set vni 10042
+        set remote-ip "192.168.98.2"
+    next
+    edit "vxlan43"
+        set interface "dmz"
+        set vni 43
+        set remote-ip "192.168.99.200" "192.168.99.201" "192.168.99.202"
+    next
+    edit "vxlan43-nas"
+        set interface "port9"
+        set vni 10043
+        set remote-ip "192.168.98.2"
+    next
+    edit "vxlan44"
+        set interface "dmz"
+        set vni 44
+        set remote-ip "192.168.99.200" "192.168.99.201" "192.168.99.202"
+    next
+    edit "vxlan44-nas"
+        set interface "port9"
+        set vni 10044
+        set remote-ip "192.168.98.2"
+    next
+    edit "vxlan45"
+        set interface "dmz"
+        set vni 45
+        set remote-ip "192.168.99.200" "192.168.99.201" "192.168.99.202"
+    next
+    edit "vxlan45-nas"
+        set interface "port9"
+        set vni 10045
         set remote-ip "192.168.98.2"
     next
 end
