@@ -24,7 +24,7 @@ Kubernetes のクラスタは 2 つあります。3 台の物理サーバ (`beck
 flowchart LR
   fg["FortiGate 100D (AS 64646)"] -- "iBGP (LB IP / Pod CIDR)" --> main["main クラスタ (becky / packard / marie)"]
   main <-- "Cilium Cluster Mesh (TCP 32379)" --> nas["nas クラスタ (ongeki)"]
-  main -- "Multus (br10 / br20)" --> vlans["DJ (VLAN 10) / AV (VLAN 20)"]
+  main -- "Multus + vxlan-cni (VXLAN)" --> vlans["DJ (VLAN 10) / AV (VLAN 20)"]
   repo["GitHub (TechnoTUT/Infra)"] -- "GitOps 同期" --> argocd["Argo CD (main 上)"]
   argocd -- "Application 配信" --> main
   argocd -- "API (TCP 6443)" --> nas
@@ -48,7 +48,7 @@ Control-Plane ノードは、API サーバ・スケジューラ・コントロ�
 | オーケストレーション | Kubernetes (`kubeadm`) | `1.37` | クラスタ構築・ライフサイクル管理 |
 | コンテナランタイム | `containerd` | Docker リポジトリ (`containerd.io`) | CRI ランタイム |
 | CNI / BGP / Ingress | Cilium | `1.20.4` | `kube-proxy` 置き換え、Native Routing、iBGP による LoadBalancer IP / Pod CIDR 広報、Ingress、Cluster Mesh |
-| L2 マルチホーム | Multus | `v4.3.1` | `br10` / `br20` 経由で Pod を VLAN 10 (PRO DJ LINK)・VLAN 20 (Ableton Link) へ直結 |
+| L2 マルチホーム | Multus | `v4.3.1` | `vxlan-cni` (VXLAN) で Pod を VLAN 10 (PRO DJ LINK)・VLAN 20 (Ableton Link) へ直結 |
 | ストレージ | NFS / Local PV | `nfs-subdir-external-provisioner` (`4.0.18`) | `becky` の `/nfs` を動的プロビジョニング、`ongeki` は `/nas` を Local PV として利用 |
 | 内部 DNS | ExternalDNS + [FortiGate の webhook](https://github.com/TechnoTUT/external-dns-fortigate-webhook) | Helm Chart `1.21.1` | `svc.technotut.net` のレコードを FortiGate の DNS データベースに REST API で登録 |
 | GitOps | Argo CD | Helm Chart `10.12.1` | `main` ブランチの `k8s/manifest/` を自動同期 (`root` Application で各アプリを管理) |
@@ -63,7 +63,6 @@ Control-Plane ノードは、API サーバ・スケジューラ・コントロ�
 
 | ロール | 対象 | 役割 |
 | :--- | :--- | :--- |
-| `network` | `main` 全ノード | VLAN 10・20 とブリッジ (`br10`, `br20`) の構成 |
 | `common` | 全ノード | DNS 固定、swap 無効化、カーネルモジュール・sysctl 設定、NFS クライアント導入 |
 | `containerd` | 全ノード | `containerd.io` の導入と設定 |
 | `nas` | `ongeki` | `/nas` の確認、ホスト Samba 停止、SELinux コンテキスト設定 |

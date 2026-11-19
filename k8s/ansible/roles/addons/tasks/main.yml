@@ -74,13 +74,6 @@
   changed_when: "'created' in addons_apply.stdout or 'configured' in addons_apply.stdout"
   when: multus_enabled
 
-- name: NetworkAttachmentDefinition（vlan10 / vlan20 のブリッジ）
-  ansible.builtin.include_tasks: apply.yml
-  vars:
-    apply_content: "{{ lookup('ansible.builtin.template', 'nad.yaml.j2') }}"
-  loop: "{{ multus_nads }}"
-  when: multus_enabled
-
 # vxlan-cni: Pod の manifest で VLAN を選ぶ NAD (プラグインと DHCP デーモンは vxlan_cni ロール)。
 # 許可する VLAN がなければ NAD を置かない (プラグインは allowedVlans が空だと動かない)。
 - name: NetworkAttachmentDefinition（vxlan-cni）

@@ -48,7 +48,7 @@ Clusters: 2 (`main`: becky, packard, marie / `nas`: ongeki)
 ## 1. 事前準備
 ### ネットワーク (管理用 VLAN は手動)
 各ノードの NIC と、管理用の VLAN 100 (IP アドレス、ゲートウェイ、DNS) は手動で設定します。この設定がないと、Ansible でノードに接続できません。\
-Multus 用の VLAN 10・20 とブリッジ (br10, br20) は、Ansible の `network` ロールが設定します。
+VLAN 10・20 は、ノードにトランクやブリッジを作らず、vxlan-cni が VXLAN でつなぎます。
 
 `/etc/network/interfaces` の例 (becky。packard と marie は NIC 名が `enp2s0`) です。
 ```
@@ -71,15 +71,6 @@ iface eno1.100 inet static
         dns-search srv.utone.technotut.net
 ```
 `vlan` パッケージが必要です (`apt install vlan`)。
-
-`network` ロールは、次のことを行います。
-- `bridge-utils`、`vlan`、`dhcpcd-base` を入れ、`8021q` を読み込みます。
-- `/etc/network/interfaces` にある VLAN 10・20 と br10・br20 の古い定義を取り除きます (バックアップを取ります)。二重に定義されていると `ifup -a` が失敗します。
-- `/etc/network/interfaces.d/k8s-vlans` に、VLAN 10・20 とブリッジを書きます。ブリッジは DHCP でアドレスを取得します。
-- `/etc/dhcpcd.conf` で、ブリッジはデフォルトゲートウェイと DNS を受け取らない設定にします (管理用 VLAN の経路と `resolv.conf` を壊さないため)。
-- 対象のインターフェースだけを `ifup` します。`networking` の再起動や、管理用 VLAN には触れません。
-
-設定後、`ip -br link show type bridge` で `br10` と `br20` があること、`ip -4 -br addr show br10` でアドレスが付いていることを確認します。VLAN の DHCP サーバがないと、アドレスは付きません (ブリッジ自体は起動します)。
 
 ### NFS サーバ
 becky の NFS サーバ (`/nfs`) は Ansible の `nfs` ロールが設定します。手動の作業は不要です。
@@ -110,7 +101,6 @@ ansible-playbook playbooks/site.yml
 
 | ロール | 内容 |
 |--------|------|
-| network | VLAN 10・20 とブリッジ (br10, br20) の設定 (DHCP) |
 | common | 不要パッケージの削除 (Docker、host の bind9 など)、ノードの DNS設定、swap 無効化、カーネルモジュール、sysctl、nfs-common |
 | containerd | containerd.io のインストール |
 | nfs | becky を NFS サーバにする (`/nfs`) |
@@ -221,16 +211,9 @@ kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.pas
 
 ## 6. 任意の設定
 ### Multus
-PRO DJ LINK や Ableton Link のネットワークと L2 で接続する場合に使います。Multus と NetworkAttachmentDefinition は Ansible で導入します (`multus_enabled`、`multus_nads`)。
+PRO DJ LINK や Ableton Link のネットワークと L2 で接続する場合に使います。Multus は Ansible で導入します (`multus_enabled`)。VLAN へは vxlan-cni の NAD (`kube-public/vxlan`) でつなぎます。以前の `vlan10-bridge`・`vlan20-bridge` (トランクと br10・br20) は廃止しました。
 
-| NetworkAttachmentDefinition | ブリッジ | サブネット |
-|---|---|---|
-| `kube-public/vlan10-bridge` | br10 | 10.10.0.0/20 |
-| `kube-public/vlan20-bridge` | br20 | 10.10.16.0/20 |
-
-ブリッジ (br10, br20) は `network` ロールが作ります。
-
-Cilium は既定で、他の CNI の設定ファイルを `*.cilium_bak` に退避します。Multus の設定 (`/etc/cni/net.d/00-multus.conflist`) も退避されて、Pod に br10・br20 のインターフェースが付かなくなります。そのため、`multus_enabled: true` のときは Cilium の `cni.exclusive` を `false` にしています。  
+Cilium は既定で、他の CNI の設定ファイルを `*.cilium_bak` に退避します。Multus の設定 (`/etc/cni/net.d/00-multus.conflist`) も退避されて、Pod に `net1` のようなインターフェースが付かなくなります。そのため、`multus_enabled: true` のときは Cilium の `cni.exclusive` を `false` にしています。  
 構築済みのクラスタでこの設定を変えたときは、Multus を再起動して設定ファイルを作り直します (`kubectl -n kube-system rollout restart ds/kube-multus-ds`)。
 
 ### vxlan-cni (VLAN を Pod の manifest で選ぶ)
@@ -266,7 +249,7 @@ flowchart LR
 | MTU | 1450 (`dmz`・`port9` の 1500 から VXLAN の 50 を引いた値) |
 | ノード間 | FortiGate は同じ VXLAN インターフェースの相手どうしを中継しないため、main の NAD の `peers` に main の全ノードの IP (`node_ip`) を入れている |
 
-Ansible の `vxlan_cni` ロールがプラグインと DHCP デーモン (`cni-dhcp.service`) を全ノードに入れ、`addons` ロールが NAD を作ります。既存の `vlan10-bridge`・`vlan20-bridge` (トランクと br10・br20) もそのまま使えます。
+Ansible の `vxlan_cni` ロールがプラグインと DHCP デーモン (`cni-dhcp.service`) を全ノードに入れ、`addons` ロールが NAD を作ります。
 
 #### FortiGate の設定
 VLAN 10・20 は、VLAN インターフェースと VXLAN インターフェースを software switch (`sw10`, `sw20`) にまとめています。ゲートウェイの IP アドレス、DHCP サーバ、DNS サーバ、ポリシーは software switch に付いています (VLAN 10 のキャプティブポータルも `sw10` にあります)。
@@ -392,14 +375,14 @@ PRO DJ LINK のモニター・曲履歴・Ableton Link・Clojure の式のサー
 
 Pod は 2 つに分けています。
 
-| Deployment | Multus | 役割 |
+| Deployment | VXLAN | 役割 |
 |---|---|---|
-| `plmux` | `kube-public/vlan10-bridge` (`dj`) | PRO DJ LINK を受ける。Web GUI。Carabiner には `plmux-carabiner` の Service (17000/tcp) でつなぎます |
-| `plmux-carabiner` | `kube-public/vlan20-bridge` (`av`) | Ableton Link (Carabiner)。同じイメージを `carabiner` の引数で動かします |
+| `plmux` | `kube-public/vxlan` (VLAN 10、`dj`) | PRO DJ LINK を受ける。Web GUI。Carabiner には `plmux-carabiner` の Service (17000/tcp) でつなぎます |
+| `plmux-carabiner` | `kube-public/vxlan` (VLAN 20、`av`) | Ableton Link (Carabiner)。同じイメージを `carabiner` の引数で動かします |
 
 - Ableton Link は Pod の全てのネットワークで広報されます。DJ ネットワーク (VLAN 10) には出さず、AV ネットワーク (VLAN 20) だけに出すため、Carabiner を VLAN 20 だけにつないだ Pod に分けています。Carabiner は 127.0.0.1 でしか待ち受けないので、plmux が中継します。
 - `plmux-carabiner` に届けば Link のテンポを変えられるので、NetworkPolicy で `plmux` の Pod からだけ受けます。テンポと拍を TCP で送るので、同じノードに置くようにしています (podAffinity)。
-- PRO DJ LINK の UDP (50000-50002) を使い、SQLite に書くので、どちらもレプリカは 1 つ (`Recreate`) です。hostNetwork は使わないので、どのノードでも動きます (br10・br20 は全ノードにあります)。
+- PRO DJ LINK の UDP (50000-50002) を使い、SQLite に書くので、どちらもレプリカは 1 つ (`Recreate`) です。hostNetwork は使わないので、どのノードでも動きます (VXLAN で VLAN につなぐので、ノードの設定は要りません)。
 - VLAN 10・20 のアドレスは NAD の host-local で、ノードごとに `10.10.0.2`・`10.10.16.2` から払い出します。別のノードの Pod と同じアドレスになることがあります。そのときは Pod を作り直してください。
 - Link のテンポを流すのは 1 つだけにしてください。個人の PC の BLT などでも Link に追従させていると、テンポの元が 2 つになります。
 - 式から dmxctl などへ送る OSC は、ノードの IP (`dmz`) に SNAT されて FortiGate を通ります。FortiGate に `dmz` から送り先への UDP (dmxctl は 9000) を許可するポリシーが必要です。

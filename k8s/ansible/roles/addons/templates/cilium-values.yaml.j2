@@ -17,7 +17,7 @@ k8sServiceHost: {{ api_endpoint }}
 k8sServicePort: {{ api_port }}
 # Multus と共存させる。既定 (exclusive: true) では、Cilium が他の CNI の設定
 # (Multus の 00-multus.conf) を *.cilium_bak に退避してしまい、Pod に
-# br10・br20 のインターフェースが付かない。
+# vxlan-cni の net1 が付かない。
 cni:
   exclusive: {{ (not multus_enabled) | lower }}
 bgpControlPlane:

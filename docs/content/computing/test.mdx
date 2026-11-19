@@ -48,7 +48,7 @@ sudo podman exec frr vtysh -c 'show ip bgp'
 ## 検証できること・できないこと
 
 - **検証できること**: `kubeadm init` / `join`、Pod / Service の CIDR、Cilium (`kube-proxy` 置き換え、Ingress、LB IP プール)、BGP (FRR での経路確認)、Argo CD、ExternalDNS のチャートと webhook のサイドカーが入ること
-- **検証できないこと**: 実機の VLAN とブリッジ、FortiGate へのレコードの書き込み (FortiGate がないため webhook は Ready にならない)、`network` ロール、Multus の L2 通信、NFS provisioner の実動作 (NFS サーバがない)、`marie` (`packard` と同じ設定)
+- **検証できないこと**: 実機の VLAN、FortiGate へのレコードの書き込み (FortiGate がないため webhook は Ready にならない)、Multus の L2 通信、NFS provisioner の実動作 (NFS サーバがない)、`marie` (`packard` と同じ設定)
 
 ## テスト用の上書き
 

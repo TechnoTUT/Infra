@@ -20,14 +20,6 @@ nfs_server: "192.168.99.200"
 nfs_path: "/nfs"
 nfs_export_network: "192.168.99.128/25"
 
-# ===== ネットワーク（VLAN とブリッジのみ。管理用 VLAN は手動）=====
-network_manage_vlans: true
-network_interfaces_file: /etc/network/interfaces
-network_mgmt_vlan: 100
-network_vlans:                       # Multus の NetworkAttachmentDefinition が使うブリッジ
-  - { id: 10, bridge: br10 }
-  - { id: 20, bridge: br20 }
-
 # イメージの取得が遅いネットワークなので、待ち時間を長めにする。
 addons_helm_timeout: 30m
 
@@ -57,10 +49,6 @@ common_packages_absent:
 
 # ===== オプション =====
 multus_enabled: true         # PRO DJ LINK / Ableton Link 用の L2 接続
-# NetworkAttachmentDefinition（現行クラスタと同じ。ブリッジは各ノードの /etc/network/interfaces で作る）
-multus_nads:
-  - { name: vlan10-bridge, namespace: kube-public, network: vlan10, bridge: br10, subnet: "10.10.0.0/20" }
-  - { name: vlan20-bridge, namespace: kube-public, network: vlan20, bridge: br20, subnet: "10.10.16.0/20" }
 
 # vxlan-cni: Pod の manifest (cni-args の vlan) で VLAN を選んでつなぐ。VLAN は FortiGate との間の VXLAN で運ぶ。
 # ノードのトランクや VLAN の設定は要らない。vxlan_cni ロールがプラグインと DHCP デーモンを、addons ロールが NAD を入れる。
@@ -93,7 +81,7 @@ cilium_cluster_id: 1
 # 両方のクラスタの Pod CIDR (main 10.15.0.0/16、nas 10.13.0.0/16) を含む範囲。この範囲への通信は NAT しない。
 # 10.12.0.0/14 (10.12-10.15) は LoadBalancer の IP (10.12、10.14) も含むが、どちらも経路はクラスタ側にあるので問題ない。
 # VLAN 10・20 (10.10.0.0/16) と外部拠点 (10.8.0.0/16 など) は含めない。含めると、Pod の通信が NAT されずに
-# br10 などから直接出て、戻りの経路が合わずに届かない (Pod から TUT の DNS 10.10.0.1 が引けなくなった)。
+# vxbr10 などから直接出て、戻りの経路が合わずに届かない (Pod から TUT の DNS 10.10.0.1 が引けなくなった)。
 cilium_native_routing_cidr: "10.12.0.0/14"
 cilium_clustermesh_enabled: true
 # clustermesh-apiserver はノードの IP の NodePort で公開する (LoadBalancer の IP は相手の

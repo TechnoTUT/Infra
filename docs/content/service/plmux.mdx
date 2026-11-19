@@ -45,7 +45,7 @@ Beat Link Trigger の式と同じように、Clojure で機能を足せます。
 書き方は [plmux の README](https://github.com/TechnoTUT/plmux#clojure-expressions) を参照してください。
 
 ## 開発者向け情報
-- DJ ネットワーク (VLAN 10) と AV ネットワーク (VLAN 20) には、Multus でつないでいます。
+- DJ ネットワーク (VLAN 10) と AV ネットワーク (VLAN 20) には、Multus と vxlan-cni (VXLAN) でつないでいます。
   - plmux 本体は VLAN 10 だけ (PRO DJ LINK)。
   - Ableton Link (Carabiner) は別の Pod で、VLAN 20 だけ。Link は Pod の全てのネットワークで広報されるため、DJ ネットワークに出さないよう分けています。
 - 構成は [構築方法](/computing/deploy#plmux) を参照してください。
