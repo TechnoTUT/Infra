@@ -44,7 +44,7 @@ flowchart LR
 - 以前の Multus の `vlan10-bridge`・`vlan20-bridge` (トランクと br10・br20) は廃止しました。plmux を含め、すべての Pod は vxlan-cni でつなぎます。
 
 ## VNI の割当
-VNI は `VLAN ID + vniOffset` で決定します。
+VNI は `VLAN ID + vniOffset` で決定します。VLAN 30・40・42〜45 も同じ規則です (例: VLAN 44 は main が 44、nas が 10044)。
 
 | クラスタ | FortiGate 側のインターフェース | VTEP の IP アドレス (`remote`) | `vniOffset` | VLAN 10 の VNI | VLAN 20 の VNI |
 |---|---|---|---|---|---|
@@ -171,6 +171,12 @@ end
 |---|---|---|
 | `sw10` (DJ) | `10.10.0.1/20` | `VLAN10`、`vxlan10`、`vxlan10-nas` |
 | `sw20` (AV) | `10.10.16.1/20` | `VLAN20`、`vxlan20`、`vxlan20-nas` |
+| `sw30` (LBAR) | `192.168.11.1/24` | `VLAN30`、`vxlan30`、`vxlan30-nas` (DHCP サーバなし) |
+| `sw40` (PA) | `192.168.12.1/27` | `VLAN40`、`vxlan40`、`vxlan40-nas` |
+| `sw42` (ENTRANCE) | `192.168.12.33/28` | `VLAN42`、`vxlan42`、`vxlan42-nas` |
+| `sw43` (LDISP) | `192.168.12.49/28` | `VLAN43`、`vxlan43`、`vxlan43-nas` |
+| `sw44` (CAM1) | `192.168.12.65/28` | `VLAN44`、`vxlan44`、`vxlan44-nas` |
+| `sw45` (CAM2) | `192.168.12.81/28` | `VLAN45`、`vxlan45`、`vxlan45-nas` |
 
 - `remote-ip` の `192.168.99.200` - `202` は main のノード (becky, packard, marie)、`192.168.98.2` は nas のノード (ongeki) です。
 - ポリシーと DHCP・DNS サーバは software switch (`sw10`, `sw20`) に設定します。ポリシーの対象アドレスは `VLAN10 subnet`・`VLAN20 subnet` (ipmask) です。

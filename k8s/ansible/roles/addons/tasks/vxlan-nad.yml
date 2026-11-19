@@ -1,0 +1,7 @@
+---
+# vxlan-cni の NAD (kube-public/vxlan) だけを作り直す。VLAN を足したときに、site.yml 全体を流さずに反映できる:
+#   ansible control_plane -m ansible.builtin.include_role -a "name=addons tasks_from=vxlan-nad"
+- name: NetworkAttachmentDefinition（vxlan-cni）の適用
+  ansible.builtin.include_tasks: apply.yml
+  vars:
+    apply_content: "{{ lookup('ansible.builtin.template', 'nad-vxlan.yaml.j2') }}"

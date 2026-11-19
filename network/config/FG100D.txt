@@ -42,6 +42,30 @@ config system switch-interface
         set vdom "root"
         set member "VLAN10" "vxlan10" "vxlan10-nas"
     next
+    edit "sw30"
+        set vdom "root"
+        set member "VLAN30" "vxlan30" "vxlan30-nas"
+    next
+    edit "sw40"
+        set vdom "root"
+        set member "VLAN40" "vxlan40" "vxlan40-nas"
+    next
+    edit "sw42"
+        set vdom "root"
+        set member "VLAN42" "vxlan42" "vxlan42-nas"
+    next
+    edit "sw43"
+        set vdom "root"
+        set member "VLAN43" "vxlan43" "vxlan43-nas"
+    next
+    edit "sw44"
+        set vdom "root"
+        set member "VLAN44" "vxlan44" "vxlan44-nas"
+    next
+    edit "sw45"
+        set vdom "root"
+        set member "VLAN45" "vxlan45" "vxlan45-nas"
+    next
 end
 config system interface
     edit "wan1"
@@ -211,10 +235,7 @@ config system interface
     next
     edit "VLAN30"
         set vdom "root"
-        set ip 192.168.11.1 255.255.255.0
-        set allowaccess ping
         set alias "LBAR"
-        set device-identification enable
         set role lan
         set snmp-index 21
         set interface "po1"
@@ -222,10 +243,7 @@ config system interface
     next
     edit "VLAN40"
         set vdom "root"
-        set ip 192.168.12.1 255.255.255.224
-        set allowaccess ping
         set alias "PA"
-        set device-identification enable
         set role lan
         set snmp-index 22
         set interface "po1"
@@ -233,10 +251,7 @@ config system interface
     next
     edit "VLAN42"
         set vdom "root"
-        set ip 192.168.12.33 255.255.255.240
-        set allowaccess ping
         set alias "ENTRANCE"
-        set device-identification enable
         set role lan
         set snmp-index 23
         set interface "po1"
@@ -244,10 +259,7 @@ config system interface
     next
     edit "VLAN43"
         set vdom "root"
-        set ip 192.168.12.49 255.255.255.240
-        set allowaccess ping
         set alias "LDISP"
-        set device-identification enable
         set role lan
         set snmp-index 26
         set interface "po1"
@@ -255,10 +267,7 @@ config system interface
     next
     edit "VLAN44"
         set vdom "root"
-        set ip 192.168.12.65 255.255.255.240
-        set allowaccess ping
         set alias "CAM1"
-        set device-identification enable
         set role lan
         set snmp-index 27
         set interface "po1"
@@ -266,10 +275,7 @@ config system interface
     next
     edit "VLAN45"
         set vdom "root"
-        set ip 192.168.12.81 255.255.255.240
-        set allowaccess ping
         set alias "CAM2"
-        set device-identification enable
         set role lan
         set snmp-index 28
         set interface "po1"
@@ -323,6 +329,144 @@ config system interface
         set lldp-transmission enable
         set role lan
         set snmp-index 36
+    next
+    edit "vxlan30"
+        set vdom "root"
+        set type vxlan
+        set snmp-index 37
+        set interface "dmz"
+    next
+    edit "vxlan30-nas"
+        set vdom "root"
+        set type vxlan
+        set snmp-index 38
+        set interface "port9"
+    next
+    edit "vxlan40"
+        set vdom "root"
+        set type vxlan
+        set snmp-index 39
+        set interface "dmz"
+    next
+    edit "vxlan40-nas"
+        set vdom "root"
+        set type vxlan
+        set snmp-index 40
+        set interface "port9"
+    next
+    edit "vxlan42"
+        set vdom "root"
+        set type vxlan
+        set snmp-index 41
+        set interface "dmz"
+    next
+    edit "vxlan42-nas"
+        set vdom "root"
+        set type vxlan
+        set snmp-index 42
+        set interface "port9"
+    next
+    edit "vxlan43"
+        set vdom "root"
+        set type vxlan
+        set snmp-index 43
+        set interface "dmz"
+    next
+    edit "vxlan43-nas"
+        set vdom "root"
+        set type vxlan
+        set snmp-index 44
+        set interface "port9"
+    next
+    edit "vxlan44"
+        set vdom "root"
+        set type vxlan
+        set snmp-index 45
+        set interface "dmz"
+    next
+    edit "vxlan44-nas"
+        set vdom "root"
+        set type vxlan
+        set snmp-index 46
+        set interface "port9"
+    next
+    edit "vxlan45"
+        set vdom "root"
+        set type vxlan
+        set snmp-index 47
+        set interface "dmz"
+    next
+    edit "vxlan45-nas"
+        set vdom "root"
+        set type vxlan
+        set snmp-index 48
+        set interface "port9"
+    next
+    edit "sw30"
+        set vdom "root"
+        set ip 192.168.11.1 255.255.255.0
+        set allowaccess ping
+        set type switch
+        set alias "LBAR"
+        set device-identification enable
+        set lldp-transmission enable
+        set role lan
+        set snmp-index 49
+    next
+    edit "sw40"
+        set vdom "root"
+        set ip 192.168.12.1 255.255.255.224
+        set allowaccess ping
+        set type switch
+        set alias "PA"
+        set device-identification enable
+        set lldp-transmission enable
+        set role lan
+        set snmp-index 50
+    next
+    edit "sw42"
+        set vdom "root"
+        set ip 192.168.12.33 255.255.255.240
+        set allowaccess ping
+        set type switch
+        set alias "ENTRANCE"
+        set device-identification enable
+        set lldp-transmission enable
+        set role lan
+        set snmp-index 51
+    next
+    edit "sw43"
+        set vdom "root"
+        set ip 192.168.12.49 255.255.255.240
+        set allowaccess ping
+        set type switch
+        set alias "LDISP"
+        set device-identification enable
+        set lldp-transmission enable
+        set role lan
+        set snmp-index 52
+    next
+    edit "sw44"
+        set vdom "root"
+        set ip 192.168.12.65 255.255.255.240
+        set allowaccess ping
+        set type switch
+        set alias "CAM1"
+        set device-identification enable
+        set lldp-transmission enable
+        set role lan
+        set snmp-index 53
+    next
+    edit "sw45"
+        set vdom "root"
+        set ip 192.168.12.81 255.255.255.240
+        set allowaccess ping
+        set type switch
+        set alias "CAM2"
+        set device-identification enable
+        set lldp-transmission enable
+        set role lan
+        set snmp-index 54
     next
 end
 config system physical-switch
@@ -2572,7 +2716,7 @@ config system dhcp server
         set dns-service local
         set default-gateway 192.168.12.1
         set netmask 255.255.255.224
-        set interface "VLAN40"
+        set interface "sw40"
         config ip-range
             edit 1
                 set start-ip 192.168.12.16
@@ -2584,7 +2728,7 @@ config system dhcp server
         set dns-service local
         set default-gateway 192.168.12.33
         set netmask 255.255.255.240
-        set interface "VLAN42"
+        set interface "sw42"
         config ip-range
             edit 1
                 set start-ip 192.168.12.34
@@ -2596,7 +2740,7 @@ config system dhcp server
         set dns-service local
         set default-gateway 192.168.12.49
         set netmask 255.255.255.240
-        set interface "VLAN43"
+        set interface "sw43"
         config ip-range
             edit 1
                 set start-ip 192.168.12.50
@@ -2608,7 +2752,7 @@ config system dhcp server
         set dns-service local
         set default-gateway 192.168.12.65
         set netmask 255.255.255.240
-        set interface "VLAN44"
+        set interface "sw44"
         config ip-range
             edit 1
                 set start-ip 192.168.12.66
@@ -2620,7 +2764,7 @@ config system dhcp server
         set dns-service default
         set default-gateway 192.168.12.81
         set netmask 255.255.255.240
-        set interface "VLAN45"
+        set interface "sw45"
         config ip-range
             edit 1
                 set start-ip 192.168.12.82
@@ -2697,42 +2841,6 @@ config firewall address
         set uuid 07bd0c00-8570-51f1-1a04-0b355d27ccf5
         set type interface-subnet
         set interface "po1"
-    next
-    edit "VLAN30 address"
-        set uuid 3252ea96-8572-51f1-8ffd-5cc73131f500
-        set type interface-subnet
-        set subnet 192.168.11.1 255.255.255.0
-        set interface "VLAN30"
-    next
-    edit "VLAN40 address"
-        set uuid 9229da7e-8572-51f1-9c56-c85de8d552ee
-        set type interface-subnet
-        set subnet 192.168.12.1 255.255.255.224
-        set interface "VLAN40"
-    next
-    edit "VLAN42 address"
-        set uuid d4942eb4-8572-51f1-19c7-87251df4b176
-        set type interface-subnet
-        set subnet 192.168.12.33 255.255.255.240
-        set interface "VLAN42"
-    next
-    edit "VLAN43 address"
-        set uuid 025dffbe-8573-51f1-1c8b-33098f3bc28d
-        set type interface-subnet
-        set subnet 192.168.12.49 255.255.255.240
-        set interface "VLAN43"
-    next
-    edit "VLAN44 address"
-        set uuid 39e56454-8573-51f1-0772-ef6f4d9a3630
-        set type interface-subnet
-        set subnet 192.168.12.65 255.255.255.240
-        set interface "VLAN44"
-    next
-    edit "VLAN45 address"
-        set uuid 7e163586-8573-51f1-ee8c-03963bdfed81
-        set type interface-subnet
-        set subnet 192.168.12.81 255.255.255.240
-        set interface "VLAN45"
     next
     edit "mgmt address"
         set uuid be66694a-85a9-51f1-6cff-184c38f6386b
@@ -2988,6 +3096,30 @@ config firewall address
     edit "VLAN10 subnet"
         set uuid 2f101fa0-e32a-51f1-b3f9-fb9cc9c8c0a9
         set subnet 10.10.0.0 255.255.240.0
+    next
+    edit "VLAN30 subnet"
+        set uuid ebedfc2a-e3be-51f1-1637-9d15dc264856
+        set subnet 192.168.11.0 255.255.255.0
+    next
+    edit "VLAN40 subnet"
+        set uuid ebef638a-e3be-51f1-86ba-7f7e5438c4da
+        set subnet 192.168.12.0 255.255.255.224
+    next
+    edit "VLAN42 subnet"
+        set uuid ebf0a8a8-e3be-51f1-69a7-40a4af785a10
+        set subnet 192.168.12.32 255.255.255.240
+    next
+    edit "VLAN43 subnet"
+        set uuid ebf1f0aa-e3be-51f1-2e83-9ada54afd0c3
+        set subnet 192.168.12.48 255.255.255.240
+    next
+    edit "VLAN44 subnet"
+        set uuid ebf33f00-e3be-51f1-ea65-df7e28b3df71
+        set subnet 192.168.12.64 255.255.255.240
+    next
+    edit "VLAN45 subnet"
+        set uuid ebf48ebe-e3be-51f1-77a6-1a56c404659d
+        set subnet 192.168.12.80 255.255.255.240
     next
 end
 config firewall multicast-address
@@ -4766,6 +4898,66 @@ config system vxlan
         set vni 10010
         set remote-ip "192.168.98.2"
     next
+    edit "vxlan30"
+        set interface "dmz"
+        set vni 30
+        set remote-ip "192.168.99.200" "192.168.99.201" "192.168.99.202"
+    next
+    edit "vxlan30-nas"
+        set interface "port9"
+        set vni 10030
+        set remote-ip "192.168.98.2"
+    next
+    edit "vxlan40"
+        set interface "dmz"
+        set vni 40
+        set remote-ip "192.168.99.200" "192.168.99.201" "192.168.99.202"
+    next
+    edit "vxlan40-nas"
+        set interface "port9"
+        set vni 10040
+        set remote-ip "192.168.98.2"
+    next
+    edit "vxlan42"
+        set interface "dmz"
+        set vni 42
+        set remote-ip "192.168.99.200" "192.168.99.201" "192.168.99.202"
+    next
+    edit "vxlan42-nas"
+        set interface "port9"
+        set vni 10042
+        set remote-ip "192.168.98.2"
+    next
+    edit "vxlan43"
+        set interface "dmz"
+        set vni 43
+        set remote-ip "192.168.99.200" "192.168.99.201" "192.168.99.202"
+    next
+    edit "vxlan43-nas"
+        set interface "port9"
+        set vni 10043
+        set remote-ip "192.168.98.2"
+    next
+    edit "vxlan44"
+        set interface "dmz"
+        set vni 44
+        set remote-ip "192.168.99.200" "192.168.99.201" "192.168.99.202"
+    next
+    edit "vxlan44-nas"
+        set interface "port9"
+        set vni 10044
+        set remote-ip "192.168.98.2"
+    next
+    edit "vxlan45"
+        set interface "dmz"
+        set vni 45
+        set remote-ip "192.168.99.200" "192.168.99.201" "192.168.99.202"
+    next
+    edit "vxlan45-nas"
+        set interface "port9"
+        set vni 10045
+        set remote-ip "192.168.98.2"
+    next
 end
 config system dns-database
     edit "svc.technotut.net"
@@ -4896,20 +5088,20 @@ config system dns-server
     next
     edit "dmz"
     next
-    edit "VLAN43"
-    next
-    edit "VLAN42"
-    next
-    edit "VLAN40"
-    next
-    edit "VLAN30"
-    next
     edit "port9"
         set mode forward-only
     next
     edit "sw20"
     next
     edit "sw10"
+    next
+    edit "sw30"
+    next
+    edit "sw40"
+    next
+    edit "sw42"
+    next
+    edit "sw43"
     next
 end
 config antivirus settings
@@ -6792,9 +6984,9 @@ config firewall policy
         set name "al-dj-et"
         set uuid 5da4087e-c384-51f1-8923-6f6e73136e8d
         set srcintf "sw10"
-        set dstintf "VLAN42"
+        set dstintf "sw42"
         set srcaddr "VLAN10 subnet"
-        set dstaddr "VLAN42 address"
+        set dstaddr "VLAN42 subnet"
         set action accept
         set schedule "always"
         set service "ALL"
@@ -6802,9 +6994,9 @@ config firewall policy
     edit 15
         set name "al-pa-av-ctrl"
         set uuid 2da78538-c393-51f1-46a3-9291a72e073e
-        set srcintf "VLAN40"
+        set srcintf "sw40"
         set dstintf "sw20"
-        set srcaddr "VLAN40 address"
+        set srcaddr "VLAN40 subnet"
         set dstaddr "VLAN20 subnet"
         set action accept
         set schedule "always"
@@ -6825,9 +7017,9 @@ config firewall policy
         set name "al-av-ledd"
         set uuid 7bb6ccc0-c398-51f1-87ec-0f21fffdb124
         set srcintf "sw20"
-        set dstintf "VLAN43"
+        set dstintf "sw43"
         set srcaddr "VLAN20 subnet"
-        set dstaddr "VLAN43 address"
+        set dstaddr "VLAN43 subnet"
         set action accept
         set schedule "always"
         set service "ALL"
@@ -6836,9 +7028,9 @@ config firewall policy
         set name "al-av-lbar"
         set uuid a715ed60-c39d-51f1-6a87-da716b787b41
         set srcintf "sw20"
-        set dstintf "VLAN30"
+        set dstintf "sw30"
         set srcaddr "VLAN20 subnet"
-        set dstaddr "VLAN30 address"
+        set dstaddr "VLAN30 subnet"
         set action accept
         set schedule "always"
         set service "ALL"
@@ -6902,9 +7094,9 @@ config firewall policy
         set name "al-mgmt-pa"
         set uuid 9bfb508e-df5c-51f1-2ae4-67193e0317a3
         set srcintf "mgmt"
-        set dstintf "VLAN40"
+        set dstintf "sw40"
         set srcaddr "mgmt address"
-        set dstaddr "VLAN40 address"
+        set dstaddr "VLAN40 subnet"
         set action accept
         set schedule "always"
         set service "ALL"
@@ -6913,9 +7105,9 @@ config firewall policy
         set name "al-rt-pa"
         set uuid e36ff1ac-df5e-51f1-41aa-8105aa1c0e8f
         set srcintf "wan1"
-        set dstintf "VLAN40"
+        set dstintf "sw40"
         set srcaddr "all"
-        set dstaddr "VLAN40 address"
+        set dstaddr "VLAN40 subnet"
         set action accept
         set schedule "always"
         set service "ALL"
@@ -6941,6 +7133,30 @@ config firewall policy
         set action accept
         set schedule "always"
         set service "SSH"
+    next
+    edit 32
+        set name "al-cam1-cam"
+        set uuid 766688f8-e361-51f1-563d-3bf51cebe65b
+        set srcintf "sw44"
+        set dstintf "dmz"
+        set srcaddr "VLAN44 subnet"
+        set dstaddr "k8s-cam1-nginx"
+        set action accept
+        set schedule "always"
+        set service "HTTP" "RTMP"
+        set comments "[k8s:cam1/al-cam1-cam] cam1 from camera VLAN44"
+    next
+    edit 36
+        set name "al-cam2-cam"
+        set uuid a3f7cd2c-e361-51f1-ed16-252c2c944ac2
+        set srcintf "sw45"
+        set dstintf "dmz"
+        set srcaddr "VLAN45 subnet"
+        set dstaddr "k8s-cam2-nginx"
+        set action accept
+        set schedule "always"
+        set service "HTTP" "RTMP"
+        set comments "[k8s:cam2/al-cam2-cam] cam2 from camera VLAN45"
     next
 end
 config firewall ssh local-key
