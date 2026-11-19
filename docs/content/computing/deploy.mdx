@@ -27,7 +27,7 @@ Clusters: 2 (`main`: becky, packard, marie / `nas`: ongeki)
 | Service CIDR (ClusterIP) | 10.96.0.0/12  |
 | LoadBalancer IP | 10.12.0.0/16, 10.14.0.0/24 |
 | Cluster Mesh | `main` (ID 1) と `nas` (ID 2)。clustermesh-apiserver はノードの IP の 32379 番 (NodePort) |
-| ノードの DNS | 133.15.64.100, 133.15.64.102 |
+| ノードの DNS | 192.168.99.129 (FortiGate の dmz。nas は 192.168.98.1) |
 | ストレージ | NFS, local PV |
 | GitOps | Argo CD |
 | コンテナレジストリ | クラスタ内 (`registry.svc.technotut.net`) |

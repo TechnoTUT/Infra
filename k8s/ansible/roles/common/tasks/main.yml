@@ -16,8 +16,9 @@
     unsafe_writes: true   # バインドマウントされた resolv.conf（コンテナ）でも書けるように
   become: true
 
-# ノードは TUT の DNS を参照するので、クラスタ内のレジストリの名前 (FortiGate の svc.technotut.net にある) は引けない。
-# containerd がイメージを取得できるよう、/etc/hosts に書く。
+# ノードは FortiGate の DNS を参照するので、レジストリの名前 (svc.technotut.net) も引けるが、
+# 起動の順序や DNS の不調に依らず containerd がイメージを取得できるよう、
+# /etc/hosts にも書く。
 - name: クラスタ内のレジストリの名前を /etc/hosts に書く
   ansible.builtin.lineinfile:
     path: /etc/hosts
