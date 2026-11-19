@@ -77,9 +77,7 @@
 # vxlan-cni: Pod の manifest で VLAN を選ぶ NAD (プラグインと DHCP デーモンは vxlan_cni ロール)。
 # 許可する VLAN がなければ NAD を置かない (プラグインは allowedVlans が空だと動かない)。
 - name: NetworkAttachmentDefinition（vxlan-cni）
-  ansible.builtin.include_tasks: apply.yml
-  vars:
-    apply_content: "{{ lookup('ansible.builtin.template', 'nad-vxlan.yaml.j2') }}"
+  ansible.builtin.include_tasks: vxlan-nad.yml
   when: multus_enabled and vxlan_cni_enabled and vxlan_cni_allowed_vlans | length > 0
 
 - name: 許可する VLAN がなければ vxlan-cni の NAD を消す

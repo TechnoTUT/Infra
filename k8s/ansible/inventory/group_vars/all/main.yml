@@ -59,9 +59,10 @@ vxlan_cni_remote: "192.168.99.129"   # FortiGate の dmz。VXLAN の相手 (VTEP
 vxlan_cni_vni_offset: 0              # VNI = VLAN ID + これ。FortiGate の VXLAN インターフェース (vxlan10, vxlan20) の VNI と合わせる
 vxlan_cni_nad_name: vxlan
 vxlan_cni_nad_namespace: kube-public
-# Pod が選べる VLAN。FortiGate に VXLAN と software switch (sw10, sw20) を作った VLAN だけを入れる。
+# Pod が選べる VLAN。FortiGate に VXLAN と software switch (sw10, sw20, sw30 ...) を作った VLAN だけを入れる。
+# VLAN 30 (LBAR) には DHCP サーバがないので、Pod をつなぐと IP アドレスが付かない (必要なら FortiGate に足す)。
 # 空のときは NAD を置かない。peers (ノード間の通信) は k8s グループの node_ip から作る。
-vxlan_cni_allowed_vlans: [10, 20]
+vxlan_cni_allowed_vlans: [10, 20, 30, 40, 42, 43, 44, 45]
 
 # ===== Cilium BGP（必須）=====
 # 全体で AS 64646 を使う（iBGP）。ピアは FortiGate の 192.168.99.129。
