@@ -33,7 +33,6 @@ ansible-playbook playbooks/reset.yml         # 全消去（RESET と入力）
 ## 構成
 | ロール | 対象 | 内容 |
 |---|---|---|
-| network | main の全ノード | VLAN 10・20 とブリッジ br10・br20（DHCP）。管理用 VLAN は手動 |
 | common | 全ノード | 不要パッケージの削除（Debian）、DNS の固定、swap 無効化、カーネルモジュール、sysctl、NFS クライアント。RHEL 系は NetworkManager の設定と firewalld の停止も |
 | containerd | 全ノード | Docker の apt / dnf リポジトリから containerd.io（更新は手動） |
 | nas | ongeki | `/nas` の確認、ホストの Samba の停止、SELinux のラベル（container_file_t） |
