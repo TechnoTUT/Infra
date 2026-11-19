@@ -46,8 +46,8 @@ ansible-playbook playbooks/reset.yml         # 全消去（RESET と入力）
 
 ## 手動で行うこと
 - 管理用ネットワーク（NIC と VLAN 100 の IP・ゲートウェイ・DNS）。ongeki は port9 の 192.168.98.2/30。
-- vxlan-cni で使う VLAN の FortiGate 側の設定（VXLAN と software switch。[手順](https://network.technotut.net/computing/deploy)）。
-- Cilium BGP の相手（FortiGate）側の設定。main と nas の間のポリシーと DNS（[NAS と Cluster Mesh の手順](https://network.technotut.net/computing/deploy)）。
+- vxlan-cni で使う VLAN の FortiGate 側の設定（VXLAN と software switch。[手順](https://network.technotut.net/compute/deploy)）。
+- Cilium BGP の相手（FortiGate）側の設定。main と nas の間のポリシーと DNS（[NAS と Cluster Mesh の手順](https://network.technotut.net/compute/deploy)）。
 
 ## テスト
 実機に触れずに検証する手順は [test/README.md](test/README.md)。

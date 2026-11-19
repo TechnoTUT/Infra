@@ -5,7 +5,7 @@ sidebar_position: 7
 ---
 
 ## 概要
-クラスタ、ノード、FortiGate を 5 分ごとに自動で確認して、**状態が変わったとき**だけ Discord に通知します。AI (Gemini) は使わないので、トークンを消費しません。LLM を使うのは、人が質問したときの [AI チャット](/computing/aichat) だけです。
+クラスタ、ノード、FortiGate を 5 分ごとに自動で確認して、**状態が変わったとき**だけ Discord に通知します。AI (Gemini) は使わないので、トークンを消費しません。LLM を使うのは、人が質問したときの [AI チャット](/compute/aichat) だけです。
 
 ```mermaid
 flowchart LR
@@ -70,7 +70,7 @@ ServiceAccount `healthcheck` に、ClusterRole `healthcheck-readonly` を与え�
 | 権限 | 非 root (UID 65533)、capability なし、ServiceAccount のトークンなし |
 | 判定 | `healthcheck` が各 Pod にアクセスして、期待値と比べる |
 
-2026-11-19 に、ノードの VLAN 設定 (`br10`) を外したときに、ノードの `/etc/resolv.conf` が空になって、クラスタ全体の外部 DNS が止まりました。この種の設定のズレを検知するための仕組みです。ノードの DNS は FortiGate (`192.168.99.129`) に固定しています ([DHCP・DNS](/network/spec))。
+2026-11-19 に、ノードの VLAN 設定 (`br10`) を外したときに、ノードの `/etc/resolv.conf` が空になって、クラスタ全体の外部 DNS が止まりました。この種の設定のズレを検知するための仕組みです。ノードの DNS は FortiGate (`192.168.99.129`) に固定しています ([DHCP・DNS](/network/fw#dhcpdns))。
 
 ## FortiGate の設定の変更検知 (fgtsnapshot)
 FortiGate の設定ファイルの取得 (backup) には、メンテナンスの権限が要ります。強すぎるので、読み取り専用のユーザーには与えていません。代わりに、設定の主要な表を読み取りの API で取って、前回との差を通知します。

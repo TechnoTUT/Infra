@@ -4,7 +4,7 @@ sidebar_label: ExternalDNS
 sidebar_position: 4
 ---
 
-Kubernetes の Service・Ingress のホスト名を、`svc.technotut.net` の DNS レコードとして FortiGate に自動登録します。ExternalDNS が Kubernetes の資源を監視し、専用の webhook が FortiGate の REST API を呼出してレコードを更新します。本書は、その全体構成と各部の設定を整理したものです。FortiGate 側の設定手順は [Kubernetes 構築方法](/computing/deploy) の「DNS (ExternalDNS と FortiGate)」を参照してください。
+Kubernetes の Service・Ingress のホスト名を、`svc.technotut.net` の DNS レコードとして FortiGate に自動登録します。ExternalDNS が Kubernetes の資源を監視し、専用の webhook が FortiGate の REST API を呼出してレコードを更新します。FortiGate 側の設定手順は [Kubernetes 構築方法](/compute/deploy) の「DNS (ExternalDNS と FortiGate)」を参照してください。
 
 <RepoCard repo="TechnoTUT/external-dns-fortigate-webhook" />
 

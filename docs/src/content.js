@@ -15,7 +15,7 @@ function toPage(file, mod) {
   const fm = mod.frontmatter ?? {};
   const parts = rel.split('/');
   const folder = parts.length > 1 ? parts[0] : null;
-  const section = resolveSection(folder);
+  const section = fm.section ?? resolveSection(folder);
   let path = fm.slug ?? '/' + rel.replace(/\/index$/, '');
   if (path === '') path = '/';
   return {

@@ -3,12 +3,10 @@ title: 基本サービス
 sidebar_position: 1
 ---
 
-網内で提供している基本的なサービスをまとめています。
-
 ## DNS
 網内ではFortiGateによるDNS(名前解決)サービスを提供しています。\
 DNSサーバのアドレスは各VLANのデフォルトゲートウェイ(FortiGate)です。\
-`*.svc.technotut.net` の名前は、コンテナ基盤のサービスに合わせて自動で登録されます。\
+`*.svc.technotut.net` は、コンテナ基盤のサービスに合わせて自動で登録されます。\
 なお、DHCPによって自動設定が行われるため、ほとんどの場合は手動で設定を行う必要はありません。
 
 ## NTP
@@ -28,31 +26,3 @@ URLは http://time.svc.technotut.net/ です。
 ## NAS (ファイル共有)
 網内では、Samba によるファイル共有サーバを `nas` クラスタ (`ongeki`) 上で提供しています。\
 ホスト名は `drive.svc.technotut.net` (`10.14.0.128`、TCP 445) です。Windows からは `\\drive.svc.technotut.net\nas` で接続できます。
-
-## 稼働中のサービス一覧
-
-コンテナ基盤 ([k8s/manifest/](https://github.com/TechnoTUT/Infra/tree/main/k8s/manifest)) およびネットワーク上で稼働している主なサービスの一覧です。
-
-### インフラ・基本サービス
-
-| サービス | ホスト名 / IP | ポート | 内容 |
-| :--- | :--- | :--- | :--- |
-| DNS (FortiGate) | 各 VLAN のデフォルトゲートウェイ | UDP/TCP 53 | `svc.technotut.net` ゾーンの名前解決 |
-| NTP | `192.168.200.5` | UDP 123 | 網内の時刻同期 (IX3110) |
-| NAS (Samba) | `drive.svc.technotut.net` (`10.14.0.128`) | TCP 445 | 共有ストレージ (`/nas`) |
-| Speedtest | `spdtest.svc.technotut.net` | HTTP / HTTPS | 接続速度測定 |
-| Time | `time.svc.technotut.net` | HTTP | 時刻表示 |
-| Argo CD | `cd.svc.technotut.net` | HTTP / HTTPS | Kubernetes GitOps 管理 UI |
-| コンテナレジストリ | `registry.svc.technotut.net` (`10.96.0.100`) | HTTP | クラスタ内専用イメージレジストリ |
-
-### 演出・メディア系サービス
-
-| サービス | ホスト名 / IP | ポート | 内容・詳細 |
-| :--- | :--- | :--- | :--- |
-| plmux | `plmux.svc.technotut.net` | HTTP | PRO DJ LINK モニター・曲履歴・Ableton Link ([plmux](/service/plmux)) |
-| Art-Net → DMX 変換 | `dmx.svc.technotut.net` (`10.12.240.254`) | UDP 6454 / HTTP | LED PAR・Moving Head 用変換 ([Art-Net](/service/art-net)) |
-| 照明シミュレータ | `dmxsim.svc.technotut.net` (`10.12.241.254`) | UDP 6454 / HTTP | 3D 照明シミュレータ ([照明シミュレータ](/service/dmxsim)) |
-| RTMP 配信サーバ | `live.svc.technotut.net` | RTMP 1935 / HTTP | OBS・VLC 向け RTMP 配信・視聴 ([Live](/service/live)) |
-| カメラ中継 (`cam1` / `cam2`) | `cam1.svc.technotut.net` (`10.12.77.252`) / `cam2` (`.251`) | RTMP 1935 / HTTP | ソニー製カメラからの RTMP 中継 ([Live](/service/live#ソニー製カメラからの配信)) |
-| NDI Discovery Server | `ndi.svc.technotut.net` (`10.12.230.254`) | TCP 5959 | AV VLAN 向け NDI ソース登録・検索 ([NDI](/service/ndi)) |
-| デジタルミキサー | `pa.svc.technotut.net` | HTTP | Soundcraft Ui 操作画面 ([PA](/service/pa)) |

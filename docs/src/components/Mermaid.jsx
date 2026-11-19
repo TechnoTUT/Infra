@@ -121,18 +121,19 @@ function DiagramCanvas({ svg, allowWheelZoom = false, toolbarExtra = null }) {
   );
 }
 
-export default function Mermaid({ code, fullPage = false, backTo = '/', fullPageTo = null }) {
+export default function Mermaid({ code, fullPage = false, backTo = '/', fullPageTo = null, forceTheme = null }) {
   const id = 'mmd' + useId().replace(/[^a-zA-Z0-9]/g, '');
   const [svg, setSvg] = useState('');
-  const [theme, setTheme] = useState('light');
+  const [theme, setTheme] = useState(forceTheme ?? 'light');
   const [fullscreen, setFullscreen] = useState(false);
 
   useEffect(() => {
+    if (forceTheme) return undefined; // 暗色固定ページなどでテーマ追従を止める
     const read = () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light');
     read();
     window.addEventListener('themechange', read);
     return () => window.removeEventListener('themechange', read);
-  }, []);
+  }, [forceTheme]);
 
   useEffect(() => {
     let cancelled = false;
