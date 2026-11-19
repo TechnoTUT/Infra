@@ -39,32 +39,32 @@ const overview = [
   {
     title: 'DJ・演出同期',
     tags: [{ label: 'PRO DJ LINK', to: '/service/prodjlink' }, { label: 'plmux', to: '/service/plmux' }, { label: 'Ableton Link' }, { label: 'OSC' }],
-    body: <>DJ ブースの再生状態やテンポを Kubernetes 上の {c('plmux')} が取得し、Ableton Link や OSC で VJ ソフトや照明制御 ({c('dmxctl')}) へ同期します。</>,
+    body: <>DJ ブースの再生状態やテンポを Kubernetes 上のアプリケーションが取得し、Ableton Link や OSC で VJ ソフトや照明へ同期します。</>,
   },
   {
     title: '映像伝送',
     tags: [{ label: 'NDI', to: '/service/ndi' }, { label: 'utone-linux', to: '/service/utone-linux' }],
-    body: <>カメラ・PC・VJ 間の映像は AV ネットワーク (VLAN 20) 上の NDI で低遅延に共有し、プロジェクタ出力やブースディスプレイ ({c('ldisp')})、照明の色連動に活用します。</>,
+    body: <>映像は NDI で低遅延に伝送し、プロジェクタやブースディスプレイ、照明の色連動に活用します。</>,
   },
   {
     title: '映像配信',
     tags: [{ label: 'RTMP', to: '/service/live' }],
-    body: <>カメラからの映像は Kubernetes 上の中継・配信サーバへ RTMP で集約し、OBS での取り込みや会場外への配信に利用します。</>,
+    body: <>カメラからの映像は Kubernetes 上の中継サーバへ RTMP で集約し、配信に利用します。</>,
   },
   {
     title: '照明制御',
     tags: [{ label: 'Art-Net', to: '/service/art-net' }, { label: 'dmxsim', to: '/service/dmxsim' }],
-    body: <>{c('dmxctl')} などから送出された Art-Net 信号で LED BAR や DMX 灯体を制御し、事前検証用の 3D シミュレータにも接続できます。</>,
+    body: <>Kubernetes 上のアプリケーションでDMX/Art-Net信号を送出し、 灯体を制御します。事前検証用の 3D シミュレータにも接続できます。</>,
   },
   {
     title: '音響制御',
     tags: [{ label: 'PA', to: '/service/pa' }],
-    body: <>独立した PA 用 VLAN 上のデジタルミキサー (Soundcraft Ui12) を、会場 Wi-Fi 経由の iPad や {c('soundcraft-ui-mcp')} から操作します。</>,
+    body: <>デジタルミキサーを、会場 Wi-Fi 経由で iPad や MCP経由でAIエージェントから操作します。</>,
   },
   {
     title: 'ネットワーク・コンテナ基盤',
-    tags: [{ label: '通信基盤', to: '/network' }, { label: '計算基盤', to: '/computing' }],
-    body: <>FortiGate 100D とコアスイッチ (N-1) が各 VLAN の制御とルーティングを担い、Kubernetes クラスタが各種サービスを冗長構成で提供します。</>,
+    tags: [{ label: 'Network', to: '/network' }, { label: 'Compute', to: '/computing' }],
+    body: <>コアスイッチが各 VLAN の制御とルーティングを担い、Kubernetes クラスタが各種サービスを冗長構成で提供します。</>,
   },
 ];
 
@@ -87,9 +87,9 @@ export default function AboutPage() {
       </section>
 
       <section className="about-section">
-        <h2 className="about-h">会場内ネットワークの全体像</h2>
+        <h2 className="about-h">ネットワークの全体像</h2>
         <p className="about-intro">
-          会場内では、用途ごとに分割した VLAN と <Link to="/computing">Kubernetes コンテナ基盤</Link> を中心に、DJ・VJ・照明・PA・映像配信の各システムが連携して動作しています。
+          用途ごとに分割した VLAN と <Link to="/computing">Kubernetes コンテナ基盤</Link> を中心に、DJ・映像・照明・音響制御の各システムが連携して動作しています。
         </p>
         <Mermaid code={overviewDiagram} fullPageTo="/diagram" forceTheme="dark" />
         <ul className="about-list">
@@ -110,7 +110,7 @@ export default function AboutPage() {
       </section>
       <section className="about-section">
         <h2 className="about-h">Source</h2>
-        <p className="about-intro">このページ及び図・コードは、TechnoTUTのGitHubリポジトリで管理されています。</p>
+        <p className="about-intro">このページは、TechnoTUTのGitHubリポジトリで管理されています。</p>
         <div className="about-repo"><RepoCard repo="TechnoTUT/Infra" /></div>
       </section>
       <Footer />
