@@ -168,3 +168,28 @@ subjects:
 - kind: ServiceAccount
   name: aichat
   namespace: aichat
+---
+# ノードの cordon / uncordon (spec.unschedulable の変更)。ノード名で絞り、ラベルや taint を変える権限は別に持たない
+# (patch は spec 全体に効くので、アプリ側でも unschedulable だけを送る)。
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: aichat-node-cordon
+rules:
+- apiGroups: [""]
+  resources: [nodes]
+  resourceNames: [becky, packard, marie]
+  verbs: [patch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: aichat-node-cordon
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: aichat-node-cordon
+subjects:
+- kind: ServiceAccount
+  name: aichat
+  namespace: aichat

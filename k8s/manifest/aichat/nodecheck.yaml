@@ -1,0 +1,55 @@
+# nodecheck: 全ノードで動く小さな HTTP サーバー。ホストの /etc と /dev を読み取り専用で見て、設定のズレ
+# (resolv.conf が空、USB デバイスがない、ディスクの空きなど) を事実として返す。判定は healthcheck が行う (LLM は使わない)。
+# ソースは TechnoTUT/infra-assistant の app/nodecheck.py。ServiceAccount のトークンは付けない。
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: nodecheck
+  labels:
+    app: nodecheck
+spec:
+  selector:
+    matchLabels:
+      app: nodecheck
+  template:
+    metadata:
+      labels:
+        app: nodecheck
+    spec:
+      automountServiceAccountToken: false
+      tolerations:
+      - operator: Exists          # control-plane (becky) も含めて全ノード
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65533
+        runAsGroup: 65533
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: nodecheck
+        image: ghcr.io/technotut/infra-assistant:sha-dfe20ac
+        imagePullPolicy: IfNotPresent
+        command: [python, -m, app.nodecheck]
+        env:
+        - name: NODE_NAME
+          valueFrom: { fieldRef: { fieldPath: spec.nodeName } }
+        ports:
+        - { name: http, containerPort: 9100, protocol: TCP }
+        readinessProbe:
+          httpGet: { path: /healthz, port: http }
+          periodSeconds: 20
+        resources:
+          requests: { cpu: 5m, memory: 24Mi }
+          limits: { memory: 64Mi }
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities: { drop: [ALL] }
+        volumeMounts:
+        - { name: host-etc, mountPath: /host/etc, readOnly: true }
+        - { name: host-dev, mountPath: /host/dev, readOnly: true }
+      volumes:
+      - name: host-etc
+        hostPath: { path: /etc, type: Directory }
+      - name: host-dev
+        hostPath: { path: /dev, type: Directory }
