@@ -34,6 +34,7 @@ sidebar_position: 6
 | `get_events` | `kubectl get events` 相当 |
 | `ping` / `dns_lookup` / `tcp_check` / `http_check` | Pod から宛先への ping、DNS (nslookup 相当)、TCP 接続、HTTP の状態を調べる (Pod から見た結果) |
 | `vlan_probe` | VLAN 10・20 の側から ping / arping / traceroute / DNS / TCP / HTTP を出す。必要になったとき、検証用の Pod (netprobe) をその VLAN に VXLAN でつないで起動し、使い終わって 5 分で消す |
+| `fortigate_overview` / `fortigate_policies` / `fortigate_dhcp_leases` / `fortigate_routes` / `fortigate_interfaces` | FortiGate の読み取り (負荷、ポリシーとヒット数、DHCP のリース、経路、インターフェース)。書き込みはできない |
 | `list_repo_files` / `read_repo_file` / `search_repo` | git-sync が取り込んだリポジトリを読む |
 
 リポジトリは、サイドカーの git-sync が TechnoTUT/Infra の main を 5 分ごとに取り込みます。
@@ -59,6 +60,11 @@ sidebar_position: 6
 
 - 新しい問題と復旧を、1 回の実行につき 1 つのメッセージにまとめます。**同じアラームは、復旧するまで再通知しません。** 状態は ConfigMap に持ち、一時的な状態では通知しません。
 - 手元で試すには `DRY_RUN=1 python -m app.healthcheck` (通知も状態の保存もしません)。
+
+## FortiGate の読み取りと変更の検知
+- FortiGate には、読み取り専用のプロファイル `readonly-api` と API ユーザー `infra-readonly` (trusthost は dmz の `192.168.99.128/25`) があります。トークンは Secret `fortigate-readonly` (キー `token`) に入っていて、Ansible Vault の `vault_fortigate_readonly_token` に入れておくと `aichat.yml` が作ります。
+- 設定ファイルの取得 (backup) にはメンテナンス権限が要るので与えていません。代わりに、CronJob `fgtsnapshot` が 30 分ごとに、ポリシー、アドレス、サービス、インターフェース、VXLAN、software switch、DHCP、DNS、静的経路の表を読み取りの API で取って、前回との差を Discord に知らせます (LLM は使わない。最初の実行は基準を作るだけ)。fortigate-operator による変更も含みます。
+- ヘルスチェックは、FortiGate の API に届くか、CPU とメモリが 90% 未満かも見ます。
 
 ## 操作の承認の記録と制限
 - 承認ボタンの承認と却下は、Discord に記録されます (操作、結果、送信元の IP、時刻)。ログインがないので、誰かは分かりません。送信元の IP が手がかりです。

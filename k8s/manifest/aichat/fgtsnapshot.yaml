@@ -1,0 +1,83 @@
+# FortiGate の設定の変更検知。LLM は使わない。30 分ごとに、読み取りの API で主要な設定のテーブルを取って、
+# 前回との差を Discord に知らせる (ソースは TechnoTUT/infra-assistant の app/fgtsnapshot.py)。
+# スナップショットは ConfigMap fortigate-snapshot に、この Job 自身が作って書く。FortiGate の API は dmz のホストからしか届かない
+# (Pod の通信はノードの IP に NAT される)。
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: fgtsnapshot
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: fgtsnapshot
+rules:
+- apiGroups: [""]
+  resources: [configmaps]
+  verbs: [create]
+- apiGroups: [""]
+  resources: [configmaps]
+  resourceNames: [fortigate-snapshot]
+  verbs: [get, update]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: fgtsnapshot
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: fgtsnapshot
+subjects:
+- kind: ServiceAccount
+  name: fgtsnapshot
+  namespace: aichat
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: fgtsnapshot
+spec:
+  schedule: "*/30 * * * *"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 300
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      activeDeadlineSeconds: 180
+      template:
+        metadata:
+          labels:
+            app: fgtsnapshot
+        spec:
+          serviceAccountName: fgtsnapshot
+          restartPolicy: Never
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65533
+            runAsGroup: 65533
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+          - name: fgtsnapshot
+            image: ghcr.io/technotut/infra-assistant:sha-8a7f28f
+            imagePullPolicy: IfNotPresent
+            command: [python, -m, app.fgtsnapshot]
+            env:
+            - name: POD_NAMESPACE
+              valueFrom: { fieldRef: { fieldPath: metadata.namespace } }
+            - name: FORTIGATE_TOKEN
+              valueFrom:
+                secretKeyRef: { name: fortigate-readonly, key: token }
+            - name: DISCORD_WEBHOOK_URL
+              valueFrom:
+                secretKeyRef: { name: aichat, key: discord-webhook-url, optional: true }
+            resources:
+              requests: { cpu: 20m, memory: 64Mi }
+              limits: { memory: 192Mi }
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: { drop: [ALL] }

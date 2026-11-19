@@ -44,6 +44,10 @@ spec:
             secretKeyRef: { name: aichat, key: gemini-api-key, optional: true }
         # VLAN 側からの診断 (vlan_probe) で、必要なときに起動する Pod のイメージ。netprobe 名前空間に作る
         - { name: NETPROBE_IMAGE, value: "ghcr.io/technotut/netprobe:main" }
+        - name: FORTIGATE_TOKEN
+          valueFrom:
+            # FortiGate の読み取り専用 API ユーザー (infra-readonly)。なければ FortiGate のツールは使えない
+            secretKeyRef: { name: fortigate-readonly, key: token, optional: true }
         - name: DISCORD_WEBHOOK_URL
           valueFrom:
             # 見つけた問題の報告先。なければ報告しない (チャットは動く)
