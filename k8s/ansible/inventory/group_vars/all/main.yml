@@ -26,8 +26,8 @@ addons_helm_timeout: 30m
 # ===== 作業用ディレクトリ（control_plane のホーム）=====
 addons_dir: "{{ ansible_facts.env.HOME }}/.k8s-addons"
 
-# ===== ノードの DNS（TUT の DNS サーバ。https://imc.tut.ac.jp/hosting/faq-dns-server.html）=====
-node_dns_servers: ["133.15.64.100", "133.15.64.102"]
+# ===== ノードの DNS（FortiGate。dmz 側の IP。外部の名前は FortiGate が TUT の DNS に転送し、svc.technotut.net は FortiGate が答える）=====
+node_dns_servers: ["192.168.99.129"]
 node_dns_search: srv.utone.technotut.net
 
 # ===== ノードのパッケージ（全ノードで同じ構成にする。余計なものは入れない）=====
@@ -124,7 +124,7 @@ argocd_hostname: "cd.{{ dns_zone }}"
 # ===== クラスタ内のコンテナレジストリ =====
 # 自前でビルドしたイメージ (ndi など) を置く。外部には公開せず、固定の ClusterIP で提供する (HTTP)。
 # 名前は svc.technotut.net に固定のレコードとして載せる (dns_static_records)。クラスタ内の Pod は CoreDNS から
-# FortiGate に問い合わせて引く。ノードは TUT の DNS を参照するので、/etc/hosts に書く (common ロール)。
+# FortiGate に問い合わせて引く。ノードは FortiGate の DNS を参照するので引けるが、起動の順序に依らないよう /etc/hosts にも書く (common ロール)。
 # ノードの containerd は Cilium の socket LB で ClusterIP に届く。
 # イメージの参照は {{ registry_host }}/<名前>:<タグ> (例: registry.svc.technotut.net/technotut/ndi-discovery-server:main)。
 registry_enabled: true

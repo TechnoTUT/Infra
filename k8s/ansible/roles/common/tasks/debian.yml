@@ -29,7 +29,7 @@
     cache_valid_time: 3600
   become: true
 
-# DHCP（dhcpcd）に resolv.conf を上書きさせず、DNS は TUT の DNS サーバに固定する。
+# DHCP（dhcpcd）に resolv.conf を上書きさせず、DNS は FortiGate に固定する。
 - name: dhcpcd に resolv.conf を触らせない
   ansible.builtin.lineinfile:
     path: /etc/dhcpcd.conf

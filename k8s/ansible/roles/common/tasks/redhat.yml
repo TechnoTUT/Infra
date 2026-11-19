@@ -15,7 +15,7 @@
     state: present
   become: true
 
-# Debian のノードと同じく、DNS は TUT の DNS サーバに固定する（resolv.conf は common ロールが書く）。
+# Debian のノードと同じく、DNS は FortiGate に固定する（resolv.conf は common ロールが書く）。
 - name: NetworkManager に resolv.conf を触らせない
   ansible.builtin.copy:
     dest: /etc/NetworkManager/conf.d/90-k8s-dns.conf
