@@ -1,0 +1,5 @@
+# aichat の書き込み権限 (他の namespace の Role / RoleBinding)。Argo CD の Application `aichat-rbac` がデプロイする。
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - rbac.yaml
