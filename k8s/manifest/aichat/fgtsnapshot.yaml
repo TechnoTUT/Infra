@@ -62,7 +62,7 @@ spec:
               type: RuntimeDefault
           containers:
           - name: fgtsnapshot
-            image: ghcr.io/technotut/infra-assistant:sha-21e56f6
+            image: ghcr.io/technotut/infra-assistant:sha-ec630ab
             imagePullPolicy: IfNotPresent
             command: [python, -m, app.fgtsnapshot]
             env:
