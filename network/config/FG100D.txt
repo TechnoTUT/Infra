@@ -2749,7 +2749,6 @@ config system dhcp server
         end
     next
     edit 8
-        set dns-service local
         set default-gateway 192.168.12.65
         set netmask 255.255.255.240
         set interface "sw44"
@@ -2759,9 +2758,9 @@ config system dhcp server
                 set end-ip 192.168.12.78
             next
         end
+        set dns-server1 10.12.77.253
     next
     edit 9
-        set dns-service default
         set default-gateway 192.168.12.81
         set netmask 255.255.255.240
         set interface "sw45"
@@ -2771,6 +2770,7 @@ config system dhcp server
                 set end-ip 192.168.12.94
             next
         end
+        set dns-server1 10.12.77.254
     next
 end
 config firewall address
@@ -3120,6 +3120,18 @@ config firewall address
     edit "VLAN45 subnet"
         set uuid ebf48ebe-e3be-51f1-77a6-1a56c404659d
         set subnet 192.168.12.80 255.255.255.240
+    next
+    edit "k8s-cam2-coredns"
+        set uuid 40149e4e-e3ce-51f1-2615-9076f7e1260e
+        set comment "[k8s:cam2/k8s-cam2-coredns] LB IP of Service coredns-service (cam2)"
+        set associated-interface "dmz"
+        set subnet 10.12.77.254 255.255.255.255
+    next
+    edit "k8s-cam1-coredns"
+        set uuid 406112a6-e3ce-51f1-5723-31546feb9a89
+        set comment "[k8s:cam1/k8s-cam1-coredns] LB IP of Service coredns-service (cam1)"
+        set associated-interface "dmz"
+        set subnet 10.12.77.253 255.255.255.255
     next
 end
 config firewall multicast-address
@@ -7157,6 +7169,30 @@ config firewall policy
         set schedule "always"
         set service "HTTP" "RTMP"
         set comments "[k8s:cam2/al-cam2-cam] cam2 from camera VLAN45"
+    next
+    edit 51
+        set name "al-cam1-dns"
+        set uuid 4086a4da-e3ce-51f1-64d6-61454716aef1
+        set srcintf "sw44"
+        set dstintf "dmz"
+        set srcaddr "VLAN44 subnet"
+        set dstaddr "k8s-cam1-coredns"
+        set action accept
+        set schedule "always"
+        set service "DNS"
+        set comments "[k8s:cam1/al-cam1-dns] cam1 CoreDNS from camera VLAN44"
+    next
+    edit 50
+        set name "al-cam2-dns"
+        set uuid 402f8722-e3ce-51f1-fef8-0f6eb4f76fb3
+        set srcintf "sw45"
+        set dstintf "dmz"
+        set srcaddr "VLAN45 subnet"
+        set dstaddr "k8s-cam2-coredns"
+        set action accept
+        set schedule "always"
+        set service "DNS"
+        set comments "[k8s:cam2/al-cam2-dns] cam2 CoreDNS from camera VLAN45"
     next
 end
 config firewall ssh local-key
