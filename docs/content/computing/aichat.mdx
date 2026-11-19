@@ -12,7 +12,7 @@ sidebar_position: 6
 | ソース | [TechnoTUT/infra-assistant](https://github.com/TechnoTUT/infra-assistant) (Python、FastAPI、google-genai。依存は uv で管理) |
 | イメージ | `ghcr.io/technotut/infra-assistant:main` (infra-assistant リポジトリの GitHub Actions がビルド) |
 | マニフェスト | [`k8s/manifest/aichat/`](https://github.com/TechnoTUT/Infra/tree/main/k8s/manifest/aichat) (Argo CD の Application `aichat`) |
-| モデル | `gemini-3.8-flash` (Gemini API)。Deployment の環境変数 `GEMINI_MODEL` で変える。1 問でツールを呼ぶたびに 1 リクエストを使うので、RPD の少ないモデルは避ける |
+| モデル | `gemini-3.8-flash` (Gemini API)。Deployment の環境変数 `GEMINI_MODEL` で変える。1 問でツールを呼ぶたびに 1 リクエストを使うので、レート制限 (RPM・TPM) が低いモデルは避ける。有料枠なので、使った分だけ課金される |
 | URL | http://ai.svc.technotut.net (Cilium Ingress。VLAN 10・20 から HTTP を許可) |
 | 問題の報告 | 調べて問題が見つかると、ツール `report_issue` が Discord の Webhook に送る。URL は Ansible Vault の `vault_discord_webhook_url` (任意) に保管し、Secret `aichat` のキー `discord-webhook-url` に入れる |
 | API キー | Ansible の `aichat.yml` が Secret `aichat` を作成。Ansible Vault の `vault_gemini_api_key` に保管 |
@@ -43,14 +43,14 @@ sidebar_position: 6
 - 書き込みは、画面の確認ボタンで承認した操作だけです。ClusterRole `aichat-operator` (Pod の `delete`、Deployment・StatefulSet・DaemonSet の `patch`、Job の `create`) と、argocd の Role (Application の `patch`) を、アプリの namespace (cam1、cam2、dmxctl、dmxsim、live、ndi、plmux、speedtest、time) にだけ RoleBinding で与えます。kube-system、argocd のほかのリソース、cilium、arc-*、external-dns、registry、fortigate-operator、aichat 自身は対象外です。マニフェストは [`k8s/manifest/aichat-rbac/`](https://github.com/TechnoTUT/Infra/tree/main/k8s/manifest/aichat-rbac) (Argo CD の Application `aichat-rbac`) にあります。
 - アプリでも、読める種類を `app/tools.py` の `KINDS` に限っています。種類を足すときは、ClusterRole と `KINDS` の両方に足します。
 - リポジトリの `vault.yml`、`.git`、鍵らしいファイル (`*.key`、`*.pem`) は読みません。
-- Gemini API の無料枠のため、送った内容は Google のサービス改善に使われることがあります。Secret を読めないようにしているのはこのためでもあります。ただし Pod のログはそのまま送るので、ログに秘密を出すアプリには注意します。
+- 質問とクラスタの情報は Gemini API (有料枠) に送られます。外部のサービスに送ることに変わりはないので、Secret を読めないようにしています。ただし Pod のログはそのまま送るので、ログに秘密を出すアプリには注意します。
 - ネットワーク診断は、ループバックとリンクローカル (クラウドのメタデータなど) には送りません。TCP と HTTP は決まったポートだけ、HTTP は本文を読まず状態とヘッダーだけ、全体で 1 分に 30 回までです。ping は特権なしの ICMP (Pod の `net.ipv4.ping_group_range` で許可されている必要がある) を使います。
 - `vlan_probe` の Pod は、aichat が `netprobe` 名前空間に作ります。aichat に与える権限はその名前空間の Pod の get / list / create / delete だけで、Pod の仕様 (イメージ、NET_RAW と NET_ADMIN だけの capability、root、ReadOnly のファイルシステム) は aichat のコードに固定です。AI が選べるのは VLAN だけです。同時に 2 つまで (ResourceQuota)、15 分で自動停止 (`activeDeadlineSeconds`)、API (8080) には aichat からだけつなげます (NetworkPolicy)。ソースは infra-assistant の `netprobe/`、マニフェストは [`k8s/manifest/netprobe/`](https://github.com/TechnoTUT/Infra/tree/main/k8s/manifest/netprobe) です。対象の VLAN は、`vxlan_cni_allowed_vlans` と `app/netdiag.py` の `NETPROBE_VLANS` の両方に足します。
 - Discord への報告は、10 分に 5 件まで、同じ題名は 30 分は再送せず、メンションは無効、秘密らしい文字列は伏せて送ります。画面にログインがないので、誰かの質問で報告が送られることがあります。
 - 画面にログインはありません。VLAN 10・20 の誰でも使えます。同時に動かす質問は 2 つまで (`MAX_CONCURRENT`) です。
 
 ## 導入
-1. [Google AI Studio](https://aistudio.google.com/apikey) で API キーを発行します (無料枠)。
+1. [Google AI Studio](https://aistudio.google.com/apikey) で API キーを発行します (有料枠。課金を有効にしたプロジェクトで発行します)。
 2. Ansible Vault に入れて、Secret を作ります。
    ```bash
    cd k8s/ansible

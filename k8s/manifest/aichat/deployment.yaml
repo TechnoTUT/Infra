@@ -37,7 +37,7 @@ spec:
         # gemini-4-hydrogen と gemma-4-31b-it は混雑で 503 を返し続けたため Flash にする
         - { name: GEMINI_MODEL, value: gemini-3.8-flash }
         - { name: REPO_DIR, value: /repo/git/current }
-        - { name: MAX_CONCURRENT, value: "2" }   # 無料枠のレート制限に合わせて同時に動かす質問を絞る
+        - { name: MAX_CONCURRENT, value: "2" }   # レート制限と課金を抑えるため、同時に動かす質問を絞る
         - name: GEMINI_API_KEY
           valueFrom:
             # Secret がなくても起動し、画面に「API キー未設定」と出す
