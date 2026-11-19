@@ -252,7 +252,7 @@ flowchart LR
 Ansible の `vxlan_cni` ロールがプラグインと DHCP デーモン (`cni-dhcp.service`) を全ノードに入れ、`addons` ロールが NAD を作ります。
 
 #### FortiGate の設定
-VLAN 10・20 は、VLAN インターフェースと VXLAN インターフェースを software switch (`sw10`, `sw20`) にまとめています。ゲートウェイの IP アドレス、DHCP サーバ、DNS サーバ、ポリシーは software switch に付いています (VLAN 10 のキャプティブポータルも `sw10` にあります)。
+VLAN 10・20・30・40・42〜45 は、VLAN インターフェースと VXLAN インターフェースを software switch (`sw10`, `sw20`) にまとめています。ゲートウェイの IP アドレス、DHCP サーバ、DNS サーバ、ポリシーは software switch に付いています (VLAN 10 のキャプティブポータルも `sw10` にあります)。
 
 | software switch | メンバー | VXLAN の相手 |
 |---|---|---|
