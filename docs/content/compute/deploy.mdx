@@ -4,7 +4,7 @@ sidebar_label: 構築方法
 sidebar_position: 2
 ---
 
-## Special thanks\
+## Special thanks
 [@launchpencil](https://github.com/launchpencil): Kubernetes入門支援
 
 ## 環境
@@ -47,7 +47,8 @@ Clusters: 2 (`main`: becky, packard, marie / `nas`: ongeki)
 
 ## 1. 事前準備
 ### ネットワーク (管理用 VLAN は手動)
-各ノードの NIC と、管理用の VLAN 100 (IP アドレス、ゲートウェイ、DNS) は手動で設定します。この設定がないと、Ansible でノードに接続できません。\
+各ノードの NIC と、管理用の VLAN 100 (IP アドレス、ゲートウェイ、DNS) は手動で設定します。この設定がないと、Ansible でノードに接続できません。
+
 VLAN 10・20・30・40・42〜45 は、ノードにトランクやブリッジを作らず、vxlan-cni が VXLAN でつなぎます。
 
 `/etc/network/interfaces` の例 (becky。packard と marie は NIC 名が `enp2s0`) です。
@@ -130,7 +131,8 @@ spec:
 プールを分けているのは、IP を指定しない Service が、他の Service の固定 IP を先に取ってしまうのを防ぐためです。
 
 ## 4. ルーター (FortiGate) の BGP 設定
-Cilium は、LoadBalancer の IP と Pod CIDR を BGP で広報します。\
+Cilium は、LoadBalancer の IP と Pod CIDR を BGP で広報します。
+
 AS 番号は全体で `64646` (iBGP)、相手は FortiGate です。
 
 | クラスタ | ノード | 相手 | 広報する範囲 |
@@ -138,7 +140,8 @@ AS 番号は全体で `64646` (iBGP)、相手は FortiGate です。
 | `main` | becky, packard, marie | 192.168.99.129 (`dmz`) | `10.12.0.0/16`、`10.15.0.0/16` |
 | `nas` | ongeki | 192.168.98.1 (`port9`) | `10.14.0.0/24`、`10.13.0.0/16` |
 
-iBGP では、受け取った経路を他の iBGP ピアに再広報しないため、FortiGate 側でノードを route reflector client にします。\
+iBGP では、受け取った経路を他の iBGP ピアに再広報しないため、FortiGate 側でノードを route reflector client にします。
+
 設定例:
 ```
 config router bgp
@@ -165,7 +168,8 @@ end
 ```
 
 ### FortiGate の Kubernetes SDN コネクタ
-FortiGate は Kubernetes の API から Service の IP を取得し、動的アドレス (`k8s-svc`、`k8s-ingress`、`k8s-nas-svc`) としてポリシーに使います。コネクタはクラスタごとに作ります。\
+FortiGate は Kubernetes の API から Service の IP を取得し、動的アドレス (`k8s-svc`、`k8s-ingress`、`k8s-nas-svc`) としてポリシーに使います。コネクタはクラスタごとに作ります。
+
 `k8s-svc` には全 Service の IP が入るため、アプリケーションごとのポリシーの宛先には使いません。アプリケーションごとのポリシーでは、fortigate-operator の `FirewallAddress` (`serviceRef`) で、その Service の LB IP だけを宛先にします ([fortigate-operator の実装](/compute/fortigate-operator) を参照)。
 
 | コネクタ | クラスタ | API |
@@ -173,7 +177,8 @@ FortiGate は Kubernetes の API から Service の IP を取得し、動的ア�
 | `kubernetes` | `main` | `192.168.99.200:6443` |
 | `kubernetes-nas` | `nas` | `192.168.98.2:6443` |
 
-Ansible (`addons` の `fortigate-sdn.yml`) が、各クラスタに読み取りだけの ServiceAccount `kube-system/fortigate-sdn` と、期限のないトークンの Secret `fortigate-sdn-token` を作ります。権限は [Fortinet の手順](https://docs.fortinet.com/document/fortigate/latest/administration-guide/508319/private-cloud-k8s-sdn-connector) と同じ (pods、namespaces、nodes、services の get / watch / list) です。\
+Ansible (`addons` の `fortigate-sdn.yml`) が、各クラスタに読み取りだけの ServiceAccount `kube-system/fortigate-sdn` と、期限のないトークンの Secret `fortigate-sdn-token` を作ります。権限は [Fortinet の手順](https://docs.fortinet.com/document/fortigate/latest/administration-guide/508319/private-cloud-k8s-sdn-connector) と同じ (pods、namespaces、nodes、services の get / watch / list) です。
+
 トークンは Ansible の出力に出しません。各クラスタの control plane (becky、ongeki) で取り出して FortiGate に入れます。クラスタを作り直すとトークンも変わるので、入れ直してください。
 ```bash
 kubectl -n kube-system get secret fortigate-sdn-token -o jsonpath='{.data.token}' | base64 -d
@@ -361,7 +366,8 @@ config system dns-database
 end
 ```
 
-以前は `svc.technotut.net` をクラスタ内の bind9 (`10.12.0.0`) で提供し、FortiGate はゾーンを bind9 に転送していました。2026-11-18 にこの構成へ移行し、bind9 は削除しました。DNS サーバに `10.12.0.0` を直接指定しているクライアントは、FortiGate (各 VLAN のゲートウェイ。DHCP で配られるもの) に変えてください。\
+以前は `svc.technotut.net` をクラスタ内の bind9 (`10.12.0.0`) で提供し、FortiGate はゾーンを bind9 に転送していました。2026-11-18 にこの構成へ移行し、bind9 は削除しました。DNS サーバに `10.12.0.0` を直接指定しているクライアントは、FortiGate (各 VLAN のゲートウェイ。DHCP で配られるもの) に変えてください。
+
 FortiGate のゾーンは `authoritative enable` (既定値) で使います。この設定では、ゾーンにない名前に NXDOMAIN を返し、`forwarder` は使われません。
 
 ### plmux
@@ -456,7 +462,8 @@ vault_arc_github_app_private_key: |
 TechnoTUT の Settings → Actions → Runner groups で、`Default` グループを public リポジトリにも使わせる設定にしないでください。privileged な Pod でジョブが動くためです。
 
 ### NAS (ongeki) と Cluster Mesh
-ongeki は、ongeki だけで動く Kubernetes のクラスタ `nas` です。ホストで動いていた Samba を、このクラスタのコンテナに移しました。\
+ongeki は、ongeki だけで動く Kubernetes のクラスタ `nas` です。ホストで動いていた Samba を、このクラスタのコンテナに移しました。
+
 `main` と `nas` は Cilium Cluster Mesh でつなぎ、`nas` のアプリは `main` の Argo CD が配ります。
 
 | 項目 | 内容 |
@@ -490,7 +497,8 @@ RHEL 系のノードで Ansible が Debian と違う設定をするところ:
 - `br_netfilter` のために `kernel-modules-extra` を入れます。
 - ホストの SELinux は Enforcing のままです。containerd の CRI では SELinux を使いません (`containerd_enable_selinux: false`)。使うと、kubeadm の static Pod (etcd、kube-apiserver) が `/var/lib/etcd` や `/etc/kubernetes/pki` を読めずに起動しません。`nas` ロールは `/nas` のラベルを `container_file_t` にします (CRI の SELinux を有効にしても Samba が読み書きできるようにするため)。
 
-Samba の設定は ConfigMap (`k8s/manifest/nas/configmap.yaml`) にあります。変えたら `nas` のクラスタで `kubectl -n nas rollout restart deployment/samba` を実行してください。\
+Samba の設定は ConfigMap (`k8s/manifest/nas/configmap.yaml`) にあります。変えたら `nas` のクラスタで `kubectl -n nas rollout restart deployment/samba` を実行してください。
+
 パスワードを変えるときは、新しい行を作って `vault_samba_smbpasswd` を差し替え、`nas` の `site.yml` を流してから Pod を作り直します (行の作り方は [TechnoTUT/samba の README](https://github.com/TechnoTUT/samba))。
 
 #### 構築と移行の手順
@@ -583,8 +591,10 @@ config system dns-database
     next
 end
 ```
-FortiGate は、クラスタごとの Kubernetes SDN コネクタで Service の IP を動的アドレスにします (`main` は `kubernetes` → `k8s-svc`、`nas` は `kubernetes-nas` → `k8s-nas-svc`。設定は上の「FortiGate の Kubernetes SDN コネクタ」)。Pod CIDR は固定のアドレス (`k8s-cl`、`k8s-nas-pod`) にします。\
-Cluster Mesh では、Pod から相手のクラスタのノードへの通信も NAT されません (相手のノードも Cilium のノードの一覧に入るため)。そのため、ポリシーには両方のクラスタの Pod CIDR を入れます。\
+FortiGate は、クラスタごとの Kubernetes SDN コネクタで Service の IP を動的アドレスにします (`main` は `kubernetes` → `k8s-svc`、`nas` は `kubernetes-nas` → `k8s-nas-svc`。設定は上の「FortiGate の Kubernetes SDN コネクタ」)。Pod CIDR は固定のアドレス (`k8s-cl`、`k8s-nas-pod`) にします。
+
+Cluster Mesh では、Pod から相手のクラスタのノードへの通信も NAT されません (相手のノードも Cilium のノードの一覧に入るため)。そのため、ポリシーには両方のクラスタの Pod CIDR を入れます。
+
 `main` と `nas` の間で使う主な通信は、Argo CD → ongeki の API (TCP 6443)、clustermesh-apiserver (TCP 32379、両方向)、Pod 間の通信 (任意のポート) です。
 
 ホストの Samba に戻すときは、Argo CD の `nas` を止めてから、ongeki で `sudo semanage fcontext -d '/nas(/.*)?' && sudo restorecon -R /nas` でラベルを戻し、`sudo systemctl enable --now smb` で起動します。`dns_static_records` の `drive` も `192.168.98.2` に戻してください。
@@ -604,7 +614,8 @@ Ansible で反映するものと、Argo CD で反映するものがあります�
 | Argo CD の Application の追加・削除 (`k8s/manifest/apps/`) | `main` にマージすると、Argo CD の `root` が登録します。`site.yml` は不要です |
 | 各アプリの manifest (`k8s/manifest/`) | `main` にマージすると、Argo CD が同期します。`site.yml` は不要です |
 
-Argo CD は GitHub の `main` を参照します。manifest の変更と Ansible の変更が関係するときは、manifest を先に `main` に入れ、Argo CD の同期を確認してから `site.yml` を流してください。\
+Argo CD は GitHub の `main` を参照します。manifest の変更と Ansible の変更が関係するときは、manifest を先に `main` に入れ、Argo CD の同期を確認してから `site.yml` を流してください。
+
 例: IP を固定する Service を足すときは、`lbipam.technotut.net/static` ラベルを付けた manifest が同期された後でないと、`static` プールから IP が割り当てられません。
 
 ## クラスタを作り直す
