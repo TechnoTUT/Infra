@@ -10,3 +10,4 @@ resources:
   - ingress.yaml
   - firewallpolicy.yaml
   - healthcheck.yaml
+  - nodecheck.yaml
