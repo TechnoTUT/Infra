@@ -42,6 +42,8 @@ spec:
           valueFrom:
             # Secret がなくても起動し、画面に「API キー未設定」と出す
             secretKeyRef: { name: aichat, key: gemini-api-key, optional: true }
+        # VLAN 側からの診断 (vlan_probe) で、必要なときに起動する Pod のイメージ。netprobe 名前空間に作る
+        - { name: NETPROBE_IMAGE, value: "ghcr.io/technotut/netprobe:main" }
         - name: DISCORD_WEBHOOK_URL
           valueFrom:
             # 見つけた問題の報告先。なければ報告しない (チャットは動く)
