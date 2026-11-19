@@ -1,4 +1,4 @@
-# plmux から Carabiner への接続 (クラスタの中だけ)。
+# plmux と dmxctl から Carabiner への接続 (クラスタの中だけ)。
 apiVersion: v1
 kind: Service
 metadata:
