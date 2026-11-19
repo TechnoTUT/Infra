@@ -9,3 +9,4 @@ resources:
   - service.yaml
   - ingress.yaml
   - firewallpolicy.yaml
+  - healthcheck.yaml

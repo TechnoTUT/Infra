@@ -38,6 +38,27 @@ sidebar_position: 6
 
 リポジトリは、サイドカーの git-sync が TechnoTUT/Infra の main を 5 分ごとに取り込みます。
 
+## 定期のヘルスチェック
+チャットとは別に、CronJob `healthcheck` が 5 分ごとに状態を調べ、問題が続いたときだけ Discord に知らせます。**LLM は使わない** (Gemini を呼ばない) ので、トークンは減りません。
+
+| 項目 | 内容 |
+|---|---|
+| ソース | infra-assistant の `app/healthcheck.py` (チャットと同じイメージ。タグは `sha-<コミット>` に固定) |
+| マニフェスト | [`k8s/manifest/aichat/healthcheck.yaml`](https://github.com/TechnoTUT/Infra/tree/main/k8s/manifest/aichat/healthcheck.yaml) |
+| 権限 | ServiceAccount `healthcheck`: ノード、Pod、PVC、Service、Argo CD の Application の `list` だけ。状態の ConfigMap `healthcheck-state` だけ読み書き |
+| 通知先 | チャットの報告と同じ Webhook (Secret `aichat` の `discord-webhook-url`)。未設定なら通知しない |
+
+| 見るもの | 通知する条件 (続いた時間) |
+|---|---|
+| ノード | NotReady (2 分)、メモリ・ディスク・PID の圧迫 (2 分) |
+| Pod | CrashLoopBackOff や ImagePullBackOff など (5 分)、Pending や Ready にならない (5 分)、Failed |
+| PVC / Service | PVC が Pending (5 分)、LoadBalancer に IP が付かない (5 分) |
+| Argo CD | Degraded や、その他の異常 (10 分)、OutOfSync (10 分) |
+| ネットワーク | Pod から外部の名前 (`github.com`) と `ai.svc.technotut.net` が引けない (2 分)、`https://github.com` に届かない (2 分) |
+
+- 新しい問題、続いている問題の再通知 (6 時間おき)、復旧を、1 回の実行につき 1 つのメッセージにまとめます。状態は ConfigMap に持ち、一時的な状態では通知しません。
+- 手元で試すには `DRY_RUN=1 python -m app.healthcheck` (通知も状態の保存もしません)。
+
 ## 安全のための制限
 - ServiceAccount `aichat` の ClusterRole `aichat-readonly` は、種類を列挙した `get` / `list` / `watch` だけです。Secret、`pods/exec`、書き込みの verb は含みません (書き込みは次の項目)。
 - 書き込みは、画面の確認ボタンで承認した操作だけです。ClusterRole `aichat-operator` (Pod の `delete`、Deployment・StatefulSet・DaemonSet の `patch`、Job の `create`) と、argocd の Role (Application の `patch`) を、アプリの namespace (cam1、cam2、dmxctl、dmxsim、live、ndi、plmux、speedtest、time) にだけ RoleBinding で与えます。kube-system、argocd のほかのリソース、cilium、arc-*、external-dns、registry、fortigate-operator、aichat 自身は対象外です。マニフェストは [`k8s/manifest/aichat-rbac/`](https://github.com/TechnoTUT/Infra/tree/main/k8s/manifest/aichat-rbac) (Argo CD の Application `aichat-rbac`) にあります。

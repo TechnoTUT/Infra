@@ -1,0 +1,108 @@
+# 定期のヘルスチェック。LLM は使わず、5 分ごとに状態を見て、問題が続いたら Discord に知らせる
+# (ソースは TechnoTUT/infra-assistant の app/healthcheck.py)。Webhook の URL は aichat と同じ Secret (aichat) から読む。
+# 状態 (いつから悪いか、通知したか) は ConfigMap healthcheck-state に、healthcheck 自身が作って書く。
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: healthcheck
+---
+# 読み取りだけ。Secret、exec、書き込みの verb は含めない。
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: healthcheck-readonly
+rules:
+- apiGroups: [""]
+  resources: [nodes, pods, persistentvolumeclaims, services]
+  verbs: [list]
+- apiGroups: [argoproj.io]
+  resources: [applications]
+  verbs: [list]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: healthcheck-readonly
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: healthcheck-readonly
+subjects:
+- kind: ServiceAccount
+  name: healthcheck
+  namespace: aichat
+---
+# 状態の ConfigMap だけ (この namespace)。作成は名前を絞れないが、読み書きは名前で絞る。
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: healthcheck-state
+rules:
+- apiGroups: [""]
+  resources: [configmaps]
+  verbs: [create]
+- apiGroups: [""]
+  resources: [configmaps]
+  resourceNames: [healthcheck-state]
+  verbs: [get, update]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: healthcheck-state
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: healthcheck-state
+subjects:
+- kind: ServiceAccount
+  name: healthcheck
+  namespace: aichat
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: healthcheck
+spec:
+  schedule: "*/5 * * * *"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 120
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      activeDeadlineSeconds: 120
+      template:
+        metadata:
+          labels:
+            app: healthcheck
+        spec:
+          serviceAccountName: healthcheck
+          restartPolicy: Never
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65533
+            runAsGroup: 65533
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+          - name: healthcheck
+            # WAN の不調のときにも動かしたい (それを検出するため) ので、コミットのタグに固定して、ノードにあるイメージを使う。
+            # healthcheck を更新するときは、infra-assistant の main のコミット (sha-<7 桁>) に変える
+            image: ghcr.io/technotut/infra-assistant:sha-ac7b2a1
+            imagePullPolicy: IfNotPresent
+            command: [python, -m, app.healthcheck]
+            env:
+            - name: POD_NAMESPACE
+              valueFrom: { fieldRef: { fieldPath: metadata.namespace } }
+            - name: DISCORD_WEBHOOK_URL
+              valueFrom:
+                secretKeyRef: { name: aichat, key: discord-webhook-url, optional: true }
+            resources:
+              requests: { cpu: 20m, memory: 64Mi }
+              limits: { memory: 192Mi }
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: { drop: [ALL] }
