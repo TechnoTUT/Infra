@@ -31,7 +31,7 @@ spec:
       containers:
       - name: aichat
         # main を常に最新にするため、Pod の起動ごとに pull する
-        image: ghcr.io/technotut/aichat:main
+        image: ghcr.io/technotut/infra-assistant:main
         imagePullPolicy: Always
         env:
         # gemini-4-hydrogen と gemma-4-31b-it は混雑で 503 を返し続けたため Flash にする

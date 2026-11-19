@@ -9,8 +9,8 @@ sidebar_position: 6
 
 | 項目 | 内容 |
 |---|---|
-| ソース | [`aichat/`](https://github.com/TechnoTUT/Infra/tree/main/aichat) (Python、FastAPI、google-genai。依存は uv で管理) |
-| イメージ | `ghcr.io/technotut/aichat:main` (GitHub Actions の `aichat image` がビルド) |
+| ソース | [TechnoTUT/infra-assistant](https://github.com/TechnoTUT/infra-assistant) (Python、FastAPI、google-genai。依存は uv で管理) |
+| イメージ | `ghcr.io/technotut/infra-assistant:main` (infra-assistant リポジトリの GitHub Actions がビルド) |
 | マニフェスト | [`k8s/manifest/aichat/`](https://github.com/TechnoTUT/Infra/tree/main/k8s/manifest/aichat) (Argo CD の Application `aichat`) |
 | モデル | `gemini-3.8-flash` (Gemini API)。Deployment の環境変数 `GEMINI_MODEL` で変える。1 問でツールを呼ぶたびに 1 リクエストを使うので、RPD の少ないモデルは避ける |
 | URL | http://ai.svc.technotut.net (Cilium Ingress。VLAN 10・20 から HTTP を許可) |
@@ -52,12 +52,13 @@ sidebar_position: 6
    ```
 3. main にマージすると、Argo CD がアプリをデプロイします。Secret を後から作ったときは、Pod を作り直します (`kubectl -n aichat rollout restart deploy/aichat`)。
 
-ghcr.io のパッケージ `aichat` が非公開だと、イメージを pull できません。初回のビルド後、パッケージの設定で公開 (Public) にします。
+ghcr.io のパッケージ `infra-assistant` が非公開だと、イメージを pull できません。初回のビルド後、パッケージの設定で公開 (Public) にします。
 
 ## 手元で動かす
 ```bash
-cd aichat
+git clone https://github.com/TechnoTUT/infra-assistant
+cd infra-assistant
 uv sync
-GEMINI_API_KEY=<キー> REPO_DIR=.. uv run uvicorn app.main:app --reload
+GEMINI_API_KEY=<キー> REPO_DIR=<Infra の clone> uv run uvicorn app.main:app --reload
 ```
 クラスタには手元の kubeconfig で接続します。http://localhost:8000 を開きます。
