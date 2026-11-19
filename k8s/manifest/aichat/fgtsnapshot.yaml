@@ -1,4 +1,4 @@
-# FortiGate の設定の変更検知。LLM は使わない。30 分ごとに、読み取りの API で主要な設定のテーブルを取って、
+# FortiGate の設定の変更検知。LLM は使わない。5 分ごとに、読み取りの API で主要な設定のテーブルを取って、
 # 前回との差を Discord に知らせる (ソースは TechnoTUT/infra-assistant の app/fgtsnapshot.py)。
 # スナップショットは ConfigMap fortigate-snapshot に、この Job 自身が作って書く。FortiGate の API は dmz のホストからしか届かない
 # (Pod の通信はノードの IP に NAT される)。
@@ -38,9 +38,9 @@ kind: CronJob
 metadata:
   name: fgtsnapshot
 spec:
-  schedule: "*/30 * * * *"
+  schedule: "*/5 * * * *"
   concurrencyPolicy: Forbid
-  startingDeadlineSeconds: 300
+  startingDeadlineSeconds: 120
   successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 3
   jobTemplate:
