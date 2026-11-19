@@ -573,7 +573,8 @@ a.repo-card:hover { border-color: var(--primary); background: var(--hover); }
   .nav-tools { display: block; }
   .hamburger-btn, .mobile-drawer { display: none !important; }
 }
-@media (min-width: 1024px) { .nav-links { font-size: 1rem; gap: 0 1.5rem; margin-left: 3rem; } .nav-gh { font-size: 1rem; } }
+  .nav-right { gap: 1.5rem; }
+@media (min-width: 1024px) { .nav-links { font-size: 1rem; gap: 0 1.5rem; margin-left: 3rem; } .nav-gh { font-size: 1rem; } .nav-right { gap: 2rem; } }
 
 /* 暗色固定ページ(/about): テーマに関わらずトップと同じ暗色・細字 */
 .dark-page {
