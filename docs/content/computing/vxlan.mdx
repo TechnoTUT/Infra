@@ -4,7 +4,7 @@ sidebar_label: VXLAN
 sidebar_position: 3
 ---
 
-Kubernetes の Pod を VLAN 10 (DJ)・20 (AV) へ L2 で直接接続するため、FortiGate とノードの間に VXLAN を採用しています。ノード側は CNI プラグイン [vxlan-cni](https://github.com/TechnoTUT/vxlan-cni) が、FortiGate 側は software switch が担当します。本書は、その全体構成と各部の設定を整理したものです。Pod の使用方法と VLAN の追加手順は [Kubernetes 構築方法](/computing/deploy) を参照してください。
+Kubernetes の Pod を VLAN 10 (DJ)・20 (AV)・30 (LBAR)・40 (PA)・42 (ENT)・43 (LDISP)・44 (CAM1)・45 (CAM2) へ L2 で直接接続するため、FortiGate とノードの間に VXLAN を採用しています。ノード側は CNI プラグイン [vxlan-cni](https://github.com/TechnoTUT/vxlan-cni) が、FortiGate 側は software switch が担当します。本書は、その全体構成と各部の設定を整理したものです。Pod の使用方法と VLAN の追加手順は [Kubernetes 構築方法](/computing/deploy) を参照してください。
 
 ## 全体構成
 ```mermaid
@@ -39,7 +39,7 @@ flowchart LR
   xn20 <-- "UDP 4789" --> o20
 ```
 
-- VLAN 10・20 の機器と Pod は、同一のブロードキャストドメイン (`sw10`, `sw20`) に所属します。ゲートウェイ、DHCP サーバ、DNS サーバ、ポリシーは software switch が保持します。
+- 各 VLAN の機器と Pod は、同一のブロードキャストドメイン (`sw10`, `sw20`, `sw30`, `sw40`, `sw42` - `sw45`) に所属します。ゲートウェイ、DHCP サーバ、DNS サーバ、ポリシーは software switch が保持します。
 - ノードのトランクや VLAN インターフェースは不要です。VLAN は VXLAN の VNI として伝送します。
 - 以前の Multus の `vlan10-bridge`・`vlan20-bridge` (トランクと br10・br20) は廃止しました。plmux を含め、すべての Pod は vxlan-cni でつなぎます。
 
@@ -77,7 +77,7 @@ Ansible の次のロールが導入を担当します。変数は `k8s/ansible/i
 | `vxlan_cni_version` | `v0.2.0` | プラグインの版数 (`vxlan_cni_sha256` と同時に更新) |
 | `vxlan_cni_remote` | `192.168.99.129` | FortiGate 側の VTEP。nas は `192.168.98.1` |
 | `vxlan_cni_vni_offset` | `0` | VNI = VLAN ID + 本値。nas は `10000` |
-| `vxlan_cni_allowed_vlans` | `[10, 20]` | Pod が選択可能な VLAN。空の場合は NAD を非配置 |
+| `vxlan_cni_allowed_vlans` | `[10, 20, 30, 40, 42, 43, 44, 45]` | Pod が選択可能な VLAN。FortiGate に VXLAN と software switch を作成済みの VLAN だけを入れる。空の場合は NAD を非配置 |
 | `vxlan_cni_nad_name` / `vxlan_cni_nad_namespace` | `vxlan` / `kube-public` | NAD の名称と namespace |
 
 ### NAD
@@ -91,7 +91,7 @@ NAD は全 VLAN 共通の一つのみです (雛形は `k8s/ansible/roles/addons
   "remote": "192.168.99.129",
   "vniOffset": 0,
   "peers": ["<main の全ノードの node_ip>"],
-  "allowedVlans": [10, 20],
+  "allowedVlans": [10, 20, 30, 40, 42, 43, 44, 45],
   "ipam": { "type": "dhcp" }
 }
 ```
@@ -103,6 +103,14 @@ NAD は全 VLAN 共通の一つのみです (雛形は `k8s/ansible/roles/addons
 | `peers` | 同一 VXLAN 上の対向ノードの IP (`k8s` グループの `node_ip`)。詳細は「ノード間通信」を参照 |
 | `allowedVlans` | `cni-args` の `vlan` に指定可能な値。範囲外はプラグインが拒否 |
 | `ipam` | `dhcp`。VLAN の DHCP サーバ (FortiGate) から IP アドレスを取得 |
+
+VLAN 30 (LBAR) は、FortiGate に DHCP サーバがありません (静的割り当て)。Pod をつなぐと、`ipam: dhcp` で IP アドレスが付きません。VLAN 30 に Pod を置くときは、FortiGate に DHCP サーバを足します。\
+NAD だけを作り直す (`vxlan_cni_allowed_vlans` や `peers` を変えたとき) には、`site.yml` 全体を流さずに、次を main と nas のそれぞれの inventory で実行します。
+```bash
+cd k8s/ansible
+ansible control_plane -i inventory/hosts.yml -m ansible.builtin.include_role -a "name=addons tasks_from=vxlan-nad"
+ansible control_plane -i inventory/nas.yml   -m ansible.builtin.include_role -a "name=addons tasks_from=vxlan-nad"
+```
 
 ### Pod での指定
 ```yaml
@@ -179,7 +187,7 @@ end
 | `sw45` (CAM2) | `192.168.12.81/28` | `VLAN45`、`vxlan45`、`vxlan45-nas` |
 
 - `remote-ip` の `192.168.99.200` - `202` は main のノード (becky, packard, marie)、`192.168.98.2` は nas のノード (ongeki) です。
-- ポリシーと DHCP・DNS サーバは software switch (`sw10`, `sw20`) に設定します。ポリシーの対象アドレスは `VLAN10 subnet`・`VLAN20 subnet` (ipmask) です。
+- ポリシーと DHCP・DNS サーバは software switch (`sw10`, `sw20`) に設定します。ポリシーの対象アドレスは `VLAN10 subnet` など、VLAN ごとの `VLANnn subnet` (ipmask) です。
 - software switch は、構成員のうち最小の MAC をゲートウェイの MAC に採用します。構成員の増減でゲートウェイの MAC が変化するため、端末の ARP キャッシュの更新が必須となります。
 
 ## 運用上の制約

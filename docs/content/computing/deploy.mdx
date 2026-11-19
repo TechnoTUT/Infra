@@ -48,7 +48,7 @@ Clusters: 2 (`main`: becky, packard, marie / `nas`: ongeki)
 ## 1. 事前準備
 ### ネットワーク (管理用 VLAN は手動)
 各ノードの NIC と、管理用の VLAN 100 (IP アドレス、ゲートウェイ、DNS) は手動で設定します。この設定がないと、Ansible でノードに接続できません。\
-VLAN 10・20 は、ノードにトランクやブリッジを作らず、vxlan-cni が VXLAN でつなぎます。
+VLAN 10・20・30・40・42〜45 は、ノードにトランクやブリッジを作らず、vxlan-cni が VXLAN でつなぎます。
 
 `/etc/network/interfaces` の例 (becky。packard と marie は NIC 名が `enp2s0`) です。
 ```
@@ -263,7 +263,7 @@ VLAN 10・20・30・40・42〜45 は、VLAN インターフェースと VXLAN �
 - ポリシーのアドレスは `VLAN10 subnet`・`VLAN20 subnet` (ipmask) です。
 
 #### VLAN を追加する手順
-VLAN 10・20 の移行と同じ手順です。FortiOS は手順を拒否すると途中で止まるので、先に FortiGate VM などで試してください。
+VLAN 10・20・30・40・42〜45 の移行と同じ手順です。FortiOS は手順を拒否すると途中で止まるので、先に FortiGate VM などで試してください。
 
 1. 影響のない準備: VXLAN インターフェース (`dmz` と `port9` に 1 つずつ)、メンバーが VXLAN だけの software switch、ポリシー用の ipmask のアドレスを作ります。
    ```
@@ -289,7 +289,9 @@ VLAN 10・20 の移行と同じ手順です。FortiOS は手順を拒否する�
    ```
 2. 切り替え (数秒止まる): ポリシーのインターフェースとアドレスを software switch と新しいアドレスに変え、古い `VLAN30 address` を消します。DHCP サーバと DNS サーバを software switch に移し、VLAN インターフェースの IP アドレスを外してから software switch のメンバーに加え、software switch に IP アドレスを付けます。
 3. ゲートウェイの MAC アドレスが変わる (software switch はメンバーのうち最も小さい MAC を使う) ので、FortiGate から VLAN の未使用のアドレスに ping して ARP をブロードキャストし、端末の ARP キャッシュを更新します。FortiOS は IP アドレスを付けても Gratuitous ARP を送りません。
-4. `vxlan_cni_allowed_vlans` に VLAN の番号を足して `site.yml` を流します (main と nas の両方)。
+4. `vxlan_cni_allowed_vlans` に VLAN の番号を足して、NAD を反映します (main と nas の両方)。`site.yml` 全体を流さなくても、`ansible control_plane -i inventory/hosts.yml -m ansible.builtin.include_role -a "name=addons tasks_from=vxlan-nad"` (nas は `-i inventory/nas.yml`) で足ります。
+5. fortigate-operator が管理するポリシー (`k8s/manifest/*/firewallpolicy.yaml`) がその VLAN のインターフェースを参照しているときは、手順 2 の直後に、マニフェストの `srcintf` と `srcaddr` を `swNN` と `VLANnn subnet` に変えてマージします。VLAN インターフェースが software switch のメンバーになると、ポリシーでは使えなくなるためです (cam1・cam2 が該当)。
+6. AI チャットの `vlan_probe` から診断したいときは、infra-assistant の `app/netdiag.py` の `NETPROBE_VLANS` に VLAN とゲートウェイを足します (DHCP サーバがある VLAN だけ)。
 
 - 使用中の (software switch のメンバーの) VXLAN インターフェースの `remote-ip` は変えられません。ノードを追加するときは、VXLAN インターフェースを一度 software switch から外し、`remote-ip` を変えて戻します。その間、VXLAN の Pod の通信が止まり、ゲートウェイの MAC が変わることがあります。
 - ポリシーが参照しているアドレスは型を変えられないため、新しいアドレスを作って付け替えます。
@@ -383,7 +385,6 @@ Pod は 2 つに分けています。
 - Ableton Link は Pod の全てのネットワークで広報されます。DJ ネットワーク (VLAN 10) には出さず、AV ネットワーク (VLAN 20) だけに出すため、Carabiner を VLAN 20 だけにつないだ Pod に分けています。Carabiner は 127.0.0.1 でしか待ち受けないので、plmux が中継します。
 - `plmux-carabiner` に届けば Link のテンポを変えられるので、NetworkPolicy で `plmux` の Pod からだけ受けます。テンポと拍を TCP で送るので、同じノードに置くようにしています (podAffinity)。
 - PRO DJ LINK の UDP (50000-50002) を使い、SQLite に書くので、どちらもレプリカは 1 つ (`Recreate`) です。hostNetwork は使わないので、どのノードでも動きます (VXLAN で VLAN につなぐので、ノードの設定は要りません)。
-- VLAN 10・20 のアドレスは NAD の host-local で、ノードごとに `10.10.0.2`・`10.10.16.2` から払い出します。別のノードの Pod と同じアドレスになることがあります。そのときは Pod を作り直してください。
 - Link のテンポを流すのは 1 つだけにしてください。個人の PC の BLT などでも Link に追従させていると、テンポの元が 2 つになります。
 - 式から dmxctl などへ送る OSC は、ノードの IP (`dmz`) に SNAT されて FortiGate を通ります。FortiGate に `dmz` から送り先への UDP (dmxctl は 9000) を許可するポリシーが必要です。
 - クライアントからは、FortiGate が plmux の LB IP (アドレス `k8s-plmux`) への HTTP を許可している VLAN (DJ、AV) と管理用 VLAN から届きます。
@@ -463,7 +464,7 @@ ongeki は、ongeki だけで動く Kubernetes のクラスタ `nas` です。�
 | Ansible | `ansible-playbook -i inventory/nas.yml playbooks/site.yml`。変数は `inventory/group_vars/all` を `inventory/group_vars/nas_cluster.yml` で上書きします |
 | OS | AlmaLinux 10 (SELinux は Enforcing のまま)。Ansible のロールは Debian と RHEL 系の両方に対応しています |
 | ネットワーク | FortiGate の `port9` (`192.168.98.0/30`)。`main` のノードと L2 が別なので、Pod 間の通信は FortiGate が BGP の経路で中継します |
-| 動かすもの | Cilium (BGP、LB IPAM、Cluster Mesh)、Samba、Multus と vxlan-cni (VLAN 10・20 は VXLAN でつなぐ) です。NFS、Argo CD、ExternalDNS などは入れません |
+| 動かすもの | Cilium (BGP、LB IPAM、Cluster Mesh)、Samba、Multus と vxlan-cni (VLAN は VXLAN でつなぐ) です。NFS、Argo CD、ExternalDNS などは入れません |
 | データ | `/nas` (sda + sdb の md RAID0、ext4)。local PV でそのまま Samba にマウントします |
 | Samba | [`k8s/manifest/nas/`](https://github.com/TechnoTUT/Infra/tree/main/k8s/manifest/nas)。イメージは [TechnoTUT/samba](https://github.com/TechnoTUT/samba) (`ghcr.io/technotut/samba`) |
 | アドレス | `drive.svc.technotut.net` → `10.14.0.128` (LoadBalancer。`main` の ExternalDNS が `dns_static_records` から FortiGate に載せます)。SMB (TCP 445) だけ |
