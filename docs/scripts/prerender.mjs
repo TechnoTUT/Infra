@@ -10,12 +10,32 @@ const { render, routes, titleFor } = await import(pathToFileURL(join(ssrDir, 'en
 const { site } = await import(pathToFileURL(join(root, 'src/site.config.js')).href);
 
 const template = await readFile(join(out, 'index.html'), 'utf8');
-const escape = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+const escape = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+const image = `${site.url}/img/og.jpg`;
+
+function headFor(url) {
+  const title = escape(titleFor(url));
+  const pageUrl = `${site.url}${url === '/' ? '/' : url}`;
+  return [
+    `<title>${title}</title>`,
+    `<meta name="description" content="${escape(site.tagline)}" />`,
+    `<meta property="og:type" content="website" />`,
+    `<meta property="og:site_name" content="${escape(site.title)}" />`,
+    `<meta property="og:title" content="${title}" />`,
+    `<meta property="og:description" content="${escape(site.tagline)}" />`,
+    `<meta property="og:url" content="${pageUrl}" />`,
+    `<meta property="og:image" content="${image}" />`,
+    `<meta property="og:image:width" content="1200" />`,
+    `<meta property="og:image:height" content="630" />`,
+    `<meta name="twitter:card" content="summary_large_image" />`,
+    `<meta name="twitter:image" content="${image}" />`,
+  ].join('\n    ');
+}
 
 async function emit(file, url) {
   const html = template
     .replace('<!--app-->', render(url))
-    .replace('<!--head-->', `<title>${escape(titleFor(url))}</title>`);
+    .replace('<!--head-->', headFor(url));
   const dest = join(out, file);
   await mkdir(dirname(dest), { recursive: true });
   await writeFile(dest, html);
