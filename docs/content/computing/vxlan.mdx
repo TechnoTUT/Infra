@@ -6,6 +6,191 @@ sidebar_position: 3
 
 Kubernetes の Pod を VLAN 10 (DJ)・20 (AV)・30 (LBAR)・40 (PA)・42 (ENT)・43 (LDISP)・44 (CAM1)・45 (CAM2) へ L2 で直接接続するため、FortiGate とノードの間に VXLAN を採用しています。ノード側は CNI プラグイン [vxlan-cni](https://github.com/TechnoTUT/vxlan-cni) が、FortiGate 側は software switch が担当します。本書は、その全体構成と各部の設定を整理したものです。Pod の使用方法と VLAN の追加手順は [Kubernetes 構築方法](/computing/deploy) を参照してください。
 
+## VXLAN のプロトコル
+このページの構成を読むための、VXLAN (Virtual eXtensible LAN、[RFC 7348](https://datatracker.ietf.org/doc/html/rfc7348)) の基礎です。
+
+### VXLAN とは
+Ethernet のフレームを丸ごと UDP でくるんで、IP ネットワークの上で運ぶ仕組みです。離れた場所の機器を、同じ L2 (同じブロードキャストドメイン) につなげます。VLAN のタグを、ケーブルや L2 スイッチを越えて運べない場所でも、IP が届けば同じ VLAN を延ばせます。
+
+| 用語 | 意味 | この環境での例 |
+| :--- | :--- | :--- |
+| VNI (VXLAN Network Identifier) | VXLAN のセグメントの番号。24 ビット (約 1677 万)。VLAN ID は 12 ビット (4094) | VLAN 20 の VNI は main が `20`、nas が `10020` |
+| VTEP (VXLAN Tunnel End Point) | フレームをくるむ (カプセル化) と、解く (デカプセル化) 場所 | 各ノード (`vxlan20`)、FortiGate (`vxlan20`) |
+| アンダーレイ | VXLAN のパケットを運ぶ、外側の IP ネットワーク | サーバ用の VLAN 100 (`dmz`、`192.168.99.128/25`) |
+| オーバーレイ | VXLAN の中を流れる、内側の L2 | VLAN 20 の Pod と機器 (`sw20`) |
+
+### なぜ L3 の上に L2 を作るのか
+DJ 機器の PRO DJ LINK や、Ableton Link、ARP、DHCP は、**同じ L2 (ブロードキャストドメイン) の中**でしか届かない通信です。ところが、Kubernetes のノードは、サーバ用のネットワーク (VLAN 100) にいて、DJ や AV の機器がいる VLAN 10・20 とは、FortiGate (L3 のルーター) を挟んで別の場所にいます。ルーターは、ブロードキャストを越えさせません。
+
+```mermaid
+flowchart TB
+  subgraph before["VXLAN なし: ルーターで L2 が分かれる"]
+    direction LR
+    p1["Pod<br/>(ノード = VLAN 100)"]
+    r1{{"FortiGate<br/>L3 の境界"}}
+    d1["DJ 機器<br/>(VLAN 20)"]
+    p1 -. "ブロードキャストは<br/>ここで止まる" .- r1
+    r1 --- d1
+  end
+  subgraph after["VXLAN あり: L3 の上に、同じ L2 を延ばす"]
+    direction LR
+    p2["Pod"]
+    t["VXLAN のトンネル<br/>(UDP で L3 を越える)"]
+    d2["DJ 機器<br/>(VLAN 20)"]
+    p2 === t === d2
+  end
+  before ~~~ after
+```
+
+VXLAN は、ルーターを越えて IP で届く経路の上に、「見かけ上の L2」(オーバーレイ) を作ります。Pod は、物理の VLAN 20 に接続した機器と、同じ L2 にいるように通信できます。
+
+```mermaid
+flowchart TB
+  subgraph over["オーバーレイ (見かけ): 同じ VLAN 20 の L2"]
+    direction LR
+    pod["Pod の net1"]
+    sw["sw20 (ゲートウェイ 10.10.16.1)"]
+    av["AV 機器 (物理の VLAN 20)"]
+    pod --- sw
+    av --- sw
+  end
+  subgraph under["アンダーレイ (実際): L3 で IP が届くだけ (VLAN 100, 192.168.99.128/25)"]
+    direction LR
+    node["ノードの VTEP<br/>192.168.99.202"]
+    fg["FortiGate の VTEP<br/>192.168.99.129"]
+    node -- "UDP 4789 の<br/>ふつうの IP パケット" --- fg
+  end
+  pod -. "1. 内側のフレームを、<br/>VXLAN でくるむ" .-> node
+  fg -. "2. 解いて、sw20 に入れる" .-> sw
+```
+
+- 上の図の「実際」の部分には、L2 の機器は出てきません。ノードと FortiGate が、IP で通信できればよいだけです。
+- 「見かけ」の L2 は、VNI (VLAN 20 なら `20`) で区別されます。VNI が違えば、別の L2 です。
+
+### カプセル化の流れ
+Pod が出した 1 つのフレームが、L3 を越えて届くまでを追います。
+
+```mermaid
+flowchart LR
+  a["1. Pod が出す<br/>内側のフレーム<br/>宛先 MAC = ゲートウェイ"]
+  b["2. ノードの VTEP がくるむ<br/>外側 IP: ノード → FortiGate<br/>UDP 4789 + VXLAN (VNI 20)<br/>+ 内側のフレーム"]
+  c["3. L3 のネットワークを運ぶ<br/>ただの UDP パケット<br/>経路は IP のルーティング"]
+  d["4. FortiGate の VTEP が解く<br/>外側を捨てて<br/>内側のフレームだけ取り出す"]
+  e["5. sw20 に入る<br/>物理の VLAN 20 と<br/>同じ L2 のフレーム"]
+  a --> b --> c --> d --> e
+```
+
+途中のルーターは、外側の IP ヘッダーだけを見ます。内側のフレーム (Pod の MAC や VLAN 20 の中身) は、運ばれているだけで、見ません。
+
+### パケットの構造
+内側のフレームの前に、VXLAN ヘッダー (8 バイト)、UDP、IP、Ethernet を付けて送ります。
+
+```
++----------------+-----------+----------+-----------+-------------------------------------+
+| 外側 Ethernet  | 外側 IP   | UDP      | VXLAN     | 内側の Ethernet フレーム            |
+| 14 B           | 20 B      | 8 B      | 8 B       | 14 B (ヘッダー) + IP パケットなど   |
+|                |           | 宛先 4789|           |  <- 元のフレーム (Pod や機器が出した) |
++----------------+-----------+----------+-----------+-------------------------------------+
+```
+
+VXLAN ヘッダー (8 バイト) の中身は次のとおりです。
+
+| フィールド | サイズ | 内容 |
+| :--- | :--- | :--- |
+| Flags | 8 ビット | `I` ビット (0x08) が 1 のとき、VNI が有効 |
+| 予約 | 24 ビット | 0 |
+| VNI | 24 ビット | セグメントの番号 |
+| 予約 | 8 ビット | 0 |
+
+- UDP の宛先ポートは **4789** (IANA で割り当て済み) です。送信元ポートは、内側のフレームのヘッダーから計算して散らします。経路上の機器が、同じ通信を同じ経路で運べるようにするためです。
+- 外側の Ethernet は、IP の経路上で毎回付け替わります。内側のフレームは、そのまま運ばれます。
+- VXLAN には、暗号化も認証もありません。経路上で見られるので、信頼できるネットワーク (ここではサーバ用の VLAN 100) の中だけで使います。
+
+#### MTU
+外側の IP パケットが 1500 バイトに収まるように、内側の IP パケットの MTU を小さくします。
+
+```
+内側の IP の MTU = 1500 (外側の MTU)
+                 - 20 (外側 IP) - 8 (UDP) - 8 (VXLAN) - 14 (内側 Ethernet)
+                 = 1450
+```
+
+この環境の VXLAN インターフェースとブリッジ、Pod の `net1` は、すべて MTU 1450 です。これより大きなパケットは、断片化されるか、捨てられます (DF ビットが立っているとき)。TCP は、MSS を調整して小さなパケットで通信します。UDP で 1450 バイトを超えるものを送る機器は、つながりにくくなります。
+
+### 転送の仕組み
+VTEP は、L2 スイッチと同じように、MAC アドレスを学習して転送します (フラッド・アンド・ラーン)。
+
+1. **学習**: 受け取ったフレームの送信元 MAC を、「この MAC は、この VTEP の先にいる」と記録します (FDB)。記録は 300 秒 (`ageing 300`) で消えます。
+2. **既知のユニキャスト**: 宛先 MAC を学習済みなら、その VTEP だけに送ります。
+3. **BUM** (ブロードキャスト、不明なユニキャスト、マルチキャスト): 宛先が分からないフレームや、ARP、DHCP などのブロードキャストは、すべての相手の VTEP に送ります。RFC 7348 は、アンダーレイの IP マルチキャストで配る方法を定めています。この環境は、マルチキャストを使わず、**宛先の VTEP のリストに、同じフレームをユニキャストで複製して送ります** (head-end replication)。
+4. **ループの防止**: VXLAN から受け取ったフレームは、ほかの VXLAN の相手 (VTEP) には転送しません (スプリットホライズン)。
+
+複製のイメージは次のとおりです (Pod が ARP のブロードキャストを出したとき)。ノードは、FortiGate (`remote`) と、NAD の `peers` に登録したほかの全ノードに、ユニキャストで同じフレームを送ります (そのノードに同じ VLAN の Pod がいるかどうかは関係ありません)。
+
+```mermaid
+flowchart LR
+  pod["Pod (marie)<br/>ARP who-has 10.10.16.1"]
+  v1["marie の VTEP"]
+  fg["FortiGate の VTEP<br/>→ sw20 の物理 VLAN 20 にも流れる"]
+  v2["packard の VTEP"]
+  v3["becky の VTEP"]
+  pod --> v1
+  v1 -- "コピー 1 (remote)" --> fg
+  v1 -- "コピー 2 (peers)" --> v2
+  v1 -- "コピー 3 (peers)" --> v3
+```
+
+宛先の数だけ複製するので、ブロードキャストが多い VLAN、VTEP が多い構成ほど、負荷が増えます。VXLAN のカプセル化と複製は、FortiGate 100D では CPU で処理されます (「運用上の制約」を参照)。
+
+#### この環境での対応
+| 役割 | 実装 | 設定 |
+| :--- | :--- | :--- |
+| ノードの VTEP | Linux の VXLAN デバイス `vxlan<VLAN>` (vxlan-cni が作る) | `vxlan id <VNI> remote 192.168.99.129 local <ノードの IP> dev <NIC>.100 dstport 4789 ageing 300` |
+| ノードのブリッジ | Linux のブリッジ `vxbr<VLAN>` (学習 `learning on`、フラッド `flood on`) | Pod の `net1` (veth) と `vxlan<VLAN>` をつなぐ。MTU 1450 |
+| FortiGate の VTEP | `config system vxlan` の `vxlan<VLAN>` (`dmz` に紐づけ) | `vni`、`remote-ip` (複製先の VTEP のリスト = main の各ノード) |
+| FortiGate のブリッジ | software switch `sw<VLAN>` | VLAN インターフェースと `vxlan<VLAN>`、`vxlan<VLAN>-nas` をまとめる。MAC を学習して転送する |
+| ノードどうしの直接通信 | NAD の `peers` | FortiGate は同じ VXLAN インターフェースの相手どうしを中継しないので、ノード同士が直接 VXLAN で送る |
+
+#### 例: Pod が DHCP でアドレスを取る
+```mermaid
+sequenceDiagram
+    participant Pod as Pod (net1)
+    participant Br as vxbr20 (ノード)
+    participant NodeV as vxlan20 (ノードの VTEP)
+    participant FgV as vxlan20 (FortiGate の VTEP)
+    participant SW as sw20 (FortiGate の software switch)
+    participant Dhcp as DHCP サーバ (FortiGate)
+
+    Pod->>Br: DHCP DISCOVER (ブロードキャスト、内側のフレーム)
+    Br->>NodeV: フラッド
+    NodeV->>FgV: UDP 4789、VNI 20 でカプセル化 (宛先は remote 192.168.99.129)
+    FgV->>SW: デカプセル化して、sw20 に入れる
+    SW->>Dhcp: DHCP DISCOVER
+    Dhcp-->>SW: DHCP OFFER (宛先は Pod の MAC)
+    SW-->>FgV: 学習した MAC の先 = vxlan20
+    FgV-->>NodeV: VNI 20 でカプセル化して、ノードの IP 宛に送る
+    NodeV-->>Br: デカプセル化
+    Br-->>Pod: DHCP OFFER
+```
+
+DHCP のあとの通信 (ゲートウェイの ARP、通常の IP の通信) も、同じ経路を、学習した MAC に従って運びます。ゲートウェイは `sw20` の IP (`10.10.16.1`) で、物理の VLAN 20 の機器と Pod は、同じ `sw20` の中にいます。
+
+### トラブルシュートのポイント
+| 症状 | 確認すること |
+| :--- | :--- |
+| Pod に IP が付かない (DHCP が取れない) | VNI がノードと FortiGate で一致しているか。FortiGate の `vxlan<VLAN>` の `remote-ip` に、そのノードが入っているか。DHCP サーバが `sw<VLAN>` にあるか (VLAN 30 にはない) |
+| 小さい通信はできるが、大きい通信が止まる | MTU。内側が 1450 を超えていないか。外側 (`<NIC>.100`、`dmz`) が 1500 か |
+| 同じ VLAN の機器と通信できない | UDP 4789 が、ノードと FortiGate の間 (VLAN 100) で届くか。ゲートウェイの MAC が変わっていないか (software switch は、メンバーのうち最小の MAC を使う) |
+| ノードを足したら Pod が届かない | NAD の `peers` と、FortiGate の `remote-ip` に、新しいノードを足したか |
+
+VXLAN のパケットは、ノードの NIC で見られます。`tcpdump` は VXLAN を解釈して、VNI と内側のフレームを表示します。
+```bash
+# ノードで (アンダーレイは VLAN 100 のインターフェース。becky は eno1.100、packard と marie は enp2s0.100)
+sudo tcpdump -ni enp2s0.100 -vv udp port 4789
+# 出力の例: VXLAN, flags [I] (0x08), vni 20  ... 内側の Ethernet と ARP / IP
+```
+Wireshark では、表示フィルタ `vxlan.vni == 20` が使えます。
+
 ## 全体構成
 ```mermaid
 flowchart LR
@@ -198,9 +383,9 @@ end
 ## 動作確認
 ```bash
 # ノード (VTEP とブリッジ)
-ip -d link show type vxlan
+ip -d link show type vxlan        # vxlan id (VNI)、remote、local、dstport 4789 を見る
 ip link show type bridge
-bridge fdb show dev vxlan20
+bridge fdb show dev vxlan20       # iproute2 の bridge コマンドが入っているノードだけ
 
 # Pod (net1 の IP アドレスと MTU)
 kubectl exec <pod> -- ip addr show net1
