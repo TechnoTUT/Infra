@@ -1,5 +1,5 @@
 ---
-# aichat (k8s/manifest/aichat) が使う Gemini API キーの Secret。
+# aichat (k8s/manifest/aichat) が使う Gemini API キーと、問題の報告先の Discord Webhook URL (任意) の Secret。
 # Deployment などは Argo CD の Application `aichat` が入れる。キーは Google AI Studio で発行した無料枠のもの。
 - name: Namespace と Gemini API キーの Secret
   ansible.builtin.include_tasks: apply.yml
@@ -18,4 +18,7 @@
       type: Opaque
       stringData:
         gemini-api-key: "{{ vault_gemini_api_key }}"
+{% if vault_discord_webhook_url is defined %}
+        discord-webhook-url: "{{ vault_discord_webhook_url }}"
+{% endif %}
     apply_no_log: true

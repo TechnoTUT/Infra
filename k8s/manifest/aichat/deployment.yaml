@@ -42,6 +42,10 @@ spec:
           valueFrom:
             # Secret がなくても起動し、画面に「API キー未設定」と出す
             secretKeyRef: { name: aichat, key: gemini-api-key, optional: true }
+        - name: DISCORD_WEBHOOK_URL
+          valueFrom:
+            # 見つけた問題の報告先。なければ報告しない (チャットは動く)
+            secretKeyRef: { name: aichat, key: discord-webhook-url, optional: true }
         ports:
         - { name: http, containerPort: 8000, protocol: TCP }
         readinessProbe:
