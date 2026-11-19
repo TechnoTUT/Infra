@@ -61,7 +61,7 @@ flowchart LR
 
 | 機能 | 内容 |
 | :--- | :--- |
-| DNS | プロキシ DNS を有効にし、`1.1.1.1` に転送 |
+| DNS | プロキシ DNS を有効にし、`1.1.1.1` に転送 (IX3110 自身の名前解決用。FortiGate の上流 DNS は別で、[DHCP・DNS](#dhcpdns) を参照) |
 | NTP | 公開 NTP サーバ (`210.173.160.27`, `.57`, `.87`) に同期し、自身も NTP サーバとして動作 |
 | 管理 | SSH、Web コンソール (HTTP, ダイジェスト認証)、SNMP |
 
@@ -94,7 +94,7 @@ VLAN 99・100 は `po1` ではなく、それぞれ専用のポート (`mgmt`, `
 ### DHCP・DNS
 
 - 各 VLAN の DHCP の範囲は [VLAN・IPアドレス設計](/network/vlan) を参照してください。DHCP で配る DNS サーバは FortiGate 自身です (CAM2 だけは FortiGate の上流 DNS サーバを直接配ります)。
-- FortiGate の上流 DNS サーバは `133.15.64.100`, `133.15.64.102` です。
+- FortiGate の上流 DNS サーバは `133.15.64.100`, `133.15.64.102` (TUT の DNS サーバ) です (`config system dns`)。FortiGate は、IX3110 のプロキシ DNS (`1.1.1.1`) を通さず、これらに直接問い合わせます。
 - Kubernetes のノードは、FortiGate を DNS サーバにしています (main は `dmz` の `192.168.99.129`、nas は `port9` の `192.168.98.1`)。外部の名前は FortiGate が上流に転送し、`svc.technotut.net` は FortiGate が答えます。クラスタ内の CoreDNS の上流も、ノードの `resolv.conf` (= FortiGate) です。
 - `svc.technotut.net` のゾーンと、逆引きの `12.10.in-addr.arpa`・`0.14.10.in-addr.arpa` は FortiGate が答えます。レコードは Kubernetes の ExternalDNS が REST API で書き換えます ([DNS (ExternalDNS と FortiGate)](/computing/deploy))。ゾーンに手でエントリを書くと消えます。
 - NTP は公開 NTP サーバに同期し、`mgmt` と `dmz` に NTP サーバとして時刻を配ります。
