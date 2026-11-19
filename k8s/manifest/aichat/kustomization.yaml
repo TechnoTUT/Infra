@@ -1,4 +1,4 @@
-# aichat: Gemini でクラスタの状態とリポジトリを読んで答える Web チャット (ソースは aichat/)。
+# aichat: Gemini でクラスタの状態とリポジトリを読んで答える Web チャット (ソースは TechnoTUT/infra-assistant)。
 # Argo CD の Application `aichat` が、このディレクトリを kustomize でデプロイする。
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
