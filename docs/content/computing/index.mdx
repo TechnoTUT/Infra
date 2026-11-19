@@ -1,5 +1,5 @@
 ---
-title: 計算基盤
+title: Compute
 sidebar_label: 概要
 slug: /computing
 sidebar_position: 1
@@ -18,7 +18,7 @@ TechnoTUTでは、以下のリポジトリでKubernetesの管理を行ってい�
 
 ## クラスタ構成
 
-Kubernetes のクラスタは 2 つあります。3 台の物理サーバ (`becky`, `packard`, `marie`) で構成する `main` と、`ongeki` で動く `nas` です。2 つのクラスタは **Cilium Cluster Mesh** でつないでいます。`becky`, `packard`, `marie` には Debian 13 が、`ongeki` には AlmaLinux 10 がインストールされ、`kubeadm` でクラスタが構築されています。
+3 台の物理サーバ (`becky`, `packard`, `marie`) で構成する `main` と、`ongeki` で動く `nas` の 2 クラスタから構成されます。2 つのクラスタは **Cilium Cluster Mesh** で接続されています。`becky`, `packard`, `marie` には Debian 13 が、`ongeki` には AlmaLinux 10 がインストールされ、`kubeadm` でクラスタが構築されています。
 
 ```mermaid
 flowchart LR
@@ -35,7 +35,7 @@ flowchart LR
 | `becky` | Debian 13 | 4 CPU | 8 GB | `192.168.99.200/25` | `main` Control-Plane / NFS サーバ (`/nfs`) |
 | `packard` | Debian 13 | 4 CPU | 12 GB | `192.168.99.201/25` | `main` Worker |
 | `marie` | Debian 13 | 4 CPU | 12 GB | `192.168.99.202/25` | `main` Worker |
-| `ongeki` | AlmaLinux 10 | 4 CPU | 8 GB | `192.168.98.2/30` | `nas` Control-Plane 兼 Worker (Local PV `/nas`) |
+| `ongeki` | AlmaLinux 10 | 4 CPU | 8 GB | `192.168.98.2/30` | `nas` Control-Plane / Worker |
 
 Control-Plane ノードは、API サーバ・スケジューラ・コントローラマネージャなどの制御コンポーネントを実行し、Worker ノードはアプリケーションの Pod を実行します。
 
