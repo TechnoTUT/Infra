@@ -1,21 +1,16 @@
 export const site = {
   title: 'TechnoTUT Network',
-  tagline: 'TechnoTUT Network',
+  tagline: 'Powering live events with Media over IP.',
   url: 'https://network.technotut.net',
   navTitle: 'Network',
   logo: '/img/technotut_logo.svg',
   editUrl: 'https://github.com/TechnoTUT/Infra/tree/main/docs/',
   github: 'https://github.com/TechnoTUT/Infra/',
-  // docs/content 直下のフォルダ名 (groups 指定時は複数フォルダを1タブにまとめる)
+  // ヘッダーのタブ。href 指定はそのパス、それ以外は docs/content 直下のフォルダ名(= section id)
   sections: [
-    {
-      id: 'nw-compute',
-      label: 'NW/Compute',
-      groups: [
-        { folder: 'network', label: 'Network' },
-        { folder: 'computing', label: 'Compute' },
-      ],
-    },
+    { id: 'about', label: 'About', href: '/' },
+    { id: 'network', label: 'Network' },
+    { id: 'computing', label: 'Compute' },
     { id: 'service', label: 'Service' },
   ],
   footerLinks: [
