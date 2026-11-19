@@ -41,7 +41,7 @@ flowchart LR
 
 - VLAN 10・20 の機器と Pod は、同一のブロードキャストドメイン (`sw10`, `sw20`) に所属します。ゲートウェイ、DHCP サーバ、DNS サーバ、ポリシーは software switch が保持します。
 - ノードのトランクや VLAN インターフェースは不要です。VLAN は VXLAN の VNI として伝送します。
-- 既存の Multus の `vlan10-bridge`・`vlan20-bridge` (トランクと br10・br20) とは別系統の機構であり、併用が可能です。
+- 以前の Multus の `vlan10-bridge`・`vlan20-bridge` (トランクと br10・br20) は廃止しました。plmux を含め、すべての Pod は vxlan-cni でつなぎます。
 
 ## VNI の割当
 VNI は `VLAN ID + vniOffset` で決定します。
