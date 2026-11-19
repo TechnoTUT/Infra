@@ -1,0 +1,19 @@
+# netprobe の Pod は、aichat が必要なときに作る (常駐しない)。この namespace はその置き場。
+# Pod の仕様は infra-assistant の app/netdiag.py に固定してある。ここでは数と権限を絞る。
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: netprobe
+---
+# 同時に置ける Pod は 2 つまで (VLAN 10 と 20 に 1 つずつ)
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: netprobe
+  namespace: netprobe
+spec:
+  hard:
+    pods: "2"
+    requests.cpu: 200m
+    requests.memory: 256Mi
+    limits.memory: 512Mi

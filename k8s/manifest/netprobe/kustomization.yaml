@@ -1,0 +1,8 @@
+# netprobe: VLAN (VXLAN) の側から診断のパケットを出す検証用 Pod の置き場と権限 (ソースは TechnoTUT/infra-assistant の netprobe/)。
+# Argo CD の Application `netprobe` がデプロイする。Pod は aichat がオンデマンドで作る。
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - rbac.yaml
+  - networkpolicy.yaml
