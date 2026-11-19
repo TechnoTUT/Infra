@@ -6,10 +6,11 @@ import { site } from './site.config.js';
 
 const EXTRA_TITLES = {
   '/': site.title,
+  '/about': 'About',
   '/diagram': '会場内ネットワークの全体像',
 };
 
-export const routes = ['/', ...pages.map((p) => p.path), '/diagram'];
+export const routes = ['/', '/about', ...pages.map((p) => p.path), '/diagram'];
 
 export function titleFor(url) {
   const page = pageByPath.get(url);

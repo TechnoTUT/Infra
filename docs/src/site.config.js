@@ -8,7 +8,7 @@ export const site = {
   github: 'https://github.com/TechnoTUT/Infra/',
   // ヘッダーのタブ。href 指定はそのパス、それ以外は docs/content 直下のフォルダ名(= section id)
   sections: [
-    { id: 'about', label: 'About', href: '/' },
+    { id: 'about', label: 'About', href: '/about' },
     { id: 'network', label: 'Network' },
     { id: 'computing', label: 'Compute' },
     { id: 'service', label: 'Service' },
