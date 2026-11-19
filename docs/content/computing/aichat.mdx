@@ -32,6 +32,7 @@ sidebar_position: 6
 | `list_resources` / `get_resource` | `kubectl get` / `kubectl get -o yaml` 相当 |
 | `get_pod_logs` | `kubectl logs` 相当 (最大 300 行) |
 | `get_events` | `kubectl get events` 相当 |
+| `ping` / `dns_lookup` / `tcp_check` / `http_check` | Pod から宛先への ping、DNS (nslookup 相当)、TCP 接続、HTTP の状態を調べる (Pod から見た結果) |
 | `list_repo_files` / `read_repo_file` / `search_repo` | git-sync が取り込んだリポジトリを読む |
 
 リポジトリは、サイドカーの git-sync が TechnoTUT/Infra の main を 5 分ごとに取り込みます。
@@ -42,6 +43,7 @@ sidebar_position: 6
 - アプリでも、読める種類を `app/tools.py` の `KINDS` に限っています。種類を足すときは、ClusterRole と `KINDS` の両方に足します。
 - リポジトリの `vault.yml`、`.git`、鍵らしいファイル (`*.key`、`*.pem`) は読みません。
 - Gemini API の無料枠のため、送った内容は Google のサービス改善に使われることがあります。Secret を読めないようにしているのはこのためでもあります。ただし Pod のログはそのまま送るので、ログに秘密を出すアプリには注意します。
+- ネットワーク診断は、ループバックとリンクローカル (クラウドのメタデータなど) には送りません。TCP と HTTP は決まったポートだけ、HTTP は本文を読まず状態とヘッダーだけ、全体で 1 分に 30 回までです。ping は特権なしの ICMP (Pod の `net.ipv4.ping_group_range` で許可されている必要がある) を使います。
 - Discord への報告は、10 分に 5 件まで、同じ題名は 30 分は再送せず、メンションは無効、秘密らしい文字列は伏せて送ります。画面にログインがないので、誰かの質問で報告が送られることがあります。
 - 画面にログインはありません。VLAN 10・20 の誰でも使えます。同時に動かす質問は 2 つまで (`MAX_CONCURRENT`) です。
 
