@@ -11,3 +11,4 @@ resources:
   - firewallpolicy.yaml
   - healthcheck.yaml
   - nodecheck.yaml
+  - fgtsnapshot.yaml
