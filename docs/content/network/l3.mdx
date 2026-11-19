@@ -1,0 +1,41 @@
+---
+title: L3・ルーティング
+sidebar_label: L3
+sidebar_position: 4
+---
+
+対外接続回線から順に、IX3110 (対外接続ルータ)、FortiGate 100D (NGFW) とつながります。
+
+- 対外接続回線は上流ルータ (`192.168.8.1`) です。IX3110 が NAPT を行い、デフォルトルートを上流ルータに向けます。
+- IX3110 は外部の 2 拠点と IPsec (IKEv2) VPN を張り、BGP で経路を交換します。
+- L3 の処理は FortiGate に集約しています。全ての VLAN のゲートウェイは FortiGate です (詳細は [FW](/network/fw))。
+
+## ルーティング
+
+経路交換には BGP のみを使います。会場内の AS 番号は `64646` です。
+
+| ピア | 種別 | セグメント | 交換する経路 |
+| :--- | :--- | :--- | :--- |
+| IX3110 (`192.168.200.1`) ⇔ FortiGate (`192.168.200.2`) | iBGP | `peer` (VLAN 101, `192.168.200.0/30`) | 対外接続と会場内の経路 |
+| FortiGate (`192.168.99.129`) ⇔ Kubernetes のノード (`192.168.99.200` - `.202`) | iBGP | `SV` (VLAN 100, `192.168.99.128/25`) | ノードから LoadBalancer IP (`10.12.0.0/16`) と Pod CIDR (`10.15.0.0/16`) |
+| IX3110 (`192.168.250.2`) ⇔ 外部拠点 ddlia-net (`192.168.250.1`, AS `65000`) | eBGP | IPsec `Tunnel0.0` (`192.168.250.0/30`) | 拠点間の経路 |
+| IX3110 (`192.168.250.10`) ⇔ 外部拠点 kisarag1-net (`192.168.250.9`, AS `65500`) | eBGP | IPsec `Tunnel1.0` (`192.168.250.8/30`) | 拠点間の経路 |
+
+- IX3110 は FortiGate を、FortiGate は Kubernetes のノードを route reflector client として扱います。Kubernetes 側の設定は [Kubernetes 構築方法](/computing/deploy) を参照してください。
+- FortiGate は直結のネットワーク (各 VLAN のサブネット) を BGP に再配布します。
+- IX3110 は対外接続のセグメント (`192.168.8.0/24`) を BGP で広報します。
+
+### Route Reflector (RR) 構成
+
+iBGP ではループ防止のため、ある iBGP ピアから受信した経路を別の iBGP ピアへは再広報しません。本来は全ノード間で iBGP のフルメッシュ接続が必要になりますが、管理を簡素化するため、AS `64646` 内では階層型の **Route Reflector (RR)** を構成しています。
+
+```mermaid
+flowchart LR
+  ext["外部拠点 (eBGP)"] <--> ix["IX3110 (RR)"]
+  ix <-- "iBGP (RR Client)" --> fg["FortiGate (RR)"]
+  fg <-- "iBGP (RR Client)" --> main["Kubernetes main (becky / packard / marie)"]
+  fg <-- "iBGP (RR Client)" --> nas["Kubernetes nas (ongeki)"]
+```
+
+- **IX3110 (RR) → FortiGate (RR Client)**: 外部拠点 (`ddlia-net`, `kisarag1-net`) との eBGP 経路や対外接続経路を FortiGate へ中継し、FortiGate から受け取った会場内・Kubernetes 経路を外部拠点へ広報します。
+- **FortiGate (RR) → Kubernetes ノード (RR Client)**: `main` クラスタの各ノード (`becky`, `packard`, `marie`) および `nas` クラスタ (`ongeki`) を RR クライアントとして収容します。ノード同士で直接 iBGP ピアを張ることなく、Cilium が広報する LoadBalancer IP や Pod CIDR の経路を相互に交換し、さらに上流の IX3110 へも経路を広報します。

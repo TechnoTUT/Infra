@@ -1,0 +1,83 @@
+---
+title: L2 スイッチ
+sidebar_label: L2
+sidebar_position: 3
+---
+
+N-1 から先のスイッチは L2 として動き、全ての VLAN をトランクで運びます。VLAN とサブネットは [VLAN・IPアドレス設計](/network/vlan) を参照してください。
+
+## 共通設定
+
+- **VLAN**: 全てのスイッチで同じ VLAN (10, 20, 30, 40, 42-45, 99, 100) を有効にしています。トランクは全ての VLAN を通し、ネイティブ VLAN は使いません。
+- **スパニングツリー**: RSTP。N-3 (ApresiaLightGM110GT-PoE) は MSTP (インスタンス 0 のみ) で、RSTP と相互接続しています。端末を収容するポートはエッジポートにし、BPDU ガードで BPDU を受けたポートを shutdown します。
+- **リンクアグリゲーション**:
+
+  | スイッチ | インターフェース | ポート | 方式 | 用途 |
+  | :--- | :--- | :--- | :--- | :--- |
+  | N-1 | `po1` | `port2.0.5` - `2.0.12` | LACP | トランク |
+  | N-1 | `po2` | `port2.0.13` - `2.0.20` | LACP | トランク |
+  | N-1 | `sa1` | `port2.0.21` - `2.0.22` | 静的 | トランク |
+  | N-4 | `po1` | `port1.0.17` - `1.0.24` | LACP | 上流へのトランク |
+  | N-4 | `po2` | `port1.0.9` - `1.0.10` | LACP | AV (VLAN 20) の機器 |
+  | N-4 | `po3` | `port1.0.11` - `1.0.12` | LACP | AV (VLAN 20) の機器 |
+  | N-5, N-6 | `sa1` | `23` - `24` | 静的 | 上流へのトランク |
+
+- **IGMP Snooping**: マルチキャストを使う DJ (VLAN 10) と AV (VLAN 20) では、N-1 が Querier になります (`10.10.0.2`, `10.10.16.2`)。
+- **PoE**: 一部のスイッチは PoE で機器に給電できます。N-3 はポート 1 - 8 で給電します (装置全体 125 W、ポートあたり最大 31.2 W)。
+
+## N-1 (AT-SH510-28GTX) のポート割り当て
+
+<SwitchPanel preset="N-1" />
+
+| ポート | VLAN | 用途 |
+| :--- | :--- | :--- |
+| 1 (`port2.0.1`) | 全 VLAN (tagged) | Kubernetes ノード (`main`) |
+| 2 (`port2.0.2`) | 全 VLAN (tagged) | トランク (部室運用時は N-3 ポート 7 等) |
+| 3 (`port2.0.3`) | 100 (untagged) | FortiGate `dmz` (SV) |
+| 4 (`port2.0.4`) | 99 (untagged) | FortiGate `mgmt` (管理) |
+| 5 - 12 (`port2.0.5 - 2.0.12`) | 全 VLAN (tagged, `po1`) | FortiGate `po1` (上流トランク / LACP) |
+| 13 - 20 (`port2.0.13 - 2.0.20`) | 全 VLAN (tagged, `po2`) | N-4 `po1` (トランク / LACP) |
+| 21 - 22 (`port2.0.21 - 2.0.22`) | 全 VLAN (tagged, `sa1`) | N-5 / N-6 `sa1` (トランク / 静的 LAG) |
+| 23 - 24 (`port2.0.23 - 2.0.24`) | 全 VLAN (tagged) | Kubernetes ノード (`main`) |
+| 25 - 28 (`port2.0.25 - 2.0.28`) | 未割当 (SFP+) | 未使用 |
+
+## N-3 (ApresiaLightGM110GT-PoE) のポート割り当て
+
+<SwitchPanel preset="N-3" />
+
+| ポート | VLAN | 用途 |
+| :--- | :--- | :--- |
+| 1 - 4 | 10 (untagged) | PRO DJ LINK |
+| 5 - 6 | 20 (untagged) | VJ |
+| 7 - 9 | 全 VLAN (tagged) | 7: サーバ、8: AP、9: SFP (光) |
+| 10 | 99 (untagged) | 管理 |
+
+N-3 のポート 9・10 はコンボポートで、ポート 9 は SFP 側、ポート 10 は RJ-45 側を使います。
+
+## N-4 (AT-x210-24GT) のポート割り当て
+
+<SwitchPanel preset="N-4" />
+
+| ポート | VLAN | 用途 |
+| :--- | :--- | :--- |
+| 1 - 2 | 40 (untagged) | PA |
+| 3 - 8 | 20 (untagged) | AV |
+| 9 - 10 | 20 (untagged, `po2`) | AV (LACP) |
+| 11 - 12 | 20 (untagged, `po3`) | AV (LACP) |
+| 13 - 14 | 99 (untagged) | 管理 |
+| 15 - 16 | 全 VLAN (tagged) | トランク |
+| 17 - 24 | 全 VLAN (tagged, `po1`) | 上流へのトランク (LACP) |
+
+## N-5 / N-6 (GS924M V2) のポート割り当て
+
+<SwitchPanel preset="N-5" />
+
+| ポート | VLAN | 用途 |
+| :--- | :--- | :--- |
+| 1 - 2 | 40 (untagged) | PA |
+| 3 - 14 | 20 (untagged) | AV |
+| 15 - 16 | 全 VLAN (tagged) | トランク |
+| 21 - 22 | 99 (untagged) | 管理 |
+| 23 - 24 | 全 VLAN (tagged, `sa1`) | 上流へのトランク (静的 LAG) |
+
+N-5・N-6 は全ポートでブロードキャストリミット (`bclimit=on`) と IGMP Snooping を有効にしています。N-6 はトランクポート (`15-16`, `23-24`) で MSTP (`ttut-intra`) も有効です。

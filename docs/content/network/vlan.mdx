@@ -1,7 +1,7 @@
 ---
 title: VLAN・IPアドレス設計
 sidebar_label: VLAN
-sidebar_position: 3
+sidebar_position: 6
 ---
 
 | VLAN ID | VLAN名 | サブネット | ゲートウェイ | DHCP 範囲 | 主な用途・備考 |
@@ -16,29 +16,3 @@ sidebar_position: 3
 | **45** | `cam2` | `192.168.12.80/28` | `192.168.12.81` | `192.168.12.82` - `192.168.12.94` | カメラ配信 2 (RTMP, `TechnoTUT_Cam2`)。DHCP で DNS に cam2 の CoreDNS (`10.12.77.254`) を配る |
 | **99** | `mgmt` | `192.168.99.0/25` | `192.168.99.1` | `192.168.99.111` - `192.168.99.127` | ネットワーク機器管理 (スイッチには静的割当) |
 | **100** | `sv` | `192.168.99.128/25` | `192.168.99.129` | なし (静的割当) | サーバ用セグメント (Kubernetes ノード等) |
-
-## Kubernetes の Pod をつなげる VLAN
-VLAN 10・20・30・40・42〜45 は、FortiGate の software switch (`sw10` など) と vxlan-cni で、Pod を L2 で直接つなげます ([VXLAN の実装](/computing/vxlan))。VLAN 30 (LBAR) は DHCP サーバがないので、Pod をつなぐと IP アドレスが付きません。
-
-## 特殊用途VLAN (内部リンク用)
-- **`wan`**: 対外接続回線 〜 IX3110 接続用: `192.168.8.0/24` (上流ルータ `.1`、IX3110 `.99`。IX3110 で NAPT)
-- **`peer`(VLAN 101)**: 対外接続ルータ(IX3110 `.1`)とNGFW(FortiGate `.2`)間のダイナミックルーティング(BGP, AS 64646)用セグメント (`192.168.200.0/30`)
-- **`nas`**: FortiGate の `port9` 〜 NAS 接続用: `192.168.98.0/30` (FortiGate `.1`、NAS `.2`)
-- **`wan2`**: 予備の対外接続 (GL.iNet GL-AR300M) 〜 FortiGate 接続用: `192.168.9.0/24` (AR300M `.1`、FortiGate `.99`)
-- **IPsec トンネル**: IX3110 と外部拠点の間の BGP 用セグメント
-  - `Tunnel0.0` (ddlia-net): `192.168.250.0/30` (IX3110 `.2`、対向 `.1`)
-  - `Tunnel1.0` (kisarag1-net): `192.168.250.8/30` (IX3110 `.10`、対向 `.9`)
-
-## Kubernetes
-クラスタ `main` (`becky`, `packard`, `marie`) と `nas` (`ongeki`) があります。Cilium Cluster Mesh でつなぐため、範囲は重ならないようにします。両方の Pod CIDR を含む `10.12.0.0/14` 宛ての Pod の通信は NAT しません。VLAN 10・20 (`10.10.0.0/16`) と外部拠点が使う `10.8.0.0/16` はこの範囲に入れません。
-
-- **Pod CIDR**: `10.15.0.0/16`
-- **Service CIDR** (ClusterIP): `10.96.0.0/12`
-- **LoadBalancer IP**: `10.12.0.0/16` (BGPでFortiGateに広報)
-  - `10.12.0.1` - `10.12.63.255`: 自動割り当て
-  - `10.12.64.0` - `10.12.255.254`: 固定 IP (Service に `lbipam.technotut.net/static: "true"` ラベルが必要)
-- **`nas` のクラスタ**
-  - Pod CIDR: `10.13.0.0/16`
-  - Service CIDR: `10.96.0.0/12` (クラスタの中だけで使うので `main` と同じ)
-  - LoadBalancer IP: `10.14.0.0/24` (BGP で FortiGate に広報。`10.14.0.1` - `10.14.0.127` は自動割り当て、`10.14.0.128` - `10.14.0.254` は固定 IP)
-    - `10.14.0.128`: Samba (`drive.svc.technotut.net`)
