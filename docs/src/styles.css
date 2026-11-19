@@ -89,9 +89,16 @@ a { color: var(--link); }
 
 .search { position: relative; }
 .search input {
-  width: 11rem; padding: .35rem .7rem; border: 1px solid var(--border); border-radius: 6px;
-  background: var(--bg-alt); color: var(--fg);
+  /* ヘッダーのリンクと同じ: Quicksand の細字、44px の高さ、枠なしで下線だけ */
+  width: 11rem; min-height: 44px; padding: 0 .3rem; border: 0; border-bottom: 1px solid rgba(255, 255, 255, .3); border-radius: 0;
+  background: transparent; color: var(--fg); outline: 0; -webkit-appearance: none; appearance: none;
+  font-family: 'Quicksand', 'Noto Sans JP', system-ui, sans-serif; font-size: 14px; font-weight: 300; letter-spacing: .04em;
+  transition: border-color .4s ease, letter-spacing .4s ease;
 }
+.search input::placeholder { color: var(--muted); }
+.search input::-webkit-search-cancel-button { display: none; }
+.search input:hover, .search input:focus { border-bottom-color: #fff; letter-spacing: .06em; }
+@media (min-width: 1024px) { .search input { font-size: 1rem; } }
 .search-results {
   position: absolute; right: 0; top: 2.4rem; width: min(26rem, 90vw); margin: 0; padding: .3rem;
   list-style: none; background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
