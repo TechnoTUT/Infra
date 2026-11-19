@@ -1,4 +1,4 @@
-# plmux 本体。Pod のネットワーク (GUI) に加えて、Multus で DJ の VLAN10 (br10) につなぎ、PRO DJ LINK を受ける。
+# plmux 本体。Pod のネットワーク (GUI) に加えて、VXLAN (vxlan-cni) で DJ の VLAN10 につなぎ、PRO DJ LINK を受ける。
 # Ableton Link はこの Pod では広報しない (Carabiner は plmux-carabiner の Pod。VLAN20 だけにつないでいる)。
 # PRO DJ LINK の UDP (50000-50002) を使い、SQLite に書くので、1 つだけ動かす。
 apiVersion: apps/v1
@@ -20,7 +20,8 @@ spec:
         app: plmux
       annotations:
         # net1 ではなく dj という名前にする。beat-link は DJ 機器と同じサブネットのインターフェースを自動で選ぶ
-        k8s.v1.cni.cncf.io/networks: kube-public/vlan10-bridge@dj
+        k8s.v1.cni.cncf.io/networks: |
+          [{ "name": "vxlan", "namespace": "kube-public", "interface": "dj", "cni-args": { "vlan": 10 } }]
     spec:
       securityContext:
         runAsUser: 10001
