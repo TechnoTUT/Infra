@@ -57,7 +57,8 @@ Argo CD に登録するアプリケーションは [`k8s/manifest/apps/`](./k8s/
 | ドキュメントを書く・プレビューする | [`docs/README.md`](./docs/README.md) |
 | クラスタを構築・再構築する | [`k8s/ansible/README.md`](./k8s/ansible/README.md) |
 | 実機に触れずに Ansible を試す | [`k8s/ansible/test/README.md`](./k8s/ansible/test/README.md) |
-| AI にクラスタの状態や使い方を聞く | http://ai.svc.technotut.net ([使い方](./docs/content/service/aichat.mdx)) |
+| AI にクラスタやネットワークの状態、使い方を聞く (承認ボタンで一部の操作も可) | http://ai.svc.technotut.net ([使い方](./docs/content/service/aichat.mdx)、[実装](./docs/content/computing/aichat.mdx)) |
+| 監視と Discord への通知の仕組みを知る・直す | [`docs/content/computing/monitoring.mdx`](./docs/content/computing/monitoring.mdx) |
 | アプリケーションを追加する | `k8s/manifest/<name>/` にマニフェストを置き、`k8s/manifest/apps/<name>.yaml` に Application を追加 |
 
 push すると、ドキュメントは GitHub Actions で自動的にビルドされ、Cloudflare Pages にデプロイされます。

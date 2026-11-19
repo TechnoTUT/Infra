@@ -22,9 +22,9 @@ cilium_lb_static_start: "10.14.0.128"
 cilium_lb_static_stop: "10.14.0.254"
 
 # ===== Multus と vxlan-cni =====
-# VLAN 10/20 のトランクにはつながっていないので、VLAN には vxlan-cni (VXLAN) だけでつなぐ。
+# VLAN のトランクにはつながっていないので、VLAN には vxlan-cni (VXLAN) だけでつなぐ。
 # FortiGate は VNI ごとに VXLAN インターフェースを 1 つしか作れないため、port9 側は別の VNI
-# (vxlan10-nas = 10010, vxlan20-nas = 10020) を使い、dmz 側 (vxlan10, vxlan20) と同じ software switch に入れている。
+# (vxlan<VLAN>-nas = VLAN + 10000。例: vxlan10-nas = 10010) を使い、dmz 側 (vxlan<VLAN>) と同じ software switch に入れている。
 multus_enabled: true
 node_dns_servers: ["192.168.98.1"]   # FortiGate の port9 (forward-only の DNS サーバ)
 vxlan_cni_remote: "192.168.98.1"     # FortiGate の port9

@@ -84,6 +84,7 @@ FortiGate のデフォルトルートは 2 本あります。
 | `wan2` | AR300M | `192.168.9.99/24` | GL.iNet GL-AR300M (予備の対外接続) |
 | `po1` (`port1` - `port8`) | LAG-CORESW | - | N-1。VLAN 10 - 45 のサブインターフェース (`VLAN10` など) を載せる |
 | `sw10`, `sw20` | DJ, AV | `10.10.0.1/20`, `10.10.16.1/20` | software switch。`VLAN10`・`VLAN20` と Kubernetes のノードへの VXLAN (`vxlan10`, `vxlan20`, `vxlan10-nas`, `vxlan20-nas`) をまとめる ([vxlan-cni](/computing/deploy)) |
+| `sw30`, `sw40`, `sw42` - `sw45` | LBAR, PA, ENT, LDISP, CAM1, CAM2 | 各 VLAN のゲートウェイ ([VLAN・IPアドレス設計](/network/vlan)) | 同じ構成の software switch (VLAN と `vxlanNN`・`vxlanNN-nas`)。ゲートウェイ、DHCP サーバ、DNS サーバ、ポリシーは software switch に付く。VLAN 30 は DHCP サーバなし |
 | `mgmt` | - | `192.168.99.1/25` | MGMT (VLAN 99) |
 | `dmz` | SV | `192.168.99.129/25` | SV (VLAN 100) |
 | `port9` | NAS | `192.168.98.1/30` | NAS (`192.168.98.2`) |
@@ -94,6 +95,7 @@ VLAN 99・100 は `po1` ではなく、それぞれ専用のポート (`mgmt`, `
 
 - 各 VLAN の DHCP の範囲は [VLAN・IPアドレス設計](/network/vlan) を参照してください。DHCP で配る DNS サーバは FortiGate 自身です (CAM2 だけは FortiGate の上流 DNS サーバを直接配ります)。
 - FortiGate の上流 DNS サーバは `133.15.64.100`, `133.15.64.102` です。
+- Kubernetes のノードは、FortiGate を DNS サーバにしています (main は `dmz` の `192.168.99.129`、nas は `port9` の `192.168.98.1`)。外部の名前は FortiGate が上流に転送し、`svc.technotut.net` は FortiGate が答えます。クラスタ内の CoreDNS の上流も、ノードの `resolv.conf` (= FortiGate) です。
 - `svc.technotut.net` のゾーンと、逆引きの `12.10.in-addr.arpa`・`0.14.10.in-addr.arpa` は FortiGate が答えます。レコードは Kubernetes の ExternalDNS が REST API で書き換えます ([DNS (ExternalDNS と FortiGate)](/computing/deploy))。ゾーンに手でエントリを書くと消えます。
 - NTP は公開 NTP サーバに同期し、`mgmt` と `dmz` に NTP サーバとして時刻を配ります。
 

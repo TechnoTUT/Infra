@@ -24,7 +24,7 @@ Kubernetes のクラスタは 2 つあります。3 台の物理サーバ (`beck
 flowchart LR
   fg["FortiGate 100D (AS 64646)"] -- "iBGP (LB IP / Pod CIDR)" --> main["main クラスタ (becky / packard / marie)"]
   main <-- "Cilium Cluster Mesh (TCP 32379)" --> nas["nas クラスタ (ongeki)"]
-  main -- "Multus + vxlan-cni (VXLAN)" --> vlans["DJ (VLAN 10) / AV (VLAN 20)"]
+  main -- "Multus + vxlan-cni (VXLAN)" --> vlans["VLAN 10 / 20 / 30 / 40 / 42-45"]
   repo["GitHub (TechnoTUT/Infra)"] -- "GitOps 同期" --> argocd["Argo CD (main 上)"]
   argocd -- "Application 配信" --> main
   argocd -- "API (TCP 6443)" --> nas
@@ -48,11 +48,13 @@ Control-Plane ノードは、API サーバ・スケジューラ・コントロ�
 | オーケストレーション | Kubernetes (`kubeadm`) | `1.37` | クラスタ構築・ライフサイクル管理 |
 | コンテナランタイム | `containerd` | Docker リポジトリ (`containerd.io`) | CRI ランタイム |
 | CNI / BGP / Ingress | Cilium | `1.20.4` | `kube-proxy` 置き換え、Native Routing、iBGP による LoadBalancer IP / Pod CIDR 広報、Ingress、Cluster Mesh |
-| L2 マルチホーム | Multus | `v4.3.1` | `vxlan-cni` (VXLAN) で Pod を VLAN 10 (PRO DJ LINK)・VLAN 20 (Ableton Link) へ直結 |
+| L2 マルチホーム | Multus | `v4.3.1` | `vxlan-cni` (VXLAN) で Pod を VLAN 10 (PRO DJ LINK)・VLAN 20 (Ableton Link) など、VLAN 10・20・30・40・42〜45 へ直結 |
 | ストレージ | NFS / Local PV | `nfs-subdir-external-provisioner` (`4.0.18`) | `becky` の `/nfs` を動的プロビジョニング、`ongeki` は `/nas` を Local PV として利用 |
 | 内部 DNS | ExternalDNS + [FortiGate の webhook](https://github.com/TechnoTUT/external-dns-fortigate-webhook) | Helm Chart `1.21.1` | `svc.technotut.net` のレコードを FortiGate の DNS データベースに REST API で登録 |
 | GitOps | Argo CD | Helm Chart `10.12.1` | `main` ブランチの `k8s/manifest/` を自動同期 (`root` Application で各アプリを管理) |
 | CI Runner | Actions Runner Controller | `0.15.1` | GitHub Actions の self-hosted runner をジョブ実行時のみ Pod として起動 |
+| 運用支援 | [AI チャット](/computing/aichat) (Gemini API) | `gemini-3.8-flash` | クラスタ、FortiGate、ネットワークを調べて答える。承認ボタンで一部の操作を実行 |
+| 監視・通知 | [CronJob と DaemonSet](/computing/monitoring) (LLM なし) | 5 分ごと | 状態が変わったとき (問題、悪化、復旧、FortiGate の設定変更) だけ Discord に通知 |
 
 ## 構築と運用の仕組み
 
@@ -71,6 +73,9 @@ Control-Plane ノードは、API サーバ・スケジューラ・コントロ�
 | `addons` | Control-Plane | Helm、Cilium、Multus、NFS Provisioner、Argo CD、ExternalDNS の導入 |
 
 詳細な手順は [Kubernetes (k8s) 構築方法](/computing/deploy) を参照してください。実機を使わずに Podman 上で Playbook を検証するテスト手順は [Podman による疑似クラスタテスト](/computing/test) にまとめています。
+
+### 監視と通知
+5 分ごとのヘルスチェック (クラスタ、ノードの設定、ネットワーク、FortiGate の負荷) と、FortiGate の設定の変更検知が動いています。状態が変わったときだけ Discord に通知します。LLM は使いません。詳しくは [監視と通知](/computing/monitoring)、質問に答える [AI チャット](/computing/aichat) は別の仕組みです。
 
 ### Argo CD による GitOps
 Argo CD はリポジトリの `main` ブランチを監視しており、`k8s/manifest/apps/` や各アプリのマニフェストを更新してマージすると自動で同期されます。`nas` クラスタのアプリも `main` クラスタ上の Argo CD から管理しています。\

@@ -5,17 +5,17 @@ sidebar_position: 6
 ---
 
 ## 概要
-[AI チャット](/service/aichat) (aichat) は、Gemini の function calling で、クラスタとリポジトリを読んで答える Web チャットです。
+[AI チャット](/service/aichat) (aichat) は、Gemini の function calling で、クラスタ、FortiGate、ネットワーク、リポジトリを調べて答える Web チャットです。画面の承認ボタンを押したときだけ、一部の操作を実行します。\
+定期の監視と Discord への通知は、チャットとは別の仕組みです ([監視と通知](/computing/monitoring))。
 
 | 項目 | 内容 |
 |---|---|
 | ソース | [TechnoTUT/infra-assistant](https://github.com/TechnoTUT/infra-assistant) (Python、FastAPI、google-genai。依存は uv で管理) |
-| イメージ | `ghcr.io/technotut/infra-assistant:main` (infra-assistant リポジトリの GitHub Actions がビルド) |
-| マニフェスト | [`k8s/manifest/aichat/`](https://github.com/TechnoTUT/Infra/tree/main/k8s/manifest/aichat) (Argo CD の Application `aichat`) |
+| イメージ | `ghcr.io/technotut/infra-assistant` (infra-assistant リポジトリの GitHub Actions がビルド)。チャットは `:main`、監視の CronJob などは `:sha-<コミット>` に固定。`netprobe` は別イメージ `ghcr.io/technotut/netprobe:main` |
+| マニフェスト | [`k8s/manifest/aichat/`](https://github.com/TechnoTUT/Infra/tree/main/k8s/manifest/aichat) (Argo CD の Application `aichat`)、[`aichat-rbac/`](https://github.com/TechnoTUT/Infra/tree/main/k8s/manifest/aichat-rbac) (`aichat-rbac`)、[`netprobe/`](https://github.com/TechnoTUT/Infra/tree/main/k8s/manifest/netprobe) (`netprobe`) |
 | モデル | `gemini-3.8-flash` (Gemini API)。Deployment の環境変数 `GEMINI_MODEL` で変える。1 問でツールを呼ぶたびに 1 リクエストを使うので、レート制限 (RPM・TPM) が低いモデルは避ける。有料枠なので、使った分だけ課金される |
 | URL | http://ai.svc.technotut.net (Cilium Ingress。VLAN 10・20 から HTTP を許可) |
-| 問題の報告 | 調べて問題が見つかると、ツール `report_issue` が Discord の Webhook に送る。URL は Ansible Vault の `vault_discord_webhook_url` (任意) に保管し、Secret `aichat` のキー `discord-webhook-url` に入れる |
-| API キー | Ansible の `aichat.yml` が Secret `aichat` を作成。Ansible Vault の `vault_gemini_api_key` に保管 |
+| Secret | `aichat` (Gemini API キー `gemini-api-key`、Discord の Webhook URL `discord-webhook-url`)、`fortigate-readonly` (FortiGate の読み取り専用トークン `token`)。Ansible の `aichat.yml` が、Ansible Vault の `vault_gemini_api_key`、`vault_discord_webhook_url` (任意)、`vault_fortigate_readonly_token` (任意) から作る |
 
 ## 仕組み
 1. ブラウザが質問と、それまでのやりとりを `POST /api/chat` に送ります。サーバーはジョブを作って ID を返します。
@@ -33,54 +33,44 @@ sidebar_position: 6
 | `get_pod_logs` | `kubectl logs` 相当 (最大 300 行) |
 | `get_events` | `kubectl get events` 相当 |
 | `ping` / `dns_lookup` / `tcp_check` / `http_check` | Pod から宛先への ping、DNS (nslookup 相当)、TCP 接続、HTTP の状態を調べる (Pod から見た結果) |
-| `vlan_probe` | VLAN 10・20 の側から ping / arping / traceroute / DNS / TCP / HTTP を出す。必要になったとき、検証用の Pod (netprobe) をその VLAN に VXLAN でつないで起動し、使い終わって 5 分で消す |
+| `vlan_probe` | VLAN 10、20、40、42〜45 の側から ping / arping / traceroute / DNS / TCP / HTTP を出す。必要になったとき、検証用の Pod (netprobe) をその VLAN に VXLAN でつないで起動し、使い終わって 5 分で消す |
 | `fortigate_overview` / `fortigate_policies` / `fortigate_dhcp_leases` / `fortigate_routes` / `fortigate_interfaces` | FortiGate の読み取り (負荷、ポリシーとヒット数、DHCP のリース、経路、インターフェース)。書き込みはできない |
 | `list_repo_files` / `read_repo_file` / `search_repo` | git-sync が取り込んだリポジトリを読む |
+| `propose_action` | クラスタを変更する操作の**提案**。実行はせず、画面に承認ボタンを出す ([操作の承認](#操作の承認)) |
+| `report_issue` | 調べて見つかった問題を、Discord の Webhook に報告する |
 
 リポジトリは、サイドカーの git-sync が TechnoTUT/Infra の main を 5 分ごとに取り込みます。
 
-## 定期のヘルスチェック
-チャットとは別に、CronJob `healthcheck` が 5 分ごとに状態を調べ、**状態が変わったとき** (新しい問題が出たとき、重大度が上がったとき (警告から重大)、復旧したとき) だけ Discord に知らせます。同じ状態が続いているあいだは通知しません。重大度が下がったときは通知せず、通知済みの最高の重大度を覚えておくので、行き来しても繰り返し通知しません。**LLM は使わない** (Gemini を呼ばない) ので、トークンは減りません。
+## 操作の承認
+クラスタを変える操作は、AI が直接は実行できません。次の流れで、人が承認したときだけ実行します。
 
-| 項目 | 内容 |
-|---|---|
-| ソース | infra-assistant の `app/healthcheck.py` (チャットと同じイメージ。タグは `sha-<コミット>` に固定) |
-| マニフェスト | [`k8s/manifest/aichat/healthcheck.yaml`](https://github.com/TechnoTUT/Infra/tree/main/k8s/manifest/aichat/healthcheck.yaml) |
-| 権限 | ServiceAccount `healthcheck`: ノード、Pod、PVC、Service、Argo CD の Application の `list` だけ。状態の ConfigMap `healthcheck-state` だけ読み書き |
-| 通知先 | チャットの報告と同じ Webhook (Secret `aichat` の `discord-webhook-url`)。未設定なら通知しない |
+1. AI が `propose_action` で操作を提案します。サーバーは操作の種類、名前、namespace を検証して、メモリに保持します (10 分で期限切れ)。ブラウザには ID と説明だけが渡ります。
+2. 画面に、操作の内容と「実行する」「やめる」のボタンが出ます。
+3. 「実行する」を押すと `POST /api/actions/<ID>/approve` が、ブラウザから送った ID に対応する、サーバーが保持している内容だけを、1 回だけ実行します (内容は差し替えられません)。「やめる」は `/reject` です。
+4. 承認と却下は、Discord に記録します (操作、結果、送信元の IP)。
 
-| 見るもの | 通知する条件 (続いた時間) |
-|---|---|
-| ノード | NotReady (2 分)、メモリ・ディスク・PID の圧迫 (2 分) |
-| Pod | CrashLoopBackOff や ImagePullBackOff など (5 分)、Pending や Ready にならない (5 分)、Failed |
-| PVC / Service | PVC が Pending (5 分)、LoadBalancer に IP が付かない (5 分) |
-| Argo CD | Degraded や、その他の異常 (10 分)、OutOfSync (10 分) |
-| CronJob | `healthcheck`、`fgtsnapshot` の直近の実行が失敗している (次の実行が成功すれば解消) |
-| FortiGate | API に届かない (2 分)、CPU・メモリが 90% 以上 (5 分) |
-| ノードの設定 | `/etc/resolv.conf` の nameserver が `192.168.99.129` でない (2 分)、`packard` に `/dev/ttyUSB0` がない (5 分)、ディスクの空きが 10% 未満 (5 分)。DaemonSet `nodecheck` (ホストの `/etc` と `/dev` を読み取り専用で見る) が事実を返し、healthcheck が判定する |
-| ネットワーク | Pod から外部の名前 (`github.com`) と `ai.svc.technotut.net` が引けない (2 分)、`https://github.com` に届かない (2 分) |
+| 操作 | 内容 | 対象 |
+|---|---|---|
+| `restart_pod` | Pod を削除して作り直させる | cam1、cam2、dmxctl、dmxsim、live、ndi、plmux、speedtest、time |
+| `rollout_restart` | Deployment・StatefulSet・DaemonSet の rollout restart | 同上 |
+| `run_cronjob` | CronJob から Job を作る | 同上 |
+| `argocd_refresh` / `argocd_sync` | Argo CD のアプリの Refresh、Sync | argocd namespace のアプリ |
+| `cordon_node` / `uncordon_node` | ノードの `spec.unschedulable` を変える | becky、packard、marie |
 
-- 新しい問題と復旧を、1 回の実行につき 1 つのメッセージにまとめます。**同じアラームは、復旧するまで再通知しません。** 状態は ConfigMap に持ち、一時的な状態では通知しません。
-- 手元で試すには `DRY_RUN=1 python -m app.healthcheck` (通知も状態の保存もしません)。
-
-## FortiGate の読み取りと変更の検知
-- FortiGate には、読み取り専用のプロファイル `readonly-api` と API ユーザー `infra-readonly` (trusthost は dmz の `192.168.99.128/25`) があります。トークンは Secret `fortigate-readonly` (キー `token`) に入っていて、Ansible Vault の `vault_fortigate_readonly_token` に入れておくと `aichat.yml` が作ります。
-- 設定ファイルの取得 (backup) にはメンテナンス権限が要るので与えていません。代わりに、CronJob `fgtsnapshot` が 5 分ごとに、ポリシー、アドレス、サービス、インターフェース、VXLAN、software switch、DHCP、DNS、静的経路の表を読み取りの API で取って、前回との差を Discord に知らせます (LLM は使わない。最初の実行は基準を作るだけ)。fortigate-operator による変更も含みます。
-- ヘルスチェックは、FortiGate の API に届くか、CPU とメモリが 90% 未満かも見ます。
-
-## 操作の承認の記録と制限
-- 承認ボタンの承認と却下は、Discord に記録されます (操作、結果、送信元の IP、時刻)。ログインがないので、誰かは分かりません。送信元の IP が手がかりです。
-- 環境変数 `APPROVER_CIDRS` (カンマ区切りの CIDR) を設定すると、その送信元からしか承認できなくなります。空なら制限しません。送信元は、Cilium Ingress (Envoy) が `X-Forwarded-For` の末尾に足す値を使います。
-- ノードの `cordon` / `uncordon` (becky、packard、marie だけ) も、承認ボタンの後に実行できます。`drain` は影響が大きいので、チャットからはできません。
+環境変数 `APPROVER_CIDRS` (カンマ区切りの CIDR) を設定すると、その送信元からしか承認できなくなります。空なら制限しません。送信元は、Cilium Ingress (Envoy) が `X-Forwarded-For` の末尾に足す値を使います。
 
 ## 安全のための制限
 - ServiceAccount `aichat` の ClusterRole `aichat-readonly` は、種類を列挙した `get` / `list` / `watch` だけです。Secret、`pods/exec`、書き込みの verb は含みません (書き込みは次の項目)。
-- 書き込みは、画面の確認ボタンで承認した操作だけです。ClusterRole `aichat-operator` (Pod の `delete`、Deployment・StatefulSet・DaemonSet の `patch`、Job の `create`) と、argocd の Role (Application の `patch`) を、アプリの namespace (cam1、cam2、dmxctl、dmxsim、live、ndi、plmux、speedtest、time) にだけ RoleBinding で与えます。kube-system、argocd のほかのリソース、cilium、arc-*、external-dns、registry、fortigate-operator、aichat 自身は対象外です。マニフェストは [`k8s/manifest/aichat-rbac/`](https://github.com/TechnoTUT/Infra/tree/main/k8s/manifest/aichat-rbac) (Argo CD の Application `aichat-rbac`) にあります。
+- 書き込みは、画面の確認ボタンで承認した操作だけです。
+  - ClusterRole `aichat-operator` (Pod の `delete`、Deployment・StatefulSet・DaemonSet の `patch`、Job の `create`) と、argocd の Role (Application の `patch`) を、アプリの namespace (cam1、cam2、dmxctl、dmxsim、live、ndi、plmux、speedtest、time) にだけ RoleBinding で与えます。kube-system、argocd のほかのリソース、cilium、arc-*、external-dns、registry、fortigate-operator、aichat 自身は対象外です。
+  - ClusterRole `aichat-node-cordon` は、ノード `becky`、`packard`、`marie` の `patch` だけ (`resourceNames` で絞る)。
+  - マニフェストは [`k8s/manifest/aichat-rbac/`](https://github.com/TechnoTUT/Infra/tree/main/k8s/manifest/aichat-rbac) (Argo CD の Application `aichat-rbac`) にあります。
 - アプリでも、読める種類を `app/tools.py` の `KINDS` に限っています。種類を足すときは、ClusterRole と `KINDS` の両方に足します。
 - リポジトリの `vault.yml`、`.git`、鍵らしいファイル (`*.key`、`*.pem`) は読みません。
 - 質問とクラスタの情報は Gemini API (有料枠) に送られます。外部のサービスに送ることに変わりはないので、Secret を読めないようにしています。ただし Pod のログはそのまま送るので、ログに秘密を出すアプリには注意します。
 - ネットワーク診断は、ループバックとリンクローカル (クラウドのメタデータなど) には送りません。TCP と HTTP は決まったポートだけ、HTTP は本文を読まず状態とヘッダーだけ、全体で 1 分に 30 回までです。ping は特権なしの ICMP (Pod の `net.ipv4.ping_group_range` で許可されている必要がある) を使います。
-- `vlan_probe` の Pod は、aichat が `netprobe` 名前空間に作ります。aichat に与える権限はその名前空間の Pod の get / list / create / delete だけで、Pod の仕様 (イメージ、NET_RAW と NET_ADMIN だけの capability、root、ReadOnly のファイルシステム) は aichat のコードに固定です。AI が選べるのは VLAN だけです。同時に 2 つまで (ResourceQuota)、15 分で自動停止 (`activeDeadlineSeconds`)、API (8080) には aichat からだけつなげます (NetworkPolicy)。ソースは infra-assistant の `netprobe/`、マニフェストは [`k8s/manifest/netprobe/`](https://github.com/TechnoTUT/Infra/tree/main/k8s/manifest/netprobe) です。対象の VLAN は、`vxlan_cni_allowed_vlans` と `app/netdiag.py` の `NETPROBE_VLANS` の両方に足します。
+- `vlan_probe` の Pod は、aichat が `netprobe` 名前空間に作ります。aichat に与える権限はその名前空間の Pod の get / list / create / delete だけで、Pod の仕様 (イメージ、NET_RAW と NET_ADMIN だけの capability、root、ReadOnly のファイルシステム) は aichat のコードに固定です。AI が選べるのは VLAN だけです。同時に 2 つまで (ResourceQuota)、15 分で自動停止 (`activeDeadlineSeconds`)、API (8080) には aichat からだけつなげます (NetworkPolicy)。対象の VLAN は、`vxlan_cni_allowed_vlans` と `app/netdiag.py` の `NETPROBE_VLANS` の両方に足します (DHCP サーバがない VLAN 30 は除く)。
+- FortiGate には、読み取り専用のプロファイル `readonly-api` と API ユーザー `infra-readonly` (trusthost は dmz の `192.168.99.128/25`) があります。API への GET だけを、許可した path にだけ送ります (`app/fortigate.py`)。設定ファイルの取得 (backup) には、メンテナンス権限が要るので与えていません。
 - Discord への報告は、10 分に 5 件まで、同じ題名は 30 分は再送せず、メンションは無効、秘密らしい文字列は伏せて送ります。画面にログインがないので、誰かの質問で報告が送られることがあります。
 - 画面にログインはありません。VLAN 10・20 の誰でも使えます。同時に動かす質問は 2 つまで (`MAX_CONCURRENT`) です。
 
@@ -89,12 +79,42 @@ sidebar_position: 6
 2. Ansible Vault に入れて、Secret を作ります。
    ```bash
    cd k8s/ansible
-   ansible-vault edit inventory/group_vars/all/vault.yml   # vault_gemini_api_key: "<キー>" を足す
+   ansible-vault edit inventory/group_vars/all/vault.yml   # vault_gemini_api_key: "<キー>" を足す。任意: vault_discord_webhook_url、vault_fortigate_readonly_token
    ansible becky -m ansible.builtin.include_role -a "name=addons tasks_from=aichat"   # main のクラスタだけ
    ```
 3. main にマージすると、Argo CD がアプリをデプロイします。Secret を後から作ったときは、Pod を作り直します (`kubectl -n aichat rollout restart deploy/aichat`)。
+4. FortiGate の読み取り専用のユーザーとトークンは、FortiGate の CLI で作ります。
+   ```
+   config system accprofile
+       edit "readonly-api"
+           set secfabgrp read
+           set ftviewgrp read
+           set authgrp read
+           set sysgrp read
+           set netgrp read
+           set loggrp read
+           set fwgrp read
+           set vpngrp read
+           set utmgrp read
+           set wanoptgrp read
+           set wifi read
+       next
+   end
+   config system api-user
+       edit "infra-readonly"
+           set accprofile "readonly-api"
+           set vdom "root"
+           config trusthost
+               edit 1
+                   set ipv4-trusthost 192.168.99.128 255.255.255.128
+               next
+           end
+       next
+   end
+   execute api-user generate-key infra-readonly    # 出力のトークンを vault_fortigate_readonly_token に入れる
+   ```
 
-ghcr.io のパッケージ `infra-assistant` が非公開だと、イメージを pull できません。初回のビルド後、パッケージの設定で公開 (Public) にします。
+ghcr.io のパッケージ `infra-assistant` と `netprobe` が非公開だと、イメージを pull できません。初回のビルド後、パッケージの設定で公開 (Public) にします。
 
 ## 手元で動かす
 ```bash
