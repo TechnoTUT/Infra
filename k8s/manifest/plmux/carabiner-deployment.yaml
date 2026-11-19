@@ -1,5 +1,5 @@
 # Ableton Link (Carabiner)。plmux と同じイメージを carabiner モードで動かす。
-# Link は Pod の全てのインターフェースで広報されるので、Multus では VJ/AV の VLAN20 (br20) にだけつなぐ
+# Link は Pod の全てのインターフェースで広報されるので、VXLAN (vxlan-cni) で VJ/AV の VLAN20 にだけつなぐ
 # (DJ の VLAN10 には出さない)。Carabiner は 127.0.0.1 でしか待ち受けないので、plmux が中継する (17000/tcp)。
 # plmux はテンポと拍をこの Pod に TCP で送るので、なるべく同じノードに置く。
 apiVersion: apps/v1
@@ -20,7 +20,8 @@ spec:
       labels:
         app: plmux-carabiner
       annotations:
-        k8s.v1.cni.cncf.io/networks: kube-public/vlan20-bridge@av
+        k8s.v1.cni.cncf.io/networks: |
+          [{ "name": "vxlan", "namespace": "kube-public", "interface": "av", "cni-args": { "vlan": 20 } }]
     spec:
       securityContext:
         runAsUser: 10001
