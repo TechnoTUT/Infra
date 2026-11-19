@@ -1,4 +1,4 @@
-# Carabiner に届けば Link のテンポを変えられるので、plmux の Pod からだけ受ける。
+# Carabiner に届けば Link のテンポを変えられるので、plmux と dmxctl の Pod からだけ受ける。
 # (Multus の VLAN20 側には効かない。Link の通信 (UDP マルチキャスト 20808) はそちらを通る)
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -14,6 +14,12 @@ spec:
     - podSelector:
         matchLabels:
           app: plmux
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: dmxctl
+      podSelector:
+        matchLabels:
+          app: dmxctl
     ports:
     - protocol: TCP
       port: 17000
