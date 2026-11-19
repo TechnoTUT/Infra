@@ -1,4 +1,5 @@
-# cam2: カメラ用の VLAN45 のカメラからの配信のため、RTMP と HTTP を許可する。
+# cam2: カメラ用の VLAN45 のカメラからの配信のため、RTMP と HTTP、名前解決の DNS (CoreDNS) を許可する。
+# カメラには、FortiGate の DHCP (VLAN45 のサーバ) が、この cam2 の CoreDNS の LB IP を DNS サーバとして配る。
 # FortiGate の設定は fortigate-operator が反映する (https://github.com/TechnoTUT/fortigate-operator)。
 # 宛先は Service cam2-nginx-service の LB IP だけ。FirewallAddress k8s-cam2-nginx が serviceRef で LB IP に追従する。
 # カメラは、HTTP で Ustream の API のエミュレーションを呼び、RTMP で配信する。
@@ -26,3 +27,30 @@ spec:
   service: [HTTP, RTMP]
   action: accept
   comments: cam2 from camera VLAN45
+---
+# 宛先は Service coredns-service の LB IP だけ。FirewallAddress k8s-cam2-coredns が serviceRef で LB IP に追従する。
+# カメラは api.ustream.tv を CoreDNS に問い合わせ、中継用の Nginx の IP を得る。
+apiVersion: fortigate.technotut.net/v1alpha1
+kind: FirewallAddress
+metadata:
+  name: k8s-cam2-coredns
+  namespace: cam2
+spec:
+  serviceRef:
+    name: coredns-service
+  associatedInterface: dmz
+  comment: LB IP of Service coredns-service (cam2)
+---
+apiVersion: fortigate.technotut.net/v1alpha1
+kind: FirewallPolicy
+metadata:
+  name: al-cam2-dns
+  namespace: cam2
+spec:
+  srcintf: [sw45]
+  dstintf: [dmz]
+  srcaddr: [VLAN45 subnet]
+  dstaddr: [k8s-cam2-coredns]
+  service: [DNS]
+  action: accept
+  comments: cam2 CoreDNS from camera VLAN45
