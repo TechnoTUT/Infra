@@ -166,7 +166,7 @@ end
 
 ### FortiGate の Kubernetes SDN コネクタ
 FortiGate は Kubernetes の API から Service の IP を取得し、動的アドレス (`k8s-svc`、`k8s-ingress`、`k8s-nas-svc`) としてポリシーに使います。コネクタはクラスタごとに作ります。\
-`k8s-svc` には全 Service の IP が入るため、アプリケーションごとのポリシーの宛先には使いません。アプリケーションごとのポリシーでは、fortigate-operator の `FirewallAddress` (`serviceRef`) で、その Service の LB IP だけを宛先にします ([fortigate-operator の実装](/computing/fortigate-operator) を参照)。
+`k8s-svc` には全 Service の IP が入るため、アプリケーションごとのポリシーの宛先には使いません。アプリケーションごとのポリシーでは、fortigate-operator の `FirewallAddress` (`serviceRef`) で、その Service の LB IP だけを宛先にします ([fortigate-operator の実装](/compute/fortigate-operator) を参照)。
 
 | コネクタ | クラスタ | API |
 |---|---|---|

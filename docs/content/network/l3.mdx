@@ -47,7 +47,7 @@ IP パケットを暗号化・認証して、離れた拠点の間を安全に�
 | IX3110 (`192.168.250.2`) ⇔ 外部拠点 ddlia-net (`192.168.250.1`, AS `65000`) | eBGP | IPsec `Tunnel0.0` (`192.168.250.0/30`) | 拠点間の経路 |
 | IX3110 (`192.168.250.10`) ⇔ 外部拠点 kisarag1-net (`192.168.250.9`, AS `65500`) | eBGP | IPsec `Tunnel1.0` (`192.168.250.8/30`) | 拠点間の経路 |
 
-- IX3110 は FortiGate を、FortiGate は Kubernetes のノードを route reflector client として扱います。Kubernetes 側の設定は [Kubernetes 構築方法](/computing/deploy) を参照してください。
+- IX3110 は FortiGate を、FortiGate は Kubernetes のノードを route reflector client として扱います。Kubernetes 側の設定は [Kubernetes 構築方法](/compute/deploy) を参照してください。
 - FortiGate は直結のネットワーク (各 VLAN のサブネット) を BGP に再配布します。
 - IX3110 は対外接続のセグメント (`192.168.8.0/24`) を BGP で広報します。
 

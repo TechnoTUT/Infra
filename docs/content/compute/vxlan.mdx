@@ -4,7 +4,7 @@ sidebar_label: VXLAN
 sidebar_position: 3
 ---
 
-Kubernetes の Pod を、各 VLAN へ L2 で直接接続するため、FortiGate と Kubernetes ノード間通信に VXLAN を採用しています。Kubernetes ノード側は CNI プラグイン [vxlan-cni](https://github.com/TechnoTUT/vxlan-cni) が、FortiGate 側は software switch が担当します。Pod の使用方法と VLAN の追加手順は [Kubernetes 構築方法](/computing/deploy) を参照してください。
+Kubernetes の Pod を、各 VLAN へ L2 で直接接続するため、FortiGate と Kubernetes ノード間通信に VXLAN を採用しています。Kubernetes ノード側は CNI プラグイン [vxlan-cni](https://github.com/TechnoTUT/vxlan-cni) が、FortiGate 側は software switch が担当します。Pod の使用方法と VLAN の追加手順は [Kubernetes 構築方法](/compute/deploy) を参照してください。
 
 ## VXLAN プロトコルの理解
 このページを読むための、VXLAN (Virtual eXtensible LAN、[RFC 7348](https://datatracker.ietf.org/doc/html/rfc7348)) の基礎です。
@@ -245,7 +245,7 @@ end
 ## 運用上の制約
 - software switch の構成員として使用中の VXLAN インターフェースは、`remote-ip` を変更できません。ノード増設時は、一旦 software switch から切離し、変更後に再度組込みます。この間、VXLAN 上の Pod 通信は一時停止します。
 - VXLAN のカプセル化と software switch の転送は、FortiGate 100D では CPU が処理します。大容量の通信を扱う VLAN に適用する際は、CPU 使用率の監視が必須です。
-- Pod が選択可能な VLAN は、FortiGate に VXLAN と software switch を作成済みの VLAN に限定されます。VLAN の追加手順は [Kubernetes 構築方法](/computing/deploy) の「VLAN を追加する手順」を参照してください。
+- Pod が選択可能な VLAN は、FortiGate に VXLAN と software switch を作成済みの VLAN に限定されます。VLAN の追加手順は [Kubernetes 構築方法](/compute/deploy) の「VLAN を追加する手順」を参照してください。
 
 ## 動作確認
 ```bash

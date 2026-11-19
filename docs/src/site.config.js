@@ -10,7 +10,7 @@ export const site = {
   sections: [
     { id: 'about', label: 'About', href: '/about' },
     { id: 'network', label: 'Network' },
-    { id: 'computing', label: 'Compute' },
+    { id: 'compute', label: 'Compute' },
     { id: 'service', label: 'Service' },
   ],
   footerLinks: [

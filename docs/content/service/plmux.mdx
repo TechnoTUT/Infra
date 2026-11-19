@@ -9,7 +9,7 @@ plmux は、[PRO DJ LINK](/service/prodjlink) で DJ 機器 (XDJ-AZ など) の�
 
 <RepoCard repo="TechnoTUT/plmux" />
 
-[コンテナ基盤](/computing)上で常に動いているので、DJ 機器を DJ ネットワークにつなぐだけで使えます。
+[コンテナ基盤](/compute)上で常に動いているので、DJ 機器を DJ ネットワークにつなぐだけで使えます。
 
 ## 機能
 - 各デッキの曲名・アーティスト・アートワーク・BPM・波形・再生位置の表示
@@ -48,4 +48,4 @@ Beat Link Trigger の式と同じように、Clojure で機能を足せます。
 - DJ ネットワーク (VLAN 10) と AV ネットワーク (VLAN 20) には、Multus と vxlan-cni (VXLAN) でつないでいます。
   - plmux 本体は VLAN 10 だけ (PRO DJ LINK)。
   - Ableton Link (Carabiner) は別の Pod で、VLAN 20 だけ。Link は Pod の全てのネットワークで広報されるため、DJ ネットワークに出さないよう分けています。
-- 構成は [構築方法](/computing/deploy#plmux) を参照してください。
+- 構成は [構築方法](/compute/deploy#plmux) を参照してください。

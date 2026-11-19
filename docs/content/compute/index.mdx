@@ -1,7 +1,7 @@
 ---
 title: Compute
 sidebar_label: 概要
-slug: /computing
+slug: /compute
 sidebar_position: 1
 ---
 
@@ -9,7 +9,7 @@ sidebar_position: 1
 コンテナ型仮想化は、Linux カーネルの機能を利用してプロセスを隔離する方式です。Linux カーネルを共有することで、仮想マシンよりも軽量で高速に動作します。
 TechnoTUT Network では、Kubernetes をコンテナオーケストレーションツールとして採用しています。Infrastructure as Code (IaC) による運用が可能であり、運用の効率化を実現します。
 
-構築方法については、[Kubernetes (k8s) 構築方法](/computing/deploy)を参照してください。
+構築方法については、[Kubernetes (k8s) 構築方法](/compute/deploy)を参照してください。
 
 ## Kubernetes とは
 Kubernetesは、複数サーバで複数のコンテナを管理するためのツールです。  
@@ -53,8 +53,8 @@ Control-Plane ノードは、API サーバ・スケジューラ・コントロ�
 | 内部 DNS | ExternalDNS + [FortiGate の webhook](https://github.com/TechnoTUT/external-dns-fortigate-webhook) | Helm Chart `1.21.1` | `svc.technotut.net` のレコードを FortiGate の DNS データベースに REST API で登録 |
 | GitOps | Argo CD | Helm Chart `10.12.1` | `main` ブランチの `k8s/manifest/` を自動同期 (`root` Application で各アプリを管理) |
 | CI Runner | Actions Runner Controller | `0.15.1` | GitHub Actions の self-hosted runner をジョブ実行時のみ Pod として起動 |
-| 運用支援 | [AI チャット](/computing/aichat) (Gemini API) | `gemini-3.8-flash` | クラスタ、FortiGate、ネットワークを調べて答える。承認ボタンで一部の操作を実行 |
-| 監視・通知 | [CronJob と DaemonSet](/computing/monitoring) (LLM なし) | 5 分ごと | 状態が変わったとき (問題、悪化、復旧、FortiGate の設定変更) だけ Discord に通知 |
+| 運用支援 | [AI チャット](/compute/aichat) (Gemini API) | `gemini-3.8-flash` | クラスタ、FortiGate、ネットワークを調べて答える。承認ボタンで一部の操作を実行 |
+| 監視・通知 | [CronJob と DaemonSet](/compute/monitoring) (LLM なし) | 5 分ごと | 状態が変わったとき (問題、悪化、復旧、FortiGate の設定変更) だけ Discord に通知 |
 
 ## 構築と運用の仕組み
 
@@ -72,10 +72,10 @@ Control-Plane ノードは、API サーバ・スケジューラ・コントロ�
 | `kubeadm` | 全ノード | `kubelet` / `kubeadm` / `kubectl` 導入、`kubeadm init` / `join` |
 | `addons` | Control-Plane | Helm、Cilium、Multus、NFS Provisioner、Argo CD、ExternalDNS の導入 |
 
-詳細な手順は [Kubernetes (k8s) 構築方法](/computing/deploy) を参照してください。実機を使わずに Podman 上で Playbook を検証するテスト手順は [Podman による疑似クラスタテスト](/computing/test) にまとめています。
+詳細な手順は [Kubernetes (k8s) 構築方法](/compute/deploy) を参照してください。実機を使わずに Podman 上で Playbook を検証するテスト手順は [Podman による疑似クラスタテスト](/compute/test) にまとめています。
 
 ### 監視と通知
-5 分ごとのヘルスチェック (クラスタ、ノードの設定、ネットワーク、FortiGate の負荷) と、FortiGate の設定の変更検知が動いています。状態が変わったときだけ Discord に通知します。LLM は使いません。詳しくは [監視と通知](/computing/monitoring)、質問に答える [AI チャット](/computing/aichat) は別の仕組みです。
+5 分ごとのヘルスチェック (クラスタ、ノードの設定、ネットワーク、FortiGate の負荷) と、FortiGate の設定の変更検知が動いています。状態が変わったときだけ Discord に通知します。LLM は使いません。詳しくは [監視と通知](/compute/monitoring)、質問に答える [AI チャット](/compute/aichat) は別の仕組みです。
 
 ### Argo CD による GitOps
 Argo CD はリポジトリの `main` ブランチを監視しており、`k8s/manifest/apps/` や各アプリのマニフェストを更新してマージすると自動で同期されます。`nas` クラスタのアプリも `main` クラスタ上の Argo CD から管理しています。\

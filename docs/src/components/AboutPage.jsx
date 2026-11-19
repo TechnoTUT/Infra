@@ -63,7 +63,7 @@ const overview = [
   },
   {
     title: 'ネットワーク・コンテナ基盤',
-    tags: [{ label: 'Network', to: '/network' }, { label: 'Compute', to: '/computing' }],
+    tags: [{ label: 'Network', to: '/network' }, { label: 'Compute', to: '/compute' }],
     body: <>コアスイッチが各 VLAN の制御とルーティングを担い、Kubernetes クラスタが各種サービスを冗長構成で提供します。</>,
   },
 ];
@@ -89,7 +89,7 @@ export default function AboutPage() {
       <section className="about-section">
         <h2 className="about-h">ネットワークの全体像</h2>
         <p className="about-intro">
-          用途ごとに分割した VLAN と <Link to="/computing">Kubernetes コンテナ基盤</Link> を中心に、DJ・映像・照明・音響制御の各システムが連携して動作しています。
+          用途ごとに分割した VLAN と <Link to="/compute">Kubernetes コンテナ基盤</Link> を中心に、DJ・映像・照明・音響制御の各システムが連携して動作しています。
         </p>
         <Mermaid code={overviewDiagram} fullPageTo="/diagram" forceTheme="dark" />
         <ul className="about-list">

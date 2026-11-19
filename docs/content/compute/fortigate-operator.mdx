@@ -98,7 +98,7 @@ spec:
 - 書込んだアドレスは `kubectl get fgaddr -A` の `Address` 列で確認できます。
 - Cilium Ingress の共有 LB で受けるもの (例: dmxctl の操作パネル) は、引続き `k8s-ingress` を宛先にします。
 
-ポリシーは、インターフェース、アドレス、サービスを FortiGate 上の名前で参照します。VXLAN で接続した VLAN (10、20、30、40、42〜45) は、software switch (`sw10`、`sw20`、`sw30` など) がインターフェースとなり、`VLAN10 subnet` のような ipmask のアドレスで指定します。VLAN インターフェース (`VLAN44` など) とその `VLAN44 address` は、ポリシーでは使えません ([VXLAN の実装](/computing/vxlan) を参照)。
+ポリシーは、インターフェース、アドレス、サービスを FortiGate 上の名前で参照します。VXLAN で接続した VLAN (10、20、30、40、42〜45) は、software switch (`sw10`、`sw20`、`sw30` など) がインターフェースとなり、`VLAN10 subnet` のような ipmask のアドレスで指定します。VLAN インターフェース (`VLAN44` など) とその `VLAN44 address` は、ポリシーでは使えません ([VXLAN の実装](/compute/vxlan) を参照)。
 
 状態は次のコマンドで確認します。
 ```bash
