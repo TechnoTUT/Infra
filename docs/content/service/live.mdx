@@ -50,6 +50,11 @@ sequenceDiagram
 | `cam1` | `TechnoTUT_Cam1` (VLAN 44) | `10.12.77.253` | `10.12.77.252` | `rtmp://rtmp-service.live:1935/live/cam1` |
 | `cam2` | `TechnoTUT_Cam2` (VLAN 45) | `10.12.77.254` | `10.12.77.251` | `rtmp://rtmp-service.live:1935/live/cam2` |
 
+カメラの DNS サーバーは、FortiGate の DHCP が配ります (VLAN 44 は `10.12.77.253`、VLAN 45 は `10.12.77.254`)。カメラの Wi-Fi 設定で DNS を手で入れる必要はありません。FortiGate には、カメラの VLAN から CoreDNS への DNS (53) と、Nginx への HTTP・RTMP を許可するポリシーがあります (`k8s/manifest/cam1`・`cam2` の `firewallpolicy.yaml` から fortigate-operator が反映します)。\
+DHCP の設定を変えても、すでに接続しているカメラは、リースを更新するまで古い DNS を持っています。変更後は、カメラの Wi-Fi を切って、つなぎ直してください。
+
+CoreDNS が答えるか、VLAN の側から確かめるときは、[AI チャット](/service/aichat) に「VLAN 44 の側から DNS サーバー 10.12.77.253 に api.ustream.tv を引いて」と聞きます (`10.12.77.252` が返れば正常です)。
+
 #### カメラの初期設定・配信手順
 配信にあたって、カメラのWi-Fi設定でSSID `TechnoTUT_Cam1` または `TechnoTUT_Cam2` に接続し、あらかじめ [Sony-PMCA-RE](https://github.com/ma1co/Sony-PMCA-RE/releases) を使ってカメラにダミーの配信設定ファイル (`stream.cfg`) を書き込んでおく必要があります。
 
