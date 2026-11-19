@@ -1,0 +1,170 @@
+# aichat が確認ボタンの承認後に行う書き込みの権限。読み取りの権限は rbac.yaml。
+# ClusterRoleBinding は使わず、アプリの namespace ごとに RoleBinding で与える。
+# aichat の kustomization は namespace を上書きするので、別の Application (aichat-rbac) に分けている。
+# kube-system、argocd、cilium、arc-*、external-dns、registry、fortigate-operator、aichat 自身は対象外。
+# 与えるのは「Pod の再作成」「rollout restart」「CronJob の手動実行」「Argo CD の Sync / Refresh」だけ。
+# 作成・削除・scale・exec・Secret は与えない。操作を足すときは infra-assistant の write ツールも足す。
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: aichat-operator
+rules:
+- apiGroups: [""]
+  resources: [pods]
+  verbs: [delete]   # Deployment 等が作り直す
+- apiGroups: [apps]
+  resources: [deployments, statefulsets, daemonsets]
+  verbs: [patch]    # rollout restart (spec.template の annotation の更新)
+- apiGroups: [batch]
+  resources: [jobs]
+  verbs: [create]   # CronJob の手動実行 (kubectl create job --from)
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: aichat-argocd-sync
+  namespace: argocd
+rules:
+- apiGroups: [argoproj.io]
+  resources: [applications]
+  verbs: [patch]    # Sync (operation の設定) と Refresh (annotation の更新)
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: aichat-argocd-sync
+  namespace: argocd
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: aichat-argocd-sync
+subjects:
+- kind: ServiceAccount
+  name: aichat
+  namespace: aichat
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: aichat-operator
+  namespace: cam1
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: aichat-operator
+subjects:
+- kind: ServiceAccount
+  name: aichat
+  namespace: aichat
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: aichat-operator
+  namespace: cam2
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: aichat-operator
+subjects:
+- kind: ServiceAccount
+  name: aichat
+  namespace: aichat
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: aichat-operator
+  namespace: dmxctl
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: aichat-operator
+subjects:
+- kind: ServiceAccount
+  name: aichat
+  namespace: aichat
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: aichat-operator
+  namespace: dmxsim
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: aichat-operator
+subjects:
+- kind: ServiceAccount
+  name: aichat
+  namespace: aichat
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: aichat-operator
+  namespace: live
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: aichat-operator
+subjects:
+- kind: ServiceAccount
+  name: aichat
+  namespace: aichat
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: aichat-operator
+  namespace: ndi
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: aichat-operator
+subjects:
+- kind: ServiceAccount
+  name: aichat
+  namespace: aichat
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: aichat-operator
+  namespace: plmux
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: aichat-operator
+subjects:
+- kind: ServiceAccount
+  name: aichat
+  namespace: aichat
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: aichat-operator
+  namespace: speedtest
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: aichat-operator
+subjects:
+- kind: ServiceAccount
+  name: aichat
+  namespace: aichat
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: aichat-operator
+  namespace: time
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: aichat-operator
+subjects:
+- kind: ServiceAccount
+  name: aichat
+  namespace: aichat
