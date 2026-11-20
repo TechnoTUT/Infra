@@ -7,7 +7,7 @@
 ;; 読み込みのエラーや、フックごとの実行回数は plmux の GUI の Expressions タブで見られる。
 ;;
 ;; dmxctl 側: 「MIDI/OSC」タブで OSC を受信、「オート」タブでオートを ON。テンポの元は Ableton Link
-;; (dmxctl の PC を VJ/AV の VLAN20 につなぐ。plmux の Link は VLAN20 に広報している)。
+;; dmxctl の Pod は plmux-carabiner (VLAN20 で Link に参加している) の Carabiner に接続して、Link のテンポを受ける。
 ;;
 ;; OSC は plmux の Pod から、クラスタ内の Service dmxctl-remote (UDP 9000) へ送る。FortiGate は通らない。
 

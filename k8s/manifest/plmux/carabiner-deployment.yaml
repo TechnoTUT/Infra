@@ -2,6 +2,7 @@
 # Link は Pod の全てのインターフェースで広報されるので、VXLAN (vxlan-cni) で VJ/AV の VLAN20 にだけつなぐ
 # (DJ の VLAN10 には出さない)。Carabiner は 127.0.0.1 でしか待ち受けないので、plmux が中継する (17000/tcp)。
 # plmux はテンポと拍をこの Pod に TCP で送るので、なるべく同じノードに置く。
+# dmxctl も、この Pod の Carabiner に接続して Link のテンポと拍を受ける (DMXCTL_CARABINER_HOST)。
 apiVersion: apps/v1
 kind: Deployment
 metadata:

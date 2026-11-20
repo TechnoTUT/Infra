@@ -38,6 +38,13 @@ spec:
         - headless
         - --remote-listen
         - 0.0.0.0
+        env:
+        # Ableton Link は、VLAN 20 につないだ別の Pod (plmux-carabiner) の Carabiner に接続して利用する。
+        # この Pod では Carabiner を導入も起動もしない
+        - name: DMXCTL_CARABINER_HOST
+          value: plmux-carabiner.plmux.svc.cluster.local
+        - name: DMXCTL_CARABINER_PORT
+          value: "17000"
         ports:
         - { name: web, containerPort: 8080, protocol: TCP }
         - { name: remote, containerPort: 9300, protocol: TCP }
