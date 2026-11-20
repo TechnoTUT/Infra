@@ -119,6 +119,9 @@ export default function MissionFibers({ className }) {
       dpr = Math.min(window.devicePixelRatio || 1, 1.5);
       w = canvas.clientWidth;
       h = canvas.clientHeight;
+      // 狭い画面では非表示(display: none)で大きさが 0 になる。0 のキャンバスを drawImage すると
+      // iOS Safari は例外を投げ、React ツリーごと落ちてページが真っ白になるので描画しない
+      if (!w || !h) return;
       canvas.width = layer.width = Math.round(w * dpr);
       canvas.height = layer.height = Math.round(h * dpr);
       fibers = build(w, h);
@@ -136,6 +139,7 @@ export default function MissionFibers({ className }) {
     }
 
     function draw() {
+      if (!layer.width || !layer.height) return;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(layer, 0, 0);
