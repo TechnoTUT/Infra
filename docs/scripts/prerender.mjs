@@ -2,11 +2,12 @@
 import { readFile, writeFile, mkdir, rm } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { plain } from '../src/text.js';
 
 const root = resolve(import.meta.dirname, '..');
 const out = join(root, 'build');
 const ssrDir = join(root, '.ssr');
-const { render, routes, titleFor } = await import(pathToFileURL(join(ssrDir, 'entry-server.js')).href);
+const { render, routes, titleFor, pages } = await import(pathToFileURL(join(ssrDir, 'entry-server.js')).href);
 const { site } = await import(pathToFileURL(join(root, 'src/site.config.js')).href);
 
 const template = await readFile(join(out, 'index.html'), 'utf8');
@@ -49,5 +50,23 @@ const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://w
   .join('\n')}\n</urlset>\n`;
 await writeFile(join(out, 'sitemap.xml'), sitemap);
 
+// MCP Worker (worker/index.js) が bundle する、全ページのテキスト。
+// body は読み取り用の Markdown(frontmatter 除去)、text は検索インデックス用の平文。
+const docs = await Promise.all(
+  pages.map(async (p) => {
+    const src = await readFile(join(root, p.editPath), 'utf8');
+    return {
+      path: p.path,
+      title: p.title,
+      section: p.section,
+      url: `${site.url}${p.path}`,
+      body: src.replace(/^---[\s\S]*?---\n*/, '').trim(),
+      text: plain(src),
+    };
+  }),
+);
+await mkdir(join(root, 'worker'), { recursive: true });
+await writeFile(join(root, 'worker/docs.json'), JSON.stringify(docs));
+
 await rm(ssrDir, { recursive: true, force: true });
-console.log(`Prerendered ${routes.length} pages + 404.html + sitemap.xml`);
+console.log(`Prerendered ${routes.length} pages + 404.html + sitemap.xml, ${docs.length} docs for MCP`);

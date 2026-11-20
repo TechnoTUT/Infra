@@ -10,6 +10,7 @@ const EXTRA_TITLES = {
   '/diagram': '会場内ネットワークの全体像',
 };
 
+export { pages };
 export const routes = ['/', '/about', ...pages.map((p) => p.path), '/diagram'];
 
 export function titleFor(url) {
