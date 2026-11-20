@@ -32,6 +32,8 @@ jobs:
           run: npm install
 
         - name: Build site
+          env:
+            GITHUB_TOKEN: ${{ github.token }}
           run: npm run build
 
         - name: Serve built site
