@@ -609,7 +609,8 @@ a.repo-card:hover { border-color: var(--primary); background: var(--hover); }
 .about-tag.is-plain { border-color: rgba(255, 255, 255, .15); color: rgba(255, 255, 255, .6); }
 .about .footer { margin-top: 6rem; }
 @media (max-width: 800px) {
-  .about-cards { grid-template-columns: 1fr; }
+  .about-cards { grid-template-columns: 1fr; gap: 0; background: none; border: 0; }
+  .about-card { padding-left: 0; padding-right: 0; border-top: 1px solid rgba(255, 255, 255, .15); }
   .about-list li { grid-template-columns: 1fr; gap: .25rem; }
 }
 
