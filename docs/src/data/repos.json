@@ -30,22 +30,22 @@
       {
         "name": "Jinja",
         "color": "#a52a22",
-        "pct": 78.4
+        "pct": 76.6
       },
       {
         "name": "Clojure",
         "color": "#db5855",
-        "pct": 11
+        "pct": 11.6
       },
       {
         "name": "Shell",
         "color": "#89e051",
-        "pct": 9.5
+        "pct": 10.5
       },
       {
         "name": "Dockerfile",
         "color": "#384d54",
-        "pct": 1.2
+        "pct": 1.3
       }
     ]
   },
@@ -176,6 +176,71 @@
         "name": "Dockerfile",
         "color": "#384d54",
         "pct": 0.5
+      }
+    ]
+  },
+  "TechnoTUT/external-dns-fortigate-webhook": {
+    "description": "ExternalDNS webhook provider for FortiGate dns-database",
+    "languages": [
+      {
+        "name": "Go",
+        "color": "#00ADD8",
+        "pct": 99.3
+      },
+      {
+        "name": "Dockerfile",
+        "color": "#384d54",
+        "pct": 0.7
+      }
+    ]
+  },
+  "TechnoTUT/fortigate-operator": {
+    "description": "Kubernetes controller that manages FortiGate firewall policies, addresses and services from manifests",
+    "languages": [
+      {
+        "name": "Go",
+        "color": "#00ADD8",
+        "pct": 98.9
+      },
+      {
+        "name": "Makefile",
+        "color": "#427819",
+        "pct": 0.7
+      },
+      {
+        "name": "Dockerfile",
+        "color": "#384d54",
+        "pct": 0.4
+      }
+    ]
+  },
+  "TechnoTUT/ndi-discovery-server": {
+    "description": "NDI on L3 network",
+    "languages": [
+      {
+        "name": "Dockerfile",
+        "color": "#384d54",
+        "pct": 100
+      }
+    ]
+  },
+  "TechnoTUT/vxlan-cni": {
+    "description": "CNI plugin that attaches pods to a VLAN over VXLAN, chosen per pod in the manifest",
+    "languages": [
+      {
+        "name": "Go",
+        "color": "#00ADD8",
+        "pct": 62
+      },
+      {
+        "name": "Shell",
+        "color": "#89e051",
+        "pct": 33.6
+      },
+      {
+        "name": "Python",
+        "color": "#3572A5",
+        "pct": 4.5
       }
     ]
   }
