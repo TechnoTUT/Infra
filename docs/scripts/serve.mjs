@@ -1,4 +1,4 @@
-// build/ を Cloudflare Pages と同様の挙動(<path>/index.html, 404.html)で配信する簡易サーバ
+// build/ を Workers Static Assets と同様の挙動(<path>/index.html, 404.html)で配信する簡易サーバ
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { extname, join, resolve } from 'node:path';

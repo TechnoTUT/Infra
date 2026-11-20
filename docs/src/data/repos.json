@@ -30,12 +30,12 @@
       {
         "name": "Jinja",
         "color": "#a52a22",
-        "pct": 76.6
+        "pct": 76.5
       },
       {
         "name": "Clojure",
         "color": "#db5855",
-        "pct": 11.6
+        "pct": 11.8
       },
       {
         "name": "Shell",

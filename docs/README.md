@@ -39,4 +39,4 @@ $ npm run serve    # build/ をローカル配信 (-- --port 3000)
 ```
 
 ## Deployment
-Cloudflare Pages でホストされており、push 時に自動でビルド・デプロイされます。
+Cloudflare Workers(Static Assets)でホストされており、push 時に自動でビルド・デプロイされます。
