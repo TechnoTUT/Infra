@@ -1,0 +1,347 @@
+---
+title: manifest の書き方
+sidebar_label: manifest
+sidebar_position: 8
+---
+
+このクラスタ (`main` と `nas`) に新しいアプリケーションを載せるときの、manifest の書き方をまとめます。Kubernetes 一般の注意点と、このクラスタ固有の決まりごとの 2 つに分けています。\
+人が読むほか、[MCP](/service/mcp) 経由で AI アプリが参照することも想定しています。実例は、リポジトリの [k8s/manifest/](https://github.com/TechnoTUT/Infra/tree/main/k8s/manifest) にあります。迷ったら、近い構成のアプリ (下の表) の manifest を真似してください。
+
+| 知りたいこと | 参考にするアプリ |
+|---|---|
+| 基本形 (Deployment、Service、PVC、probe、kustomize) | `plmux` |
+| Ingress、固定の LB IP、デバイスを持つノードへの固定 | `dmxctl` |
+| VLAN への接続 (Multus) | `plmux`、`dmxctl` |
+| FortiGate のポリシー | `plmux`、`cam1` |
+| NetworkPolicy | `plmux` (carabiner)、`netprobe` |
+| nas のクラスタ (local PV) | `nas` |
+
+## 配信の仕組み
+manifest は `kubectl apply` で直接入れず、Git に置いて Argo CD に配信させます。
+
+```
+k8s/manifest/
+  apps/<名前>.yaml     # Argo CD の Application (どこから、どのクラスタへ配るか)
+  <名前>/              # アプリ本体の manifest (kustomization.yaml を置く)
+```
+
+`apps/` に置いた Application は、main にマージすると Argo CD が自動で登録します (親の Application `root` が `k8s/manifest/apps` を見ています)。\
+Application の基本形は次のとおりです (`apps/plmux.yaml`)。
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: plmux
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/TechnoTUT/Infra.git
+    targetRevision: HEAD
+    path: k8s/manifest/plmux
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: plmux
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+```
+
+- **`prune: false`**: Git からファイルを消しても、クラスタの資源は消えません。`kubectl delete` で手動で消してください。Service を消したときは、対応する `FirewallAddress` も消します ([fortigate-operator](/compute/fortigate-operator) を参照)。
+- **`selfHeal: true`**: `kubectl edit` などで手動で変えても、Git の内容に戻されます。変更は必ず Git で行います。
+- **`CreateNamespace=true`**: namespace は Application が作ります。namespace の manifest は書きません。
+- **nas のクラスタに配るとき**は `destination` を `name: nas` にします (`server` は使いません。`apps/nas.yaml`)。
+- **CRD を含むとき**は `ServerSideApply=true` を足します (`apps/fortigate-operator.yaml`)。
+- `apps/<名前>.yaml` を消すと、Argo CD への登録が外れますが、アプリの資源は消えません。
+- 反映は、main へのマージ後に数分かかります。
+
+## namespace
+アプリごとに namespace を 1 つ作り、名前はアプリと同じにします。namespace の指定方法は 2 通りあります。
+
+- **kustomize で付ける (推奨)**: `kustomization.yaml` に `namespace: <名前>` を書きます。各 manifest には書かなくてよくなります (`plmux`、`dmxctl`)。
+- **各 manifest に書く**: kustomize を使わないときは、全ての manifest の `metadata.namespace` に書きます (`time`、`cam1`)。書き忘れた資源は `default` に入ります。
+
+## manifest 一般の注意点
+### ラベルとセレクタ
+- `Deployment` の `spec.selector.matchLabels` と、Pod テンプレートの `labels` は一致させます。`app: <名前>` を使うのが慣例です。
+- `Service` の `selector` は、Pod のラベルと一致させます。一致しないと、エンドポイントが空のまま通信できません。
+- `selector` は作成後に変更できません。変えるときは Deployment を作り直します。
+
+### probe
+- `readinessProbe` を必ず付けます。付けないと、起動前の Pod にも通信が届きます。
+- `livenessProbe` は、起動が遅いアプリでは `initialDelaySeconds` を長めにします。短いと、起動中に再起動を繰り返します。
+- HTTP の `/healthz` があるアプリは `httpGet`、なければ `tcpSocket` にします。
+
+### リソース
+- `requests` (CPU とメモリ) と、メモリの `limits` を書きます。CPU の `limits` は必須ではありません。`plmux`、`dmxctl`、`samba` は付けておらず、`cam1`、`cam2`、`live` は付けています。付けると、上限を超えた分だけ処理が遅くなります。
+- メモリの `limits` を超えると、Pod は OOMKilled で再起動します。JVM のアプリなどは、ヒープ以外の分も見込んで余裕を持たせます。
+- ワーカーのメモリは `packard` と `marie` が 12 GB です。1 つのアプリに大きく要求しないでください。
+
+### セキュリティ
+- 可能な限り非 root で動かします (`runAsUser`、`runAsNonRoot: true`)。書き込むボリュームがあるときは、`fsGroup` も同じ ID にします。
+- `allowPrivilegeEscalation: false` と `capabilities.drop: ["ALL"]` を付けます。`readOnlyRootFilesystem: true` にできるときは、書き込む場所を `emptyDir` で足します (`/tmp` など)。
+- `privileged: true` は、デバイスを使うときなどに限ります (`dmxctl` の USB-DMX)。使うときは、理由を manifest にコメントで書きます。
+- **Secret の値を Git に置かないでください**。Secret は Ansible (Ansible Vault) が作ります。manifest からは名前で参照します (`samba-accounts`)。
+
+### 更新と起動
+- ボリュームを書き込む Pod が 1 つだけのときは、`replicas: 1` と `strategy.type: Recreate` にします。既定の `RollingUpdate` は、新しい Pod が起動する間、古い Pod も動くため、同じボリュームに 2 つの Pod が書き込みます。
+- `ConfigMap` を `subPath` でマウントすると、ConfigMap を更新しても Pod に反映されません。ディレクトリごとマウントします (`plmux` の `/config`)。ディレクトリ全体を置き換えられないファイル (`nas` の `/etc/samba/smb.conf`) だけ `subPath` を使い、反映には Pod の再起動が必要です。
+- ConfigMap の更新で Pod を再起動したくないとき、`configMapGenerator` の `disableNameSuffixHash: true` を使います。再起動したいときは、既定の名前のハッシュを使います。
+
+### 書き方
+- **理由が自明でない設定には、コメントを書きます**。ノードを固定した理由、`Recreate` にした理由、イメージのタグを固定した理由などです。既存の manifest もそうしています。
+- 複数の資源は `---` で区切って 1 ファイルにまとめても、資源ごとにファイルを分けても構いません。`kustomization.yaml` の `resources` に全てを列挙します (書き忘れると配信されません)。
+
+## このクラスタ向けの注意点
+### イメージ
+- 自作のイメージは `ghcr.io/technotut/<名前>` に置きます (public)。クラスタ内のレジストリ `registry.svc.technotut.net` を使うものもあります (`ndi`)。
+- **WAN が不安定**なため、イメージの取得に失敗することがあります。リリース用のイメージは、タグを固定して (`0.2.0`、`sha-<コミット>`)、`imagePullPolicy: IfNotPresent` にします。ノードにあるイメージを使うので、取得に失敗しません。更新するときは、タグを変えます。
+- `:main` や `:latest` を使うときは `imagePullPolicy: Always` にします。ただし、起動のたびに取得するため、WAN が不安定なときは起動に失敗します。開発中のアプリ (`dmxctl`) だけにしてください。
+- `:latest` で `IfNotPresent` にすると、更新が反映されません。
+
+### ノードの選び方
+- `main` の Control-Plane (`becky`) には、既定の `NoSchedule` の taint があります。Pod は `packard` と `marie` で動きます。`nas` のクラスタは、1 台 (`ongeki`) で taint がなく、Pod も動かします。
+- USB デバイスなど、特定のノードの資源が必要なときは `nodeName` (`dmxctl` は `packard`) か `nodeSelector` (`kubernetes.io/hostname`) で固定します。固定した理由はコメントに書きます。
+- 同じノードに寄せたいときは `podAffinity` を使います (`plmux-carabiner`。`preferred` なので、寄せられないときも起動します)。
+
+### Service と IP アドレス
+クラスタの外 (VLAN の端末) に出すときは、`type: LoadBalancer` にします。IP は Cilium が割り当て、FortiGate へ BGP で広報されます。
+
+| 種類 | 範囲 | 指定方法 |
+|---|---|---|
+| 自動 | `10.12.0.1` から `10.12.63.255` | `loadBalancerIP` を書かない |
+| 固定 | `10.12.64.0` から `10.12.255.254` | `loadBalancerIP` を書き、**ラベル `lbipam.technotut.net/static: "true"` を付ける** (`dmxctl-remote`) |
+
+- 固定の IP は、ラベルを付けた Service だけが使えます。ラベルがないと、IP が割り当てられません。
+- 固定の IP を別の Service へ移すときは、先に古い Service を消してから適用します。
+- クラスタ内だけで使う Service は、`type` を書かず (ClusterIP)、外に出しません (`dmxctl` の `Service`)。
+- **UDP と TCP を同じ LB IP に載せる**ことができます (`dmxctl-remote`)。
+
+### DNS (ExternalDNS)
+Service に annotation を付けると、`<名前>.svc.technotut.net` が FortiGate の DNS に登録されます。
+
+```yaml
+metadata:
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: plmux.svc.technotut.net
+```
+
+Ingress は `host` に `svc.technotut.net` 配下の名前を書くだけで登録されます。詳しくは [ExternalDNS](/compute/externaldns) を参照してください。
+
+### Ingress
+HTTP のアプリは、Cilium Ingress (共有の LB) で受けられます。`ingressClassName: cilium` にします。
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: dmxctl
+spec:
+  ingressClassName: cilium
+  rules:
+  - host: dmx.svc.technotut.net
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: dmxctl
+            port:
+              name: http
+```
+
+- バックエンドの Service は、ClusterIP で構いません。
+- Envoy のルートは 15 秒で切れます。15 秒より長い処理は、ジョブを作ってポーリングする作りにします (`aichat`)。
+- FortiGate のポリシーの宛先は、共有 LB のアドレス `k8s-ingress` です。
+
+### ストレージ
+| StorageClass | クラスタ | 内容 |
+|---|---|---|
+| `nfs-client` | main | `becky` の `/nfs` に動的に作る。`ReadWriteOnce` で使う |
+| `nas-local` | nas | `ongeki` の `/nas` を、静的な PV で割り当てる (`Retain`) |
+
+```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: plmux-data
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: nfs-client
+  resources:
+    requests:
+      storage: 1Gi
+```
+
+- NFS は `becky` の 1 台に依存します。`becky` が止まると、NFS の PVC を使う Pod も動かなくなります。
+- `nas-local` の PV は `nodeAffinity` で `ongeki` に決まります。既存のデータを使うので、動的には作りません (`nas/storage.yaml`)。
+- SQLite などのファイルに書き込む Pod は、1 つだけにします (`plmux`)。
+
+### VLAN への接続 (Multus)
+Pod を VLAN (10、20、30、40、42〜45) に L2 で直接つなぐときは、annotation で NAD `kube-public/vxlan` を指定します。仕組みは [VXLAN の実装](/compute/vxlan) を参照してください。
+
+```yaml
+metadata:
+  annotations:
+    k8s.v1.cni.cncf.io/networks: |
+      [{ "name": "vxlan", "namespace": "kube-public", "interface": "dj", "cni-args": { "vlan": 10 } }]
+```
+
+- Pod には、Cilium の `eth0` に加えて、`net1` (`interface` を書くとその名前) が付きます。IP は、その VLAN の DHCP から取得します。
+- 既定の経路は `eth0` のままです。VLAN の側の通信は、その VLAN のサブネット宛てだけが `net1` を通ります。
+- `vlan` に指定できるのは、10、20、30、40、42、43、44、45 だけです。それ以外は Pod の作成が失敗します。
+- 1 つの Pod に VLAN を複数つなぐときは、JSON の配列に要素を足します。
+- アプリが「DJ 機器と同じサブネットのインターフェース」を自動で選ぶ場合 (beat-link) などは、`interface` で分かりやすい名前を付けます。
+- NetworkPolicy は、`net1` の側の通信には効きません。
+
+### FortiGate のポリシー
+VLAN の端末からアプリへの通信や、Pod から VLAN への通信は、FortiGate のポリシーで許可しないと通りません。ポリシーは、アプリの manifest と同じディレクトリに `firewallpolicy.yaml` として置き、`kustomization.yaml` の `resources` に足します。反映は [fortigate-operator](/compute/fortigate-operator) が行います。
+
+書き方の要点は次のとおりです。
+
+- 宛先が LB の Service のときは、`FirewallAddress` の `serviceRef` でその Service の LB IP を指定し、ポリシーの `dstaddr` にそのアドレスを使います。`k8s-svc` (全 Service) は、他のアプリにも開いてしまうので使いません。
+- Ingress の共有 LB で受けるものは、`k8s-ingress` を宛先にします。
+- VXLAN で接続した VLAN は、software switch (`sw10`、`sw20`、`sw44` など) をインターフェースに、`VLAN10 subnet` のようなアドレスで指定します。`VLAN44` などの VLAN インターフェースと `VLAN44 address` は使えません。
+- LB を受けるインターフェースは `dmz` です (`dstintf: [dmz]`)。
+- Pod から外への通信は、ノードの IP (`dmz`) に SNAT されて FortiGate を通ります。送信元は `srcintf: [dmz]`、`srcaddr: [dmz]` にします。
+- 名前は `al-<アプリ>-<内容>` にします。アドレスは `k8s-<アプリ>` です。`FirewallService` の名前は、FortiGate 全体で一意にします。
+- Service を消すときは、対応する `FirewallAddress` も消します。残ると、その IP が他の Service に割り当てられたときに、開放されたままになります。
+
+ポリシーがない通信は、FortiGate の暗黙の拒否で止まります。通信が通らないときは、`kubectl get fortigate -A` で状態 (`Ready`) を確認します。
+
+### NetworkPolicy
+Cilium が NetworkPolicy を実装しています。許可する送信元を絞るときに使います (`plmux-carabiner`、`netprobe`)。
+
+- `policyTypes: [Ingress]` だけを書くと、入る通信だけが制限されます。出る通信は制限されません。
+- 別の namespace からの通信は、`namespaceSelector` で `kubernetes.io/metadata.name` を指定します。`podSelector` を併記すると、その namespace の中のその Pod だけになります。
+- Multus の `net1` の通信には効きません。
+
+### nas のクラスタ
+- `destination` を `name: nas` にします。
+- FortiGate のポリシーは、`fortigate-operator` が main にしかないため、nas のクラスタには置けません (`fortigate_operator_enabled: false`)。
+- nas のクラスタの Service の IP は、FortiGate の `k8s-nas-svc` に入ります。
+
+## 新しいアプリを追加する手順
+1. `k8s/manifest/<名前>/` に、Deployment、Service、必要なら PVC、ConfigMap を書きます。
+2. 外に出すときは、Service を `LoadBalancer` にして、DNS の annotation を付けます (HTTP は Ingress でも構いません)。
+3. 通信が必要なら、`firewallpolicy.yaml` を書きます。
+4. `kustomization.yaml` に、`namespace` と全ての `resources` を書きます。
+5. `k8s/manifest/apps/<名前>.yaml` に、Application を書きます。
+6. PR を作って、main にマージします。Argo CD が数分で反映します。
+7. 状態を確認します。
+
+```bash
+kubectl -n <名前> get pods
+kubectl -n <名前> get svc
+kubectl get fortigate -A
+```
+
+Argo CD の画面 (`cd.svc.technotut.net`) でも、同期の状態が見られます。
+
+### 最小の雛形
+`kustomization.yaml`:
+
+```yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: myapp
+resources:
+  - deployment.yaml
+  - service.yaml
+```
+
+`deployment.yaml`:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp
+  labels:
+    app: myapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: myapp
+  template:
+    metadata:
+      labels:
+        app: myapp
+    spec:
+      securityContext:
+        runAsUser: 10001
+        runAsGroup: 10001
+      containers:
+      - name: myapp
+        # タグを固定して、WAN が不安定でもノードにあるイメージを使う
+        image: ghcr.io/technotut/myapp:1.0.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 8080
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: http
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 20
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            memory: 256Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: ["ALL"]
+      restartPolicy: Always
+```
+
+`service.yaml`:
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: myapp
+  labels:
+    app: myapp
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: myapp.svc.technotut.net
+spec:
+  selector:
+    app: myapp
+  type: LoadBalancer
+  ports:
+  - name: http
+    protocol: TCP
+    port: 80
+    targetPort: http
+```
+
+## よくある失敗
+| 症状 | 原因と対処 |
+|---|---|
+| Pod が `ImagePullBackOff` | WAN の不通か、タグの間違い。タグを固定して `IfNotPresent` にする。ノードにまだないイメージは、WAN が戻るまで取得できない |
+| Service に `EXTERNAL-IP` が付かない (`<pending>`) | 固定の IP を使うのに、ラベル `lbipam.technotut.net/static: "true"` がない。または、IP が他の Service で使用中 |
+| Service は `Running` だが、通信できない | FortiGate のポリシーがない。`kubectl get fortigate -A` で `Ready` を確認する。`selector` とラベルの不一致も確認する |
+| 名前 (`*.svc.technotut.net`) が引けない | annotation の `hostname` が `svc.technotut.net` 配下でない。ExternalDNS の反映を待つ |
+| Pod の作成が `ContainerCreating` のまま | `vlan` が許可外、または NAD の指定の間違い (`name: vxlan`、`namespace: kube-public`) |
+| PVC が `Pending` | `storageClassName` の間違い。nas のクラスタでは `nas-local` で、PV を先に作る |
+| 更新したのに Pod が変わらない | Argo CD の同期待ち。`:latest` や `:main` に `IfNotPresent` を使うと、新しいイメージを取得しない |
+| 手で直したのに元に戻る | `selfHeal: true` のため。Git を直す |
+| ファイルを消したのに資源が残る | `prune: false` のため。`kubectl delete` で手動で消す |
+| Pod が OOMKilled で再起動を繰り返す | メモリの `limits` が足りない。`requests` と `limits` を見直す |
+| 2 つの Pod が同じボリュームに書いて壊れる | `Recreate` にしていない (`RollingUpdate` のまま) |
