@@ -61,4 +61,4 @@ Argo CD に登録するアプリケーションは [`k8s/manifest/apps/`](./k8s/
 | 監視と Discord への通知の仕組みを知る・直す | [`docs/content/compute/monitoring.mdx`](./docs/content/compute/monitoring.mdx) |
 | アプリケーションを追加する | `k8s/manifest/<name>/` にマニフェストを置き、`k8s/manifest/apps/<name>.yaml` に Application を追加 |
 
-push すると、ドキュメントは GitHub Actions で自動的にビルドされ、Cloudflare Pages にデプロイされます。
+push すると、ドキュメントは GitHub Actions で自動的にビルドされ、Cloudflare Workers(Static Assets)にデプロイされます。

@@ -2,7 +2,7 @@ on:
     push:
       paths:
         - "docs/**"
-        - ".github/workflows/pages-deployment.yaml"
+        - ".github/workflows/workers-deployment.yaml"
 
 jobs:
     deploy:
@@ -15,7 +15,7 @@ jobs:
         contents: read
         deployments: write
         statuses: write
-      name: Deploy to Cloudflare Pages
+      name: Deploy to Cloudflare Workers
       steps:
         - name: Checkout
           uses: actions/checkout@v4
@@ -38,8 +38,9 @@ jobs:
             GITHUB_TOKEN: ${{ github.token }}
           run: npm run build
         - name: Publish
-          uses: cloudflare/wrangler-action@v3
+          uses: cloudflare/wrangler-action@v4
           with:
             apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
             accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-            command: pages deploy docs/build --project-name=technotut-infra
+            workingDirectory: docs
+            command: deploy
