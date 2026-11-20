@@ -1,0 +1,11 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "technotut-infra",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./build",
+    // prerender.mjs が <path>/index.html と 404.html を出力する
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page"
+  }
+}
