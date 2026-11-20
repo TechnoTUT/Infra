@@ -7,6 +7,8 @@
 
 # Generated files
 /docs/.ssr
+/docs/worker/docs.json
+/docs/.wrangler
 
 # Misc
 /docs/.DS_Store
