@@ -4,7 +4,7 @@ sidebar_position: 12
 ---
 
 ## MCP とは
-MCP (Model Context Protocol) は、Claude Code や Claude Desktop などの AI アプリから、外部のデータやツールを使うための共通の仕組みです。\
+MCP (Model Context Protocol) は、Claude Code や Claude Desktop などの AI アプリから、外部のデータやツールを使うための仕組みです。\
 このドキュメントは MCP サーバーとしても公開されています。接続すると、AI アプリがこのドキュメントを検索して、必要なページを読めます。「VXLAN の設定はどうなっている？」のような質問に、手元のコピーではなく最新のドキュメントを根拠に答えられます。
 
 ## 接続方法
@@ -20,8 +20,7 @@ claude mcp add --transport http technotut-network-docs https://network.technotut
 ```
 
 ### その他のクライアント
-Streamable HTTP に対応した MCP クライアントなら、上の URL を指定するだけで使えます。\
-Claude Desktop などの設定ファイルで URL を指定するときは、種類 (type) に `http` を選んでください。
+Streamable HTTP に対応した MCP クライアントで、上の URL を指定します。
 
 ## 使えるツール
 | ツール | 内容 | 引数 |
@@ -36,15 +35,3 @@ AI アプリは、まず `search_docs` で探して、見つかったページ�
 - FortiGate のファイアウォールポリシーはどう管理している？
 - VXLAN で Pod を VLAN に接続する仕組みを教えて
 - PA ネットワークの構成を要約して
-
-## 仕組み
-- サイトと同じ Cloudflare Workers で動いています。`/mcp` だけが MCP サーバーで、そのほかのパスは、これまでどおりドキュメントのページです。
-- ページの内容は、ドキュメントのビルド時に Worker へ取り込まれます。そのため、更新が反映されるのはデプロイが終わったあとです。
-- 読み取り専用です。ドキュメントの変更や、ネットワークへの操作はできません。
-- 状態を持ちません。セッションの開始や終了の処理はなく、ブラウザで URL を開いても `405` が返ります (MCP クライアント専用です)。
-
-実装は [Infra リポジトリ](https://github.com/TechnoTUT/Infra) の `docs/worker/index.js` です。
-
-## 関連
-- [AI チャット](/service/aichat): 同じドキュメントに加えて、クラスタや FortiGate の状態も調べられる、部内 Web チャットです。
-- [PA](/service/pa): Soundcraft Ui12 を AI から操作する別の MCP サーバー (`soundcraft-ui-mcp`) を紹介しています。
