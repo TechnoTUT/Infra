@@ -30,7 +30,7 @@ spec:
       - name: moipctl
         # TechnoTUT/moipctl のタグ (v を除く) を GitHub Actions がビルドして置く (public)。
         # WAN が不安定なので、ノードにあるイメージを使う。更新するときはタグを変える。
-        image: ghcr.io/technotut/moipctl:0.1.0
+        image: ghcr.io/technotut/moipctl:0.1.1
         imagePullPolicy: IfNotPresent
         # イメージの ENTRYPOINT は `moipctl serve --host 0.0.0.0 --port 8080 --state /data/state.json`。
         # ここに足す: VLAN にはつながないので自分では探さない。scout の報告は 8081 で受ける。
