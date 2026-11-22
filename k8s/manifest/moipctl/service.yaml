@@ -1,4 +1,4 @@
-# Web・API (/api/nodes、/api/bulk/...、/api/events)。認証はないので、FortiGate のポリシー (firewallpolicy.yaml) で入れる VLAN を絞っている。
+# Web・API (/api/nodes、/api/bulk/...、/api/events)。認証はないので、FortiGate のポリシー (firewallpolicy.yaml) で、入れる VLAN (DJ、AV) を絞っている。
 apiVersion: v1
 kind: Service
 metadata:

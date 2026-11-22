@@ -1,5 +1,5 @@
 # moipctl の画面と API には認証がない。操作できると映像の切り替えが誰でもできてしまうので、
-# 入れるのは、演出側 (AV、VLAN 20) だけにしている。DJ (VLAN 10) などから使うときは、同じ形のポリシーを足す。
+# 入れるのは、DJ (VLAN 10) と演出側 (AV、VLAN 20) だけにしている。他の VLAN から使うときは、同じ形のポリシーを足す。
 # ノードとの通信は、Pod が同じ VLAN に直接つながっている (Multus) ので、ポリシーは要らない。
 # FortiGate の設定は fortigate-operator が反映する (https://github.com/TechnoTUT/fortigate-operator)。
 #
@@ -26,3 +26,16 @@ spec:
   service: [HTTP]
   action: accept
   comments: moipctl from VLAN20
+---
+apiVersion: fortigate.technotut.net/v1alpha1
+kind: FirewallPolicy
+metadata:
+  name: al-moipctl-dj
+spec:
+  srcintf: [sw10]
+  dstintf: [dmz]
+  srcaddr: [VLAN10 subnet]
+  dstaddr: [k8s-moipctl]
+  service: [HTTP]
+  action: accept
+  comments: moipctl from VLAN10

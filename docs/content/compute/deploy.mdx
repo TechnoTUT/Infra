@@ -413,7 +413,7 @@ kubectl -n plmux logs deploy/plmux | grep -iE "VirtualCdj|Carabiner|expressions"
 
 - ノードは mDNS (`_moip._tcp`) で自分を広報します。mDNS はルーターを越えないので、Pod をノードのいる VLAN に直接つなぎ (Multus)、そこでノードを探します。ノードとの通信 (TCP 8000) も同じ VLAN の中で済むので、FortiGate のポリシーは要りません。
 - ノードを置く VLAN が増えたときは、Deployment の annotation に VLAN を足します。
-- 画面と API には認証がありません。FortiGate のポリシー (`firewallpolicy.yaml`) で、AV ネットワーク (VLAN 20) からだけ入れるようにしています。
+- 画面と API には認証がありません。FortiGate のポリシー (`firewallpolicy.yaml`) で、DJ ネットワーク (VLAN 10) と AV ネットワーク (VLAN 20) からだけ入れるようにしています。
 - 表示名を書く state.json があるので、レプリカは 1 つ (`Recreate`) です。
 
 ```bash
