@@ -1,0 +1,124 @@
+# scout: VLAN の中で mDNS (_moip._tcp) を探して、見つけたノードのアドレスを moipctl に報告するだけの Pod。
+# mDNS はルーターを越えないので、ノードのいる VLAN ごとに 1 つ置く。VLAN を増やすときは、Deployment を足す。
+#   - moipctl-scout-av:  VLAN 20 (av)  NDI の送受信 (RX/TX) をするノード
+#   - moipctl-scout-ent: VLAN 42 (ent) 入口のサイネージのノード
+# 報告先は Service moipctl-scout (ClusterIP、eth0 経由)。VLAN の側 (av/ent) は探すだけで、何も受け付けない。
+# 状態を持たないので、PVC はない。
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: moipctl-scout-av
+  labels:
+    app: moipctl-scout
+    vlan: av
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: moipctl-scout
+      vlan: av
+  template:
+    metadata:
+      labels:
+        app: moipctl-scout
+        vlan: av
+      annotations:
+        k8s.v1.cni.cncf.io/networks: |
+          [{ "name": "vxlan", "namespace": "kube-public", "interface": "av", "cni-args": { "vlan": 20 } }]
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+      containers:
+      - name: scout
+        # moipctl と同じイメージ。ENTRYPOINT (serve) を scout に置き換える。
+        image: ghcr.io/technotut/moipctl:0.1.1
+        imagePullPolicy: IfNotPresent
+        command: ["moipctl", "scout"]
+        args: ["--controller", "http://moipctl-scout:8081", "--source", "av"]
+        ports:
+        - name: health
+          containerPort: 8082
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: health
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: health
+          initialDelaySeconds: 5
+          periodSeconds: 20
+        resources:
+          requests:
+            cpu: 20m
+            memory: 32Mi
+          limits:
+            memory: 128Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
+      restartPolicy: Always
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: moipctl-scout-ent
+  labels:
+    app: moipctl-scout
+    vlan: ent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: moipctl-scout
+      vlan: ent
+  template:
+    metadata:
+      labels:
+        app: moipctl-scout
+        vlan: ent
+      annotations:
+        k8s.v1.cni.cncf.io/networks: |
+          [{ "name": "vxlan", "namespace": "kube-public", "interface": "ent", "cni-args": { "vlan": 42 } }]
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+      containers:
+      - name: scout
+        image: ghcr.io/technotut/moipctl:0.1.1
+        imagePullPolicy: IfNotPresent
+        command: ["moipctl", "scout"]
+        args: ["--controller", "http://moipctl-scout:8081", "--source", "ent"]
+        ports:
+        - name: health
+          containerPort: 8082
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: health
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: health
+          initialDelaySeconds: 5
+          periodSeconds: 20
+        resources:
+          requests:
+            cpu: 20m
+            memory: 32Mi
+          limits:
+            memory: 128Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
+      restartPolicy: Always

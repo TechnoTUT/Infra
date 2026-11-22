@@ -1,0 +1,22 @@
+# moipctl (複数の moip-toolkit ノードのコントローラ)。k8s/manifest/moipctl を kustomize で配る。
+# Multus で VLAN 20・42 につなぐ (Ansible の multus_enabled: true)。
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: moipctl
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/TechnoTUT/Infra.git
+    targetRevision: HEAD
+    path: k8s/manifest/moipctl
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: moipctl
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

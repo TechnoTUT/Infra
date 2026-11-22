@@ -1,0 +1,71 @@
+# moipctl 本体 (API・状態の集約・ノードへの操作)。VLAN には直接つながない。
+# DJ・AV から届く Pod (認証のない API) が VLAN の中に入ると、そこからの踏み台になるため。
+# ノードの探索は VLAN ごとの scout (scout.yaml) が mDNS で行い、見つけたアドレスをこの Pod に報告する (:8081)。
+# ノードへの操作 (TCP 8000) は、ノードの IP (dmz) に SNAT されて FortiGate を通る (firewallpolicy.yaml)。
+# 表示名を state.json に書くので、1 つだけ動かす。
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: moipctl
+  labels:
+    app: moipctl
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: moipctl
+  template:
+    metadata:
+      labels:
+        app: moipctl
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+      containers:
+      - name: moipctl
+        # TechnoTUT/moipctl のタグ (v を除く) を GitHub Actions がビルドして置く (public)。
+        # WAN が不安定なので、ノードにあるイメージを使う。更新するときはタグを変える。
+        image: ghcr.io/technotut/moipctl:0.1.1
+        imagePullPolicy: IfNotPresent
+        # イメージの ENTRYPOINT は `moipctl serve --host 0.0.0.0 --port 8080 --state /data/state.json`。
+        # ここに足す: VLAN にはつながないので自分では探さない。scout の報告は 8081 で受ける。
+        args: ["--mdns=false", "--scout-listen", ":8081"]
+        ports:
+        - name: http
+          containerPort: 8080
+        - name: scout    # scout からの報告だけ。Service moipctl (LB) には出さない。networkpolicy.yaml で scout の Pod に絞る
+          containerPort: 8081
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: http
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 20
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            memory: 256Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
+        volumeMounts:
+        - { name: data, mountPath: /data }
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: moipctl-data
+      restartPolicy: Always

@@ -1,0 +1,13 @@
+# moipctl (https://github.com/TechnoTUT/moipctl): 複数の moip-toolkit (utone-linux) ノードをまとめて見る・操作するコントローラ。
+# Argo CD の Application `moipctl` が、このディレクトリを kustomize でデプロイする。
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: moipctl
+resources:
+  - pvc.yaml
+  - deployment.yaml
+  - service.yaml
+  - scout.yaml
+  - scout-service.yaml
+  - networkpolicy.yaml
+  - firewallpolicy.yaml
