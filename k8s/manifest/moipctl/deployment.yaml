@@ -1,9 +1,7 @@
-# moipctl 本体。Pod のネットワーク (Web・API) に加えて、VXLAN (vxlan-cni) でノードのいる VLAN に直接つなぐ。
-#   - VLAN 20 (av):  NDI の送受信 (RX/TX) をするノード
-#   - VLAN 42 (ent): 入口のサイネージのノード
-# ノードは mDNS (_moip._tcp) で自分を広報するので、同じ VLAN (L2) にいれば IP を知らなくても見つかり、
-# 操作の HTTP (TCP 8000) もその VLAN の中だけで済む (FortiGate のポリシーは要らない)。
-# ノードを増やす VLAN があれば、annotation に要素を足す (vlan は 10、20、30、40、42〜45 だけ)。
+# moipctl 本体 (API・状態の集約・ノードへの操作)。VLAN には直接つながない。
+# DJ・AV から届く Pod (認証のない API) が VLAN の中に入ると、そこからの踏み台になるため。
+# ノードの探索は VLAN ごとの scout (scout.yaml) が mDNS で行い、見つけたアドレスをこの Pod に報告する (:8081)。
+# ノードへの操作 (TCP 8000) は、ノードの IP (dmz) に SNAT されて FortiGate を通る (firewallpolicy.yaml)。
 # 表示名を state.json に書くので、1 つだけ動かす。
 apiVersion: apps/v1
 kind: Deployment
@@ -22,13 +20,6 @@ spec:
     metadata:
       labels:
         app: moipctl
-      annotations:
-        # net1/net2 ではなく、VLAN の名前 (av、ent) にする
-        k8s.v1.cni.cncf.io/networks: |
-          [
-            { "name": "vxlan", "namespace": "kube-public", "interface": "av",  "cni-args": { "vlan": 20 } },
-            { "name": "vxlan", "namespace": "kube-public", "interface": "ent", "cni-args": { "vlan": 42 } }
-          ]
     spec:
       securityContext:
         runAsNonRoot: true
@@ -41,9 +32,14 @@ spec:
         # WAN が不安定なので、ノードにあるイメージを使う。更新するときはタグを変える。
         image: ghcr.io/technotut/moipctl:0.1.0
         imagePullPolicy: IfNotPresent
+        # イメージの ENTRYPOINT は `moipctl serve --host 0.0.0.0 --port 8080 --state /data/state.json`。
+        # ここに足す: VLAN にはつながないので自分では探さない。scout の報告は 8081 で受ける。
+        args: ["--mdns=false", "--scout-listen", ":8081"]
         ports:
         - name: http
           containerPort: 8080
+        - name: scout    # scout からの報告だけ。Service moipctl (LB) には出さない。networkpolicy.yaml で scout の Pod に絞る
+          containerPort: 8081
         readinessProbe:
           httpGet:
             path: /healthz

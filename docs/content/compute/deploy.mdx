@@ -406,20 +406,31 @@ kubectl -n plmux logs deploy/plmux | grep -iE "VirtualCdj|Carabiner|expressions"
 | 項目 | 内容 |
 |---|---|
 | manifest | [`k8s/manifest/moipctl/`](https://github.com/TechnoTUT/Infra/tree/main/k8s/manifest/moipctl) (kustomize)。Argo CD の Application `moipctl` は [`k8s/manifest/apps/moipctl.yaml`](https://github.com/TechnoTUT/Infra/blob/main/k8s/manifest/apps/moipctl.yaml) |
-| イメージ | `ghcr.io/technotut/moipctl:<バージョン>` (public。moipctl のタグ `v*` で GitHub Actions がビルドする)。`imagePullPolicy: IfNotPresent` なので、更新するときは Deployment のタグを変える |
+| イメージ | `ghcr.io/technotut/moipctl:<バージョン>` (public。moipctl のタグ `v*` で GitHub Actions がビルドする)。コントローラも scout も同じイメージ。`imagePullPolicy: IfNotPresent` なので、更新するときは 3 つの Deployment のタグを全て変える |
 | エンドポイント | `http://moipctl.svc.technotut.net` (API。認証なし) |
 | データ | ノードの表示名 (`/data/state.json`)。NFS 上の PVC `moipctl-data` (100Mi) |
-| VXLAN | `kube-public/vxlan` で VLAN 20 (`av`) と VLAN 42 (`ent`) に同時につなぐ |
 
-- ノードは mDNS (`_moip._tcp`) で自分を広報します。mDNS はルーターを越えないので、Pod をノードのいる VLAN に直接つなぎ (Multus)、そこでノードを探します。ノードとの通信 (TCP 8000) も同じ VLAN の中で済むので、FortiGate のポリシーは要りません。
-- ノードを置く VLAN が増えたときは、Deployment の annotation に VLAN を足します。
+Pod は 2 種類に分けています。
+
+| Deployment | VXLAN | 役割 |
+|---|---|---|
+| `moipctl` | なし | API・状態の集約・ノードへの操作。scout の報告を `:8081` で受ける |
+| `moipctl-scout-av` | `kube-public/vxlan` (VLAN 20、`av`) | VLAN 20 のノードを mDNS で探して、`moipctl` に報告する |
+| `moipctl-scout-ent` | `kube-public/vxlan` (VLAN 42、`ent`) | VLAN 42 のノードを探して報告する |
+
+- ノードは mDNS (`_moip._tcp`) で自分を広報します。mDNS はルーターを越えないので、ノードのいる VLAN ごとに scout を 1 つ置き、**探すだけ**にしています。scout は見つけたアドレスを、ClusterIP の Service `moipctl-scout` (8081) へ報告します。
+- コントローラは VLAN に直接つながっていません。DJ・AV から届く認証のない API の Pod が VLAN の中に入ると、そこからの踏み台になるためです。
+- コントローラからノード (TCP 8000) への操作は、ノードの IP (`dmz`) に SNAT されて FortiGate を通ります。ノードのいる VLAN ごとに、FortiGate のポリシー (`al-moipctl-to-av`、`al-moipctl-to-ent`) が要ります。
+- 報告 (`:8081`) には認証がなく、コントローラは報告されたアドレスへ接続します。NetworkPolicy で、scout の Pod からだけ受けます。8081 は LB の Service には出していません。
+- ノードを置く VLAN が増えたときは、scout の Deployment (VLAN の `interface` と `vlan`、`--source`) と、FortiGate のポリシーを足します。
 - 画面と API には認証がありません。FortiGate のポリシー (`firewallpolicy.yaml`) で、DJ ネットワーク (VLAN 10) と AV ネットワーク (VLAN 20) からだけ入れるようにしています。
-- 表示名を書く state.json があるので、レプリカは 1 つ (`Recreate`) です。
+- 表示名を書く state.json があるので、コントローラのレプリカは 1 つ (`Recreate`) です。
 
 ```bash
 kubectl -n moipctl get pods -o wide
-kubectl -n moipctl logs deploy/moipctl | grep discovery   # 見つかったノード
-curl -s http://moipctl.svc.technotut.net/api/nodes | head
+kubectl -n moipctl logs deploy/moipctl | grep scout        # scout が報告したノード
+kubectl -n moipctl logs deploy/moipctl-scout-av            # scout 側の失敗
+curl -s http://moipctl.svc.technotut.net/api/nodes | head  # source が、見つけた scout (av、ent)
 ```
 
 ### クラスタ内のコンテナレジストリ

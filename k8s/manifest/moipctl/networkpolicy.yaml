@@ -1,0 +1,24 @@
+# moipctl の Pod に入る通信。
+#   - 8080 (Web・API): どこからでも。入れる VLAN は FortiGate のポリシー (firewallpolicy.yaml) で絞っている
+#   - 8081 (scout の報告): scout の Pod だけ。報告に認証はなく、アドレスの先へ moipctl が接続するので、他からは受けない
+# (NetworkPolicy が効くのは eth0 の通信。scout の VLAN 側 (av/ent) は moipctl には通じない)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: moipctl
+spec:
+  podSelector:
+    matchLabels:
+      app: moipctl
+  policyTypes: [Ingress]
+  ingress:
+  - ports:
+    - protocol: TCP
+      port: 8080
+  - from:
+    - podSelector:
+        matchLabels:
+          app: moipctl-scout
+    ports:
+    - protocol: TCP
+      port: 8081

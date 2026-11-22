@@ -1,0 +1,16 @@
+# scout からの報告 (POST /api/scout/report)。クラスタの中だけ (ClusterIP)。LB には出さない。
+# 報告は認証なしで受けるので、届く Pod を networkpolicy.yaml で scout に絞っている。
+apiVersion: v1
+kind: Service
+metadata:
+  name: moipctl-scout
+  labels:
+    app: moipctl
+spec:
+  selector:
+    app: moipctl
+  ports:
+  - name: scout
+    protocol: TCP
+    port: 8081
+    targetPort: scout

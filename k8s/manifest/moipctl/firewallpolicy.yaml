@@ -1,6 +1,7 @@
 # moipctl の画面と API には認証がない。操作できると映像の切り替えが誰でもできてしまうので、
 # 入れるのは、DJ (VLAN 10) と演出側 (AV、VLAN 20) だけにしている。他の VLAN から使うときは、同じ形のポリシーを足す。
-# ノードとの通信は、Pod が同じ VLAN に直接つながっている (Multus) ので、ポリシーは要らない。
+# ノードへの操作 (TCP 8000) は、scout が見つけたノードのアドレスへ、moipctl の Pod から送る。
+# Pod の通信はノードの IP (dmz) に SNAT されて FortiGate を通るので、ノードのいる VLAN ごとにポリシーが要る (末尾)。
 # FortiGate の設定は fortigate-operator が反映する (https://github.com/TechnoTUT/fortigate-operator)。
 #
 # 宛先は Service moipctl の LB IP だけ。FirewallAddress k8s-moipctl が serviceRef で LB IP に追従する。
@@ -39,3 +40,39 @@ spec:
   service: [HTTP]
   action: accept
   comments: moipctl from VLAN10
+---
+# moipctl からノードの API (moip web、TCP 8000) への操作と、状態の取得 (SSE)。
+apiVersion: fortigate.technotut.net/v1alpha1
+kind: FirewallService
+metadata:
+  name: moipctl-node-api
+spec:
+  name: MOIP-8000
+  tcpPortrange: ["8000"]
+  comment: moip-toolkit node API
+---
+apiVersion: fortigate.technotut.net/v1alpha1
+kind: FirewallPolicy
+metadata:
+  name: al-moipctl-to-av
+spec:
+  srcintf: [dmz]
+  dstintf: [sw20]
+  srcaddr: [dmz]
+  dstaddr: [VLAN20 subnet]
+  service: [MOIP-8000]
+  action: accept
+  comments: moipctl to the nodes on VLAN20
+---
+apiVersion: fortigate.technotut.net/v1alpha1
+kind: FirewallPolicy
+metadata:
+  name: al-moipctl-to-ent
+spec:
+  srcintf: [dmz]
+  dstintf: [sw42]
+  srcaddr: [dmz]
+  dstaddr: [VLAN42 subnet]
+  service: [MOIP-8000]
+  action: accept
+  comments: moipctl to the nodes on VLAN42
