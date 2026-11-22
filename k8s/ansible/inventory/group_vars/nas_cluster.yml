@@ -31,6 +31,7 @@ vxlan_cni_remote: "192.168.98.1"     # FortiGate の port9
 vxlan_cni_vni_offset: 10000
 
 # ===== 使わないもの =====
+kubevirt_enabled: false
 nfs_enabled: false
 registry_enabled: false
 arc_enabled: false

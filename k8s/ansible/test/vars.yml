@@ -11,7 +11,8 @@ kubeadm_ignore_preflight_errors:
   - FileContent--proc-sys-net-bridge-bridge-nf-call-iptables
   - Swap
 
-# メモリ節約のため、root から作る Application は cam1 と dmx だけにする
+# 入れ子のコンテナでは VM を動かさない（メモリ節約）。root から作る Application も cam1 と dmx だけにする
+kubevirt_enabled: false
 argocd_root_include: "{cam1.yaml,dmx.yaml}"
 
 # このテスト環境（TUT の外）からは TUT の DNS サーバに届かないため、公開 DNS を使う

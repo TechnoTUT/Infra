@@ -49,7 +49,7 @@ Pod CIDR は 10.15.0.0/16、Service CIDR (ClusterIP) は 10.96.0.0/12、LB の I
 `kubeadm init` / `join`、Pod / Service の CIDR、Cilium (kube-proxy 置き換え、Ingress、LB IP プール)、BGP (FRR での経路確認)、ArgoCD、ExternalDNS のチャートと webhook のサイドカーが入ること。
 
 ## 検証できないこと
-実機の VLAN とブリッジ、FortiGate へのレコードの書き込み (FortiGate がないため、webhook は Ready にならない)、Multus の L2 通信、NFS provisioner の実動作 (NFS サーバがない)、network ロール、marie (packard と同じ設定)、Haswell でのメモリの余裕。
+KubeVirt / CDI、実機の VLAN とブリッジ、FortiGate へのレコードの書き込み (FortiGate がないため、webhook は Ready にならない)、Multus の L2 通信、NFS provisioner の実動作 (NFS サーバがない)、network ロール、marie (packard と同じ設定)、Haswell でのメモリの余裕。
 
 ## テスト用の上書き (`vars.yml`)
 コンテナ固有の事情に対処するために、次の変数を上書きしている。本番の値は変えない。
@@ -61,7 +61,7 @@ Pod CIDR は 10.15.0.0/16、Service CIDR (ClusterIP) は 10.96.0.0/12、LB の I
 | `kubeadm_ignore_preflight_errors` | 上記に伴う preflight の無視 |
 | `argocd_network_policy` | 入れ子のコンテナでは NetworkPolicy 下の probe が通らないため |
 | `node_dns_servers` | テストを動かす PC から TUT の DNS サーバに届かないため、公開 DNS を使う |
-| `argocd_root_include` | メモリ節約のため、root から作る Application は `cam1` と `dmx` だけにする |
+| `kubevirt_enabled`, `argocd_root_include` | 入れ子のコンテナでは VM を動かさない (メモリ節約)。root から作る Application も `cam1` と `dmx` だけにする |
 | `externaldns_helm_wait` | FortiGate がなく webhook が Ready にならないため、helm の完了を待たない |
 
 `up.sh` は、Cilium が `/sys/fs/bpf` を使えるように bpffs を shared でマウントする。また、kubeadm の preflight がカーネルの設定を読めるように、ホストの `/lib/modules` と `/boot` を読み取り専用でマウントする (Ubuntu では設定が `/boot/config-*` にある)。

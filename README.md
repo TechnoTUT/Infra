@@ -31,6 +31,7 @@ DJ 機器の PRO DJ LINK、映像伝送の NDI・RTMP、テンポ同期の Ablet
 | CNI | Cilium, Multus |
 | ストレージ | NFS, local PV |
 | GitOps | Argo CD |
+| VM | KubeVirt, CDI |
 
 詳細: [構築方法](./docs/content/compute/deploy.mdx)
 
