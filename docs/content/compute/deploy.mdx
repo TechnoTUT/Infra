@@ -421,7 +421,7 @@ kubectl -n plmux logs deploy/plmux | grep -iE "VirtualCdj|Carabiner|expressions"
 |---|---|
 | manifest | [`k8s/manifest/moipctl/`](https://github.com/TechnoTUT/Infra/tree/main/k8s/manifest/moipctl) (kustomize)。Argo CD の Application `moipctl` は [`k8s/manifest/apps/moipctl.yaml`](https://github.com/TechnoTUT/Infra/blob/main/k8s/manifest/apps/moipctl.yaml) |
 | イメージ | `ghcr.io/technotut/moipctl:<バージョン>` (public。moipctl のタグ `v*` で GitHub Actions がビルドする)。コントローラも scout も同じイメージ。`imagePullPolicy: IfNotPresent` なので、更新するときは 3 つの Deployment のタグを全て変える |
-| エンドポイント | `http://moipctl.svc.technotut.net` (API。認証なし) |
+| エンドポイント | `http://moipctl.svc.technotut.net` (Web 画面と API。認証なし。画面は moipctl のバイナリに入っている) |
 | データ | ノードの表示名 (`/data/state.json`)。NFS 上の PVC `moipctl-data` (100Mi) |
 
 Pod は 2 種類に分けています。

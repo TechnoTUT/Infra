@@ -11,40 +11,40 @@ moipctl は、会場に置いた [utone-linux](/service/utone-linux) の端末 (
 
 [コンテナ基盤](/compute)上で常に動いています。
 
-<Admonition type="info">
-
-現在は API だけで、Web の画面はありません。画面は今後つくります。
-
-</Admonition>
-
-## 使用方法
+## 使用方法 (画面)
 1. [TechnoTUT Network](/network)の **DJ ネットワーク (VLAN 10)** か **AV ネットワーク (VLAN 20)** に接続します。他の VLAN からは届きません。
-2. 見つかっている端末の一覧を見ます。
+2. ブラウザで http://moipctl.svc.technotut.net/ を開きます。
+   - 左: 見つかっている端末 (ノード) のカード。受信 (RX)・送信 (TX)・マルチビュー・サイネージの状態と、CPU と RAM が出ます。
+   - 右: 端末から見えている NDI ソース。何台の端末から見えているか、どの端末で表示中かも出ます。
+3. 映像を切り替えるときは、左で端末にチェックを入れて、右のソースの **Show on N selected nodes** を押します。
+   - 受信中の端末は切り替わり、停止中の端末は受信を始めます。
+   - 結果は右下に出て、端末ごとの成否が分かります。一部の端末だけ失敗したときは、その端末と理由が出ます。
+4. カードのボタンで、受信・送信・マルチビューの **Stop** と、サイネージの **Show** / **Stop** ができます。鉛筆のアイコンで、端末に分かりやすい名前を付けられます (再起動しても残ります)。
+
+- `Unreachable` (黄色) の端末は、広報はされていますが、moipctl から届いていません。表示は古いかもしれず、選択も操作もできません。
+- 画面は自動で更新されます。右上が `Live` なら、更新を受け取っています。`Reconnecting` のときは、moipctl との接続が切れていて、つなぎ直しています。
+- 認証はありません。誰でも操作できる VLAN (DJ・AV) からしか届かないことで、守っています。
+
+## 使用方法 (スクリプトから)
+画面と同じことが API でできます。書き込み (`POST`・`PUT`) は、`Content-Type: application/json` が必要です (ブラウザからの不正な書き込みを防ぐためです)。
 
 ```bash
+# 見つかっている端末の一覧
 curl -s http://moipctl.svc.technotut.net/api/nodes
-```
 
-`online` は端末が広報されていること、`connected` は状態の取得ができていることを表します。`state` に、受信 (`rx`)・送信 (`tx`)・マルチビュー・サイネージの状態と、見えている NDI ソースが入っています。
-
-3. 複数の端末で、受信するソースをまとめて切り替えます (`nodes` に端末の `id` を並べます)。
-
-```bash
+# 複数の端末で、受信するソースをまとめて切り替える (nodes に端末の id を並べる)
 curl -s -X POST http://moipctl.svc.technotut.net/api/bulk/rx/switch \
+  -H 'Content-Type: application/json' \
   -d '{"nodes": ["utone-a1b2c3", "utone-d4e5f6"], "body": {"sender_name": "CAM1 (OBS)"}}'
+
+# 端末に名前を付ける
+curl -s -X PUT http://moipctl.svc.technotut.net/api/nodes/utone-a1b2c3/alias \
+  -H 'Content-Type: application/json' -d '{"alias": "入口サイネージ"}'
 ```
 
-結果は端末ごとに返ります。一部の端末だけ失敗したときも、どの端末が失敗したかが分かります。
+`online` は端末が広報されていること、`connected` は状態の取得ができていることを表します。`state` に、受信 (`rx`)・送信 (`tx`)・マルチビュー・サイネージの状態と、見えている NDI ソースが入っています。結果は端末ごとに返るので、一部の端末だけ失敗したときも、どの端末が失敗したかが分かります。
 
-操作できるのは、`rx` (`start` / `switch` / `stop`)、`tx`、`multiview`、`signage` (`start` / `stop`) です。1 台だけに送るときは `POST /api/nodes/<id>/<役割>/<操作>` です。
-
-4. 端末に分かりやすい名前を付けます。名前は再起動しても残ります。
-
-```bash
-curl -s -X PUT http://moipctl.svc.technotut.net/api/nodes/utone-a1b2c3/alias -d '{"alias": "入口サイネージ"}'
-```
-
-変化をリアルタイムに受け取るときは、`GET /api/events` (Server-Sent Events) を使います。
+操作できるのは、`rx` (`start` / `switch` / `stop`)、`tx`、`multiview`、`signage` (`start` / `stop`) です。1 台だけに送るときは `POST /api/nodes/<id>/<役割>/<操作>` です。変化をリアルタイムに受け取るときは、`GET /api/events` (Server-Sent Events) を使います。
 
 ## 端末の条件
 - utone-linux の、端末が mDNS で広報する版 (moip-toolkit の `moip web` が動いていること。`nweb.service` を有効にします)。

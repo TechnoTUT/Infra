@@ -33,7 +33,7 @@ spec:
       containers:
       - name: scout
         # moipctl と同じイメージ。ENTRYPOINT (serve) を scout に置き換える。
-        image: ghcr.io/technotut/moipctl:0.1.1
+        image: ghcr.io/technotut/moipctl:0.2.0
         imagePullPolicy: IfNotPresent
         command: ["moipctl", "scout"]
         args: ["--controller", "http://moipctl-scout:8081", "--source", "av"]
@@ -92,7 +92,7 @@ spec:
         runAsGroup: 10001
       containers:
       - name: scout
-        image: ghcr.io/technotut/moipctl:0.1.1
+        image: ghcr.io/technotut/moipctl:0.2.0
         imagePullPolicy: IfNotPresent
         command: ["moipctl", "scout"]
         args: ["--controller", "http://moipctl-scout:8081", "--source", "ent"]
