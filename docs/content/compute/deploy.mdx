@@ -43,7 +43,7 @@ Clusters: 2 (`main`: becky, packard, marie / `nas`: ongeki)
 3. Ansible の実行
 4. ルーター (FortiGate) の BGP 設定
 5. 動作確認
-6. 任意: Multus、ExternalDNS、NAS (ongeki)
+6. 任意: Multus、ExternalDNS、KubeVirt、NAS (ongeki)
 
 ## 1. 事前準備
 ### ネットワーク (管理用 VLAN は手動)
@@ -107,7 +107,7 @@ ansible-playbook playbooks/site.yml
 | nfs | becky を NFS サーバにする (`/nfs`) |
 | kubeadm | kubelet・kubeadm・kubectl のインストール、`kubeadm init`、`kubeadm join` |
 | vxlan_cni | vxlan-cni のプラグイン (`/opt/cni/bin/vxlan`) と DHCP デーモン (`cni-dhcp.service`) のインストール |
-| addons | Helm、Cilium、Multus と NAD (vxlan-cni を含む)、NFS provisioner、Argo CD と親の Application (`root`)、ExternalDNS (FortiGate の webhook) |
+| addons | Helm、Cilium、Multus と NAD (vxlan-cni を含む)、NFS provisioner、KubeVirt と CDI の operator、Argo CD と親の Application (`root`)、ExternalDNS (FortiGate の webhook) |
 
 `kubeadm init` は Pod CIDR を `10.15.0.0/16`、Service CIDR (ClusterIP) を `10.96.0.0/12` で作成します。kube-proxy は Cilium で置き換えるため入れません。
 
@@ -370,6 +370,20 @@ end
 
 FortiGate のゾーンは `authoritative enable` (既定値) で使います。この設定では、ゾーンにない名前に NXDOMAIN を返し、`forwarder` は使われません。
 
+### KubeVirt
+VM を動かすときのために、KubeVirt と CDI を Ansible で導入している (`kubevirt_enabled: true`)。\
+以前は BLT (Beat Link Trigger) を VM で動かしていたが、[plmux](#plmux) に置き換えて、一度削除した。utone-linux のイメージを VM で起動して動作を確かめるために、再び入れた。常時動かす VM はない。
+
+| コンポーネント | 内容 |
+|---|---|
+| KubeVirt | operator と CR。メモリ節約のため、制御コンポーネントは 1 レプリカ (`infra.replicas: 1`) |
+| CDI | operator のみ。CDI の CR は Argo CD の `cdi-config` が管理する (`k8s/manifest/infrastructure/cdi/`) |
+| virtctl | becky の `/usr/local/bin/virtctl` |
+
+- ノードで `/dev/kvm` が使えること。使えないノードでは、KubeVirt の CR の `developerConfiguration.useEmulation: true` で動くが、極端に遅い。
+- operator は Ansible (`site.yml`) が入れる。Argo CD は CDI の CR だけを管理するので、`main` にマージしただけでは operator は入らない。
+- メモリを使うので、VM が要らないときは `kubevirt_enabled: false` にして、operator を消してよい。
+
 ### plmux
 PRO DJ LINK のモニター・曲履歴・Ableton Link・Clojure の式のサーバー [TechnoTUT/plmux](https://github.com/TechnoTUT/plmux) を、`main` のクラスタで動かす。使い方は [plmux](/service/plmux)。
 
@@ -610,7 +624,7 @@ Ansible で反映するものと、Argo CD で反映するものがあります�
 
 | 変更するもの | 反映の方法 |
 |---|---|
-| Cilium、LoadBalancer の IP プール、BGP、Multus、Argo CD、ExternalDNS など (`k8s/ansible/`) | `site.yml` を流します |
+| Cilium、LoadBalancer の IP プール、BGP、Multus、KubeVirt、Argo CD、ExternalDNS など (`k8s/ansible/`) | `site.yml` を流します |
 | Argo CD の Application の追加・削除 (`k8s/manifest/apps/`) | `main` にマージすると、Argo CD の `root` が登録します。`site.yml` は不要です |
 | 各アプリの manifest (`k8s/manifest/`) | `main` にマージすると、Argo CD が同期します。`site.yml` は不要です |
 

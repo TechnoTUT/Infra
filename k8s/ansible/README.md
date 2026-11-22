@@ -39,7 +39,7 @@ ansible-playbook playbooks/reset.yml         # 全消去（RESET と入力）
 | nfs | becky (`nfs_enabled`) | NFS サーバ（/nfs） |
 | kubeadm | 全ノード | kubelet/kubeadm/kubectl、`kubeadm init` / `join` |
 | vxlan_cni | main の全ノード (`vxlan_cni_enabled`) | [vxlan-cni](https://github.com/TechnoTUT/vxlan-cni) のプラグイン (`/opt/cni/bin/vxlan`) と DHCP デーモン (`cni-dhcp.service`) |
-| addons | control plane (becky / ongeki) | Helm、Cilium（LB IP プール、BGP、Cluster Mesh）、Multus と NAD（vxlan-cni を含む）、NFS provisioner、Samba の Secret、ArgoCD と親の Application（root。各アプリは `k8s/manifest/apps` から Argo CD が作る。nas は main の Argo CD に登録）、ExternalDNS (FortiGate の webhook)。nas では使わないものを `*_enabled` で止める |
+| addons | control plane (becky / ongeki) | Helm、Cilium（LB IP プール、BGP、Cluster Mesh）、Multus と NAD（vxlan-cni を含む）、NFS provisioner、Samba の Secret、KubeVirt と CDI の operator、ArgoCD と親の Application（root。各アプリは `k8s/manifest/apps` から Argo CD が作る。nas は main の Argo CD に登録）、ExternalDNS (FortiGate の webhook)。nas では使わないものを `*_enabled` で止める |
 
 ノードに Python ライブラリは入れず、`helm` と `kubectl` のコマンドだけで操作する。
 バージョンと CIDR は `inventory/group_vars/all/main.yml` に集約している。
