@@ -1,0 +1,11 @@
+# ノードの表示名 (alias) を入れる state.json。書き込むのは moipctl の Pod 1 つだけ (replicas: 1、Recreate)。
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: moipctl-data
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: nfs-client
+  resources:
+    requests:
+      storage: 100Mi

@@ -1,0 +1,18 @@
+# Web・API (/api/nodes、/api/bulk/...、/api/events)。認証はないので、FortiGate のポリシー (firewallpolicy.yaml) で入れる VLAN を絞っている。
+apiVersion: v1
+kind: Service
+metadata:
+  name: moipctl
+  labels:
+    app: moipctl
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: moipctl.svc.technotut.net
+spec:
+  selector:
+    app: moipctl
+  type: LoadBalancer
+  ports:
+  - name: http
+    protocol: TCP
+    port: 80
+    targetPort: http

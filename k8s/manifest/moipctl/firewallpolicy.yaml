@@ -1,0 +1,28 @@
+# moipctl の画面と API には認証がない。操作できると映像の切り替えが誰でもできてしまうので、
+# 入れるのは、演出側 (AV、VLAN 20) だけにしている。DJ (VLAN 10) などから使うときは、同じ形のポリシーを足す。
+# ノードとの通信は、Pod が同じ VLAN に直接つながっている (Multus) ので、ポリシーは要らない。
+# FortiGate の設定は fortigate-operator が反映する (https://github.com/TechnoTUT/fortigate-operator)。
+#
+# 宛先は Service moipctl の LB IP だけ。FirewallAddress k8s-moipctl が serviceRef で LB IP に追従する。
+apiVersion: fortigate.technotut.net/v1alpha1
+kind: FirewallAddress
+metadata:
+  name: k8s-moipctl
+spec:
+  serviceRef:
+    name: moipctl
+  associatedInterface: dmz
+  comment: LB IP of Service moipctl
+---
+apiVersion: fortigate.technotut.net/v1alpha1
+kind: FirewallPolicy
+metadata:
+  name: al-moipctl-av
+spec:
+  srcintf: [sw20]
+  dstintf: [dmz]
+  srcaddr: [VLAN20 subnet]
+  dstaddr: [k8s-moipctl]
+  service: [HTTP]
+  action: accept
+  comments: moipctl from VLAN20
