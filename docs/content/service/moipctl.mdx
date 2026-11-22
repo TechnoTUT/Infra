@@ -1,0 +1,54 @@
+---
+title: moipctl
+sidebar_position: 13
+---
+
+## moipctl とは
+moipctl は、会場に置いた [utone-linux](/service/utone-linux) の端末 (moip-toolkit) をまとめて見て、操作するコントローラです。\
+端末の IP アドレスは DHCP で変わりますが、端末が自分を mDNS で広報するので、IP を調べて繋ぎ変える必要はありません。
+
+<RepoCard repo="TechnoTUT/moipctl" />
+
+[コンテナ基盤](/compute)上で常に動いています。
+
+<Admonition type="info">
+
+現在は API だけで、Web の画面はありません。画面は今後つくります。
+
+</Admonition>
+
+## 使用方法
+1. [TechnoTUT Network](/network)の **AV ネットワーク (VLAN 20)** に接続します。他の VLAN からは届きません。
+2. 見つかっている端末の一覧を見ます。
+
+```bash
+curl -s http://moipctl.svc.technotut.net/api/nodes
+```
+
+`online` は端末が広報されていること、`connected` は状態の取得ができていることを表します。`state` に、受信 (`rx`)・送信 (`tx`)・マルチビュー・サイネージの状態と、見えている NDI ソースが入っています。
+
+3. 複数の端末で、受信するソースをまとめて切り替えます (`nodes` に端末の `id` を並べます)。
+
+```bash
+curl -s -X POST http://moipctl.svc.technotut.net/api/bulk/rx/switch \
+  -d '{"nodes": ["utone-a1b2c3", "utone-d4e5f6"], "body": {"sender_name": "CAM1 (OBS)"}}'
+```
+
+結果は端末ごとに返ります。一部の端末だけ失敗したときも、どの端末が失敗したかが分かります。
+
+操作できるのは、`rx` (`start` / `switch` / `stop`)、`tx`、`multiview`、`signage` (`start` / `stop`) です。1 台だけに送るときは `POST /api/nodes/<id>/<役割>/<操作>` です。
+
+4. 端末に分かりやすい名前を付けます。名前は再起動しても残ります。
+
+```bash
+curl -s -X PUT http://moipctl.svc.technotut.net/api/nodes/utone-a1b2c3/alias -d '{"alias": "入口サイネージ"}'
+```
+
+変化をリアルタイムに受け取るときは、`GET /api/events` (Server-Sent Events) を使います。
+
+## 端末の条件
+- utone-linux の、端末が mDNS で広報する版 (moip-toolkit の `moip web` が動いていること。`nweb.service` を有効にします)。
+- 端末の `id` はホスト名です。utone-linux は、起動時にホスト名を `utone-` と MAC アドレスの下位 6 桁 (例: `utone-a1b2c3`) にします。ホスト名を手で変えた端末は、その名前が `id` になるので、重複させないでください。
+- 端末が AV ネットワーク (VLAN 20) か、入口のサイネージ用のネットワーク (VLAN 42) に接続していること。
+
+moipctl の中の仕組みは [コンテナ基盤](/compute/deploy#moipctl) を参照してください。
