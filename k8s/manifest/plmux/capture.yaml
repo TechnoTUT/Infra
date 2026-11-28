@@ -41,8 +41,9 @@ spec:
       - name: tcpdump
         image: docker.io/nicolaka/netshoot:v0.13
         imagePullPolicy: IfNotPresent
-        # -Z root: tcpdump ユーザーに切り替えない (SETUID の権限を与えないため)
-        command: ["tcpdump", "-i", "dj", "-n", "-s", "0", "-U", "-Z", "root",
+        # -Z は付けない。このイメージの tcpdump は既定で root のまま動く。-Z root でもユーザーを切り替えようとして、
+        # CAP_SETGID がないので "Couldn't change to 'root'" で止まる
+        command: ["tcpdump", "-i", "dj", "-n", "-s", "0", "-U",
                   "-C", "100", "-W", "20", "-w", "/pcap/dj.pcap"]
         resources:
           requests:
