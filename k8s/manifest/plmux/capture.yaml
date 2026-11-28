@@ -1,0 +1,77 @@
+# 調査用 (一時的。調査が終わったら kustomization.yaml から外して消す)。
+# DJ の VLAN 10 を pcap に記録する。rekordbox 7.2.20 / 6.8.8 以降が、plmux (仮想 CDJ) を
+# 「暗号化されていない接続 (Non-secure connection)」と警告する件で、何を見て判定しているかを調べる。
+#
+# この Pod に届くのは、ブロードキャスト (PRO DJ LINK の 50000-50002 の announce・keep-alive・ステータス、
+# DHCP、ARP など) と、この Pod 宛ての通信だけ。rekordbox の PC と DJ 機器のあいだのユニキャストは
+# N-1 スイッチの中で折り返すので、FortiGate (sw10) にも vxbr10 にも来ない。
+#
+# rekordbox と plmux のあいだのユニキャストは、plmux の Pod のネットワークの中で見る (Pod に debug コンテナを足す):
+#   echo '{"securityContext":{"runAsUser":0}}' > root.json
+#   kubectl -n plmux debug -i "$(kubectl -n plmux get pod -l app=plmux -o name)" \
+#     --image=docker.io/nicolaka/netshoot:v0.13 --target=plmux --profile=netadmin --custom=root.json \
+#     -- tcpdump -i dj -n -s 0 -U -w - > plmux-dj.pcap
+#   (debug コンテナは Pod を作り直すまで残る。tcpdump を止めれば何もしない)
+#
+# pcap は PVC plmux-capture に、100MB × 20 個を上書きしながら置く (dj.pcap00 から dj.pcap19)。取り出すとき:
+#   kubectl -n plmux cp "$(kubectl -n plmux get pod -l app=plmux-capture -o name | cut -d/ -f2)":/pcap ./pcap
+# tcpdump は、パケットを受けるだけで、DJ ネットワークには何も送らない (IP は DHCP で取る)。
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: plmux-capture
+  labels:
+    app: plmux-capture
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: plmux-capture
+  template:
+    metadata:
+      labels:
+        app: plmux-capture
+      annotations:
+        k8s.v1.cni.cncf.io/networks: |
+          [{ "name": "vxlan", "namespace": "kube-public", "interface": "dj", "cni-args": { "vlan": 10 } }]
+    spec:
+      containers:
+      - name: tcpdump
+        image: docker.io/nicolaka/netshoot:v0.13
+        imagePullPolicy: IfNotPresent
+        # -Z root: tcpdump ユーザーに切り替えない (SETUID の権限を与えないため)
+        command: ["tcpdump", "-i", "dj", "-n", "-s", "0", "-U", "-Z", "root",
+                  "-C", "100", "-W", "20", "-w", "/pcap/dj.pcap"]
+        resources:
+          requests:
+            cpu: 20m
+            memory: 32Mi
+          limits:
+            memory: 128Mi
+        securityContext:
+          # パケットを読むのに root と NET_RAW、プロミスキャスにするのに NET_ADMIN が要る
+          runAsUser: 0
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: ["ALL"]
+            add: ["NET_RAW", "NET_ADMIN"]
+        volumeMounts:
+        - { name: pcap, mountPath: /pcap }
+      volumes:
+      - name: pcap
+        persistentVolumeClaim:
+          claimName: plmux-capture
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: plmux-capture
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: nfs-client
+  resources:
+    requests:
+      storage: 3Gi
